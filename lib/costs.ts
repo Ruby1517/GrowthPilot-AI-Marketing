@@ -1,0 +1,1 @@
+import Org from '@/models/Org'; import { dbConnect } from './db'; export async function addUsage(orgId:string,{tokens=0,minutes=0}:{tokens?:number,minutes?:number}){await dbConnect(); await Org.updateOne({_id:orgId},{ $inc: {'usage.tokens':tokens,'usage.minutes':minutes}})}

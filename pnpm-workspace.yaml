@@ -1,0 +1,6 @@
+ignoredBuiltDependencies:
+  - aws-sdk
+  - esbuild
+  - ffmpeg-static
+  - msgpackr-extract
+  - unrs-resolver

@@ -1,0 +1,1 @@
+export function renderTemplate(tpl: string, vars: Record<string, any>) { return tpl.replace(/{{\s*([\w.]+)\s*}}/g, (_, key) => { const val = key.split('.').reduce((acc: any, k: string) => (acc ? acc[k] : ''), vars); return (val ?? '').toString() }) }
