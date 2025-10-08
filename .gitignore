@@ -1,1 +1,29 @@
-node_modules
+# Dependencies / build
+node_modules/
+.next/
+out/
+dist/
+.vercel/
+coverage/
+
+# Env & secrets
+.env
+.env.*
+!.env.example        # keep a template (no real values)
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+*.pfx
+*.crt
+*.cer
+*.der
+*.enc
+.envrc
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
