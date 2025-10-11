@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import UserMenu from '@/components/UserMenu'
+import { ThemeProvider } from './theme-provider';
+import ThemeToggle from './ThemeToggle';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -76,6 +78,12 @@ function Icon({ name, className = 'w-4 h-4' }: { name: string; className?: strin
           <path fill="currentColor" d="M7 2h2v3H7V2Zm8 0h2v3h-2V2ZM4 6h16v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Zm2 4h4v4H6v-4Z" />
         </svg>
       );
+      case 'youtube':
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden>
+          <path fill="currentColor" d="M10 15l5.19-3L10 9v6Zm12-3c0 0-0.02-2.04-.26-3.02a3.04 3.04 0 0 0-2.14-2.14C18.61 6.5 12 6.5 12 6.5s-6.61 0-7.6.24A3.04 3.04 0 0 0 2.26 8.88C2.02 9.86 2 11.9 2 11.9s.02 2.04.26 3.02a3.04 3.04 0 0 0 2.14 2.14c.99.24 7.6.24 7.6.24s6.61 0 7.6-.24a3.04 3.04 0 0 0 2.14-2.14c.24-.98.26-3.02.26-3.02Z"/>
+        </svg>
+      );
     default:
       return null;
   }
@@ -129,6 +137,8 @@ export default function Navbar() {
     { href: '/viralpilot', label: 'ViralPilot', desc: 'Brand & Design Kit',   icon: 'youtube' },
   ];
   const tools = [
+    { href: '/dashboard/history', label: 'History' },
+    { href: '/dashboard/analytics', label: 'Analytics' },
     { href: '/upload',     label: 'Upload',     desc: 'Send files to S3',     icon: 'upload' },
     { href: '/assets',     label: 'Assets',     desc: 'Library & links',      icon: 'assets' },
     { href: '/calendar',   label: 'Calendar',   desc: 'Plan & schedule',      icon: 'calendar' },
@@ -250,7 +260,7 @@ export default function Navbar() {
             )}
           </div>
         )}
-
+        <ThemeToggle />
         <UserMenu />
       </nav>
     </header>

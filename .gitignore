@@ -8,8 +8,8 @@ coverage/
 
 # Env & secrets
 .env
-.env.local
 .env.*
+.env.local
 !.env.example        # keep a template (no real values)
 *.pem
 *.key

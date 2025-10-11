@@ -41,7 +41,7 @@
 //   async function loadJobs() {
 //     setLoading(true);
 //     try {
-//       const r = await fetch("/api/clips/list", { cache: "no-store" });
+//       const r = await fetch("/api/clippilot/list", { cache: "no-store" });
 //       if (!r.ok) throw new Error(await r.text());
 //       const j = await r.json();
 //       setJobs(j.jobs || []);
@@ -56,7 +56,7 @@
 
 //   async function loadAssets(id: string) {
 //     try {
-//       const r = await fetch(`/api/clips/${id}/assets`, { cache: "no-store" });
+//       const r = await fetch(`/api/clippilot/${id}/assets`, { cache: "no-store" });
 //       if (!r.ok) throw new Error(await r.text());
 //       const j = await r.json();
 //       setAssets((prev) => ({ ...prev, [id]: j.assets || [] }));
@@ -67,7 +67,7 @@
 
 //   async function refreshJob(id: string) {
 //     try {
-//       const r = await fetch(`/api/clips/${id}/status`, { cache: "no-store" });
+//       const r = await fetch(`/api/clippilot/${id}/status`, { cache: "no-store" });
 //       if (!r.ok) return;
 //       const j = await r.json();
 //       setJobs((prev) => prev.map((x) => (x._id === id ? j.job : x)));
@@ -262,135 +262,415 @@
 
 
 // app/clips/page.tsx
+// 'use client';
+
+// import { useEffect, useState } from 'react';
+
+// export default function ClipsPage() {
+//   const [src, setSrc] = useState('');
+//   const [prompt, setPrompt] = useState('');
+//   const [aspect, setAspect] = useState<'9:16'|'1:1'|'16:9'>('9:16');
+//   const [durationSec, setDurationSec] = useState(30);
+//   const [variants, setVariants] = useState(1);
+
+//   const [jobId, setJobId] = useState<string | null>(null);
+//   const [loading, setLoading] = useState(false);
+//   const [status, setStatus] = useState<string>('idle');
+//   const [outputs, setOutputs] = useState<any[]>([]);
+//   const [error, setError] = useState<string | null>(null);
+
+//   async function createJob(e: React.FormEvent) {
+//     e.preventDefault();
+//     setLoading(true); setError(null); setJobId(null); setOutputs([]); setStatus('idle');
+
+//     try {
+//       const res = await fetch('/api/clippilot/create', {
+//         method: 'POST',
+//         headers: { 'content-type':'application/json' },
+//         body: JSON.stringify({ src, prompt, aspect, durationSec, variants }),
+//       });
+//       const data = await res.json();
+//       if (!res.ok || data.ok === false) throw new Error(data?.error || 'Failed');
+//       setJobId(data.jobId);
+//       setStatus('queued');
+//     } catch (e:any) {
+//       setError(e.message || 'Failed to create job');
+//     } finally {
+//       setLoading(false);
+//     }
+//   }
+
+//   useEffect(() => {
+//     if (!jobId) return;
+//     let t: any;
+//     const poll = async () => {
+//       try {
+//         const r = await fetch(`/api/clippilot/status/${jobId}`);
+//         if (!r.ok) return;
+//         const j = await r.json();
+//         setStatus(j.status);
+//         setOutputs(j.outputs || []);
+//         if (j.status === 'done' || j.status === 'error') return; // stop
+//         t = setTimeout(poll, 2000);
+//       } catch {}
+//     };
+//     poll();
+//     return () => clearTimeout(t);
+//   }, [jobId]);
+
+//   return (
+//     <div className="p-6 space-y-6 max-w-3xl">
+//       <h1 className="text-2xl font-semibold">ClipPilot — Video/Shorts Creator</h1>
+
+//       <form onSubmit={createJob} className="card p-6 space-y-4">
+//         <input
+//           className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2"
+//           placeholder="Source URL or s3://key"
+//           value={src}
+//           onChange={(e)=>setSrc(e.target.value)}
+//           required
+//         />
+//         <textarea
+//           className="w-full rounded-xl border border-white/10 bg-transparent p-3"
+//           placeholder="Editing prompt (cuts, captions, music, style)…"
+//           value={prompt}
+//           onChange={(e)=>setPrompt(e.target.value)}
+//         />
+//         <div className="grid gap-3 md:grid-cols-3">
+//           <div className="flex items-center gap-2">
+//             <label className="text-sm w-24">Aspect</label>
+//             <select
+//               className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+//               value={aspect}
+//               onChange={(e)=>setAspect(e.target.value as any)}
+//             >
+//               <option value="9:16">9:16</option>
+//               <option value="1:1">1:1</option>
+//               <option value="16:9">16:9</option>
+//             </select>
+//           </div>
+//           <div className="flex items-center gap-2">
+//             <label className="text-sm w-24">Duration</label>
+//             <input
+//               type="number" min={5} max={600}
+//               className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+//               value={durationSec}
+//               onChange={(e)=>setDurationSec(Math.max(5, Math.min(600, Number(e.target.value)||30)))}
+//             />
+//             <span className="text-sm text-brand-muted">sec</span>
+//           </div>
+//           <div className="flex items-center gap-2">
+//             <label className="text-sm w-24">Variants</label>
+//             <input
+//               type="number" min={1} max={10}
+//               className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+//               value={variants}
+//               onChange={(e)=>setVariants(Math.max(1, Math.min(10, Number(e.target.value)||1)))}
+//             />
+//           </div>
+//         </div>
+
+//         <div className="flex gap-2">
+//           <button className="btn-gold" disabled={loading}>
+//             {loading ? 'Queuing…' : 'Create job'}
+//           </button>
+//           {error && <span className="text-sm text-red-400">{error}</span>}
+//         </div>
+//       </form>
+
+//       {jobId && (
+//         <div className="card p-6 space-y-3">
+//           <div className="text-sm">Job: <b>{jobId}</b></div>
+//           <div className="text-sm">Status: <b className="capitalize">{status}</b></div>
+//           {!!outputs.length && (
+//             <div className="grid gap-3 md:grid-cols-2">
+//               {outputs.map((o, i)=>(
+//                 <video key={i} src={o.url} controls className="w-full rounded-xl border border-white/10" />
+//               ))}
+//             </div>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
-export default function ClipsPage() {
-  const [src, setSrc] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [aspect, setAspect] = useState<'9:16'|'1:1'|'16:9'>('9:16');
-  const [durationSec, setDurationSec] = useState(30);
-  const [variants, setVariants] = useState(1);
+const Uploader = dynamic(() => import('@/components/Uploader'), { ssr: false });
 
-  const [jobId, setJobId] = useState<string | null>(null);
+type Item = {
+  id: string;
+  status: 'queued' | 'processing' | 'done' | 'error';
+  durationSec: number;
+  variants: number;
+  estimateMinutes?: number;
+  actualMinutes?: number;
+  createdAt: string;
+};
+
+const VOICE_STYLES = ['Friendly','Professional','Witty','Inspirational','Authoritative'] as const;
+type VoiceStyle = typeof VOICE_STYLES[number];
+type Aspect = '9:16' | '1:1' | '16:9';
+
+export default function ClipsHome() {
+  const { data: session, status } = useSession();
+  const orgId = useMemo(() => (session as any)?.user?.orgId as string | undefined, [session]);
+
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string>('idle');
-  const [outputs, setOutputs] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  async function createJob(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError(null); setJobId(null); setOutputs([]); setStatus('idle');
+  // tabs
+  const [tab, setTab] = useState<'tts' | 'video'>('tts');
 
+  // shared
+  const [aspect, setAspect] = useState<Aspect>('9:16');
+  const [variants] = useState<number>(1);
+
+  // TTS
+  const [script, setScript] = useState('');
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>('Friendly');
+
+  // Video
+  const [srcUrl, setSrcUrl] = useState('');
+  const [storageKey, setStorageKey] = useState(''); // if private upload
+
+  async function refresh() {
     try {
-      const res = await fetch('/api/clippilot/create', {
+      setErr(null);
+      const r = await fetch('/api/clippilot/list');
+      if (!r.ok) throw new Error(await r.text());
+      const j = await r.json();
+      setItems(Array.isArray(j.items) ? j.items : []);
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to load jobs');
+    }
+  }
+
+  useEffect(() => { refresh(); }, []);
+
+  async function onCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+
+    if (status === 'loading') return; // wait for session
+    if (!orgId) {
+      setErr('No organization found for your account. Please select or create an org.');
+      return;
+    }
+
+    // build payload
+    let payload: any = { orgId, aspect, variants };
+    if (tab === 'tts') {
+      if (!script.trim()) { setErr('Please paste a script.'); return; }
+      payload = { ...payload, mode: 'tts', script, voiceStyle };
+    } else {
+      if (srcUrl.trim()) {
+        payload = { ...payload, mode: 'video', srcUrl };
+      } else if (storageKey) {
+        payload = { ...payload, mode: 'video', storageKey };
+      } else {
+        setErr('Paste a video URL or upload a file.'); return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const r = await fetch('/api/clippilot/create', {
         method: 'POST',
-        headers: { 'content-type':'application/json' },
-        body: JSON.stringify({ src, prompt, aspect, durationSec, variants }),
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok || data.ok === false) throw new Error(data?.error || 'Failed');
-      setJobId(data.jobId);
-      setStatus('queued');
-    } catch (e:any) {
-      setError(e.message || 'Failed to create job');
+
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j?.ok === false) {
+        // surface server-side structured errors if present
+        const msg =
+          j?.error === 'usage_limit' && j?.details?.reason
+            ? `Usage limit: ${j.details.reason}`
+            : j?.error || `Create failed (${r.status})`;
+        throw new Error(msg);
+      }
+
+      // reset form fields
+      if (tab === 'tts') setScript('');
+      else { setSrcUrl(''); setStorageKey(''); }
+
+      await refresh();
+    } catch (e: any) {
+      setErr(e?.message || 'Create failed');
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    if (!jobId) return;
-    let t: any;
-    const poll = async () => {
-      try {
-        const r = await fetch(`/api/clippilot/status/${jobId}`);
-        if (!r.ok) return;
-        const j = await r.json();
-        setStatus(j.status);
-        setOutputs(j.outputs || []);
-        if (j.status === 'done' || j.status === 'error') return; // stop
-        t = setTimeout(poll, 2000);
-      } catch {}
-    };
-    poll();
-    return () => clearTimeout(t);
-  }, [jobId]);
+  const disabled = loading || (tab === 'tts' ? !script.trim() : !(srcUrl.trim() || storageKey));
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-semibold">ClipPilot — Video/Shorts Creator</h1>
+    <section className="p-6 space-y-6 max-w-5xl">
+      <h1 className="text-2xl font-semibold">ClipPilot — Create Shorts</h1>
 
-      <form onSubmit={createJob} className="card p-6 space-y-4">
-        <input
-          className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2"
-          placeholder="Source URL or s3://key"
-          value={src}
-          onChange={(e)=>setSrc(e.target.value)}
-          required
-        />
-        <textarea
-          className="w-full rounded-xl border border-white/10 bg-transparent p-3"
-          placeholder="Editing prompt (cuts, captions, music, style)…"
-          value={prompt}
-          onChange={(e)=>setPrompt(e.target.value)}
-        />
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm w-24">Aspect</label>
-            <select
-              className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-              value={aspect}
-              onChange={(e)=>setAspect(e.target.value as any)}
-            >
-              <option value="9:16">9:16</option>
-              <option value="1:1">1:1</option>
-              <option value="16:9">16:9</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm w-24">Duration</label>
-            <input
-              type="number" min={5} max={600}
-              className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-              value={durationSec}
-              onChange={(e)=>setDurationSec(Math.max(5, Math.min(600, Number(e.target.value)||30)))}
-            />
-            <span className="text-sm text-brand-muted">sec</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm w-24">Variants</label>
-            <input
-              type="number" min={1} max={10}
-              className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-              value={variants}
-              onChange={(e)=>setVariants(Math.max(1, Math.min(10, Number(e.target.value)||1)))}
-            />
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={`px-3 py-1.5 rounded-xl text-sm border ${tab==='tts' ? 'border-white/20' : 'border-white/10 text-brand-muted'}`}
+          onClick={() => setTab('tts')}
+        >
+          Script → TTS
+        </button>
+        <button
+          type="button"
+          className={`px-3 py-1.5 rounded-xl text-sm border ${tab==='video' ? 'border-white/20' : 'border-white/10 text-brand-muted'}`}
+          onClick={() => setTab('video')}
+        >
+          From Video
+        </button>
+      </div>
 
-        <div className="flex gap-2">
-          <button className="btn-gold" disabled={loading}>
-            {loading ? 'Queuing…' : 'Create job'}
+      <form onSubmit={onCreate} className="card p-6 space-y-4">
+        {tab === 'tts' ? (
+          <>
+            <textarea
+              className="w-full rounded-xl border border-white/10 bg-transparent p-3"
+              placeholder="Paste your script here…"
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              required
+            />
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm w-28">Voice style</label>
+                <select
+                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  value={voiceStyle}
+                  onChange={(e) => setVoiceStyle(e.target.value as VoiceStyle)}
+                >
+                  {VOICE_STYLES.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm w-28">Aspect</label>
+                <select
+                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  value={aspect}
+                  onChange={(e) => setAspect(e.target.value as Aspect)}
+                >
+                  <option value="9:16">9:16</option>
+                  <option value="1:1">1:1</option>
+                  <option value="16:9">16:9</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-brand-muted">Minutes billed by rendered length.</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm">Paste video URL</label>
+                <input
+                  className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  placeholder="https://… (MP4/MOV/WEBM)"
+                  value={srcUrl}
+                  onChange={(e) => setSrcUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm">Or upload a file</label>
+                <Uploader
+                  projectId={undefined /* TODO: wire your project/org id if needed */}
+                  onComplete={({ url, key }) => {
+                    if (url) {
+                      setSrcUrl(url);
+                      setStorageKey('');
+                    } else if (key) {
+                      setStorageKey(key);
+                      if (process.env.NEXT_PUBLIC_CDN_BASE) {
+                        const base = process.env.NEXT_PUBLIC_CDN_BASE.replace(/\/+$/, '');
+                        setSrcUrl(`${base}/${key}`);
+                      }
+                    }
+                  }}
+                />
+                {storageKey && !srcUrl && (
+                  <div className="text-xs text-brand-muted break-all">
+                    Uploaded (private): {storageKey}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm w-28">Aspect</label>
+                <select
+                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  value={aspect}
+                  onChange={(e) => setAspect(e.target.value as Aspect)}
+                >
+                  <option value="9:16">9:16</option>
+                  <option value="1:1">1:1</option>
+                  <option value="16:9">16:9</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="flex items-center gap-3">
+          <button className="btn-gold" disabled={disabled}>
+            {loading ? 'Queuing…' : 'Create'}
           </button>
-          {error && <span className="text-sm text-red-400">{error}</span>}
+          {err && <span className="text-sm text-red-400">{err}</span>}
         </div>
       </form>
 
-      {jobId && (
-        <div className="card p-6 space-y-3">
-          <div className="text-sm">Job: <b>{jobId}</b></div>
-          <div className="text-sm">Status: <b className="capitalize">{status}</b></div>
-          {!!outputs.length && (
-            <div className="grid gap-3 md:grid-cols-2">
-              {outputs.map((o, i)=>(
-                <video key={i} src={o.url} controls className="w-full rounded-xl border border-white/10" />
-              ))}
-            </div>
-          )}
+      <div className="card p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Recent Jobs</h2>
+          <button className="btn-gold" onClick={refresh}>Refresh</button>
         </div>
-      )}
-    </div>
+
+        <div className="mt-3 divide-y divide-white/10">
+          {items.length === 0 && <div className="text-sm text-brand-muted py-4">No jobs yet.</div>}
+          {items.map(it => (
+            <Link
+              key={it.id}
+              href={`/clips/${it.id}`}
+              className="flex items-center justify-between py-3 hover:bg-white/5 rounded-md px-2"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`px-2 py-1 rounded text-xs capitalize ${
+                    it.status === 'done'
+                      ? 'bg-green-500/20 text-green-300'
+                      : it.status === 'error'
+                      ? 'bg-red-500/20 text-red-300'
+                      : 'bg-yellow-500/20 text-yellow-300'
+                  }`}
+                >
+                  {it.status}
+                </div>
+                <div className="text-sm opacity-80">
+                  ~{Math.ceil((it.durationSec || 0) / 60)} min, {it.variants} variant{it.variants > 1 ? 's' : ''}
+                </div>
+              </div>
+              <div className="text-xs text-brand-muted">
+                {new Date(it.createdAt).toLocaleString()}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

@@ -15,8 +15,7 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "baseUrl": ".",    
+    "jsx": "preserve",    
     "paths": {
       "@/*": [
         "./*"

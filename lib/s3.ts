@@ -96,3 +96,19 @@ function cryptoRandomUUID() {
         return v.toString(16);
       });
 }
+
+export function guessContentType(name: string) {
+  const n = name.toLowerCase();
+  if (n.endsWith('.mp4')) return 'video/mp4';
+  if (n.endsWith('.mov')) return 'video/quicktime';
+  if (n.endsWith('.webm')) return 'video/webm';
+  if (n.endsWith('.mkv')) return 'video/x-matroska';
+  if (n.endsWith('.mp3')) return 'audio/mpeg';
+  if (n.endsWith('.wav')) return 'audio/wav';
+  if (n.endsWith('.m4a')) return 'audio/mp4';
+  if (n.endsWith('.png')) return 'image/png';
+  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+  if (n.endsWith('.gif')) return 'image/gif';
+  if (n.endsWith('.pdf')) return 'application/pdf';
+  return 'application/octet-stream';
+}

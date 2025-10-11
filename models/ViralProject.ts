@@ -1,6 +1,6 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
-const ScriptSection = new Schema(
+const ScriptSection = new mongoose.Schema(
   {
     type: { type: String },           // 'intro' | 'point' | 'outro'
     title: String,
@@ -10,7 +10,7 @@ const ScriptSection = new Schema(
   { _id: false }
 );
 
-const ViralProjectSchema = new Schema(
+const ViralProjectSchema = new mongoose.Schema(
   {
     userId: { type: Schema.Types.ObjectId, index: true, required: true },
     keyword: { type: String, index: true },
@@ -48,4 +48,4 @@ const ViralProjectSchema = new Schema(
   { timestamps: true }
 );
 
-export default models.ViralProject || mongoose.model('ViralProject', ViralProjectSchema);
+export default mongoose.models.ViralProject || mongoose.model('ViralProject', ViralProjectSchema);

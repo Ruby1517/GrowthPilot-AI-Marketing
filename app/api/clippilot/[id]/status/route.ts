@@ -21,23 +21,41 @@
 // }
 
 
-// app/api/clippilot/status/[id]/route.ts
+// app/api/clips/[id]/status/route.ts
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/db';
-import Clip from '@/models/Clip';
+import ClipJob from '@/models/ClipJob';
+import ClipOutput from '@/models/ClipOutput';
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   await dbConnect();
-  const job = await Clip.findById(params.id).lean();
+
+  const job = await ClipJob.findById(params.id).lean();
   if (!job) return new Response('Not found', { status: 404 });
+
+  const outputs = await ClipOutput.find({ jobId: job._id })
+    .sort({ index: 1 })
+    .lean();
+
   return NextResponse.json({
+    id: String(job._id),
     status: job.status,
-    outputs: job.outputs || [],
-    estimateMinutes: job.estimateMinutes,
-    actualMinutes: job.actualMinutes,
+    estimateMinutes: job.estimateMinutes || 0,
+    actualMinutes: job.actualMinutes || 0,
+    durationSec: job.durationSec || 0,
+    variants: job.variants || 1,
     error: job.error || null,
+    outputs: outputs.map(o => ({
+      index: o.index ?? 0,
+      url: o.url,
+      thumb: o.thumb,
+      bytes: o.bytes ?? null,
+      durationSec: o.durationSec ?? null,
+    })),
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
   });
 }

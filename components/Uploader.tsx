@@ -1,7 +1,18 @@
 'use client'
 import { useState } from 'react'
 
-export default function Uploader({ projectId }: { projectId?: string }) {
+type UploadComplete = {
+  key: string
+  url?: string
+  assetId?: string
+}
+export default function Uploader({ 
+  projectId,
+  onComplete,
+ }: { 
+  projectId?: string,
+  onComplete?: (v: UploadComplete) => void
+ }) {
   const [progress, setProgress] = useState(0)
   const [err, setErr] = useState<string | null>(null)
 
@@ -57,6 +68,8 @@ export default function Uploader({ projectId }: { projectId?: string }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ assetId, key }),
     })
+
+    onComplete?.({ key, url, assetId });
 
     setProgress(100)
     alert('Uploaded!')
