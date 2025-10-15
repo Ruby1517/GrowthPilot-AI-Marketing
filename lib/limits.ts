@@ -50,7 +50,7 @@ export type MeterKey = keyof typeof PLAN_LIMITS['Starter'];
 // Canonical meter keys
 export const USAGE_KEYS = {
   CLIPPILOT_MINUTES: 'clippilot_minutes' as MeterKey,
-  VIRALPILOT_MINUTES: 'viralp ilot_minutes' as MeterKey, // if used
+  VIRALPILOT_MINUTES: 'viralppilot_minutes' as MeterKey, // if used
   POSTPILOT_GENERATED: 'postpilot_generated' as MeterKey,
   BLOGPILOT_WORDS: 'blogpilot_words' as MeterKey,
   MAILPILOT_EMAILS: 'mailpilot_emails' as MeterKey,
@@ -58,3 +58,12 @@ export const USAGE_KEYS = {
   LEADPILOT_CONVOS: 'leadpilot_convos' as MeterKey,
   BRANDPILOT_ASSETS: 'brandpilot_assets' as MeterKey,
 } as const;
+
+
+// Handy helpers:
+export function getPlanCap(plan: PlanKey, key: MeterKey) {
+  return PLAN_LIMITS[plan][key];
+}
+export function getOveragePrice(key: keyof typeof OVERAGE_PRICING) {
+  return OVERAGE_PRICING[key];
+}

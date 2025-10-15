@@ -3,6 +3,7 @@ import './globals.css';
 import { ReactNode } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/Navbar';
+import StudioSidebar from '@/components/StudioSidebar';
 import AuthSessionProvider from '@/components/AuthSessionProvider';
 
 export const metadata = {
@@ -37,12 +38,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* ThemeProvider toggles the .dark class and persists the choice */}
         <ThemeProvider>
           <AuthSessionProvider>
-            <div className="mx-auto max-w-6xl px-6">
-              <Navbar />
-              <main className="py-8">{children}</main>
-              <footer className="py-10 text-center text-sm text-brand-muted">
-                © {new Date().getFullYear()} GrowthPilot
-              </footer>
+            <Navbar />
+            <div className="flex">
+              <StudioSidebar />
+              <div className="flex-1">
+                <main className="py-8 px-6 max-w-6xl mx-auto">{children}</main>
+                <footer className="py-10 px-6 text-center text-sm text-brand-muted max-w-6xl mx-auto">
+                  © {new Date().getFullYear()} GrowthPilot
+                </footer>
+              </div>
             </div>
           </AuthSessionProvider>
         </ThemeProvider>

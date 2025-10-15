@@ -35,9 +35,29 @@ export async function generateContent({ orgId, userId, module, templateId, promp
 
   const outSafety = safetyCheck(text); let status:'done'|'failed' = outSafety.ok ? 'done' : 'failed'
   let parsed:any = text
-  if(usedSchema){ try{ parsed = JSON.parse(text); OutputSchema.parse(parsed) } catch{ parsed = { text } } }
+  if(usedSchema) { 
+    try { 
+      parsed = JSON.parse(text); OutputSchema.parse(parsed) 
+    } catch{ 
+      parsed = { text } 
+    } 
+  }
 
-  await Generation.updateOne({ _id: gen._id }, { $set:{ output: parsed, status, safety: outSafety, cost:{ tokens } }, $push:{ events:{ type:'completed', at:new Date(), meta:{ tokens } } } })
-  await addUsage(orgId, { tokens }); await trackEvent(orgId, 'generation.completed', { module, generationId: gen._id, tokens })
-  return { ok:true, generationId: gen._id.toString(), output: parsed, cost:{ tokens }, safety: outSafety }
+  await Generation.updateOne(
+    { 
+      _id: gen._id 
+    }, 
+    { 
+      $set:{ output: parsed, status, safety: outSafety, cost:{ tokens } }, $push:{ events:{ type:'completed', at:new Date(), meta:{ tokens } } } 
+    }
+  )
+  await addUsage(orgId, { tokens }); 
+  await trackEvent(orgId, 'generation.completed', { module, generationId: gen._id, tokens })
+  return { 
+    ok:true, 
+    generationId: 
+    gen._id.toString(), 
+    output: parsed, 
+    cost:{ tokens }, 
+    safety: outSafety }
 }

@@ -23,7 +23,8 @@ export async function track(
     inc['kpi.leadsCaptured'] = 1;
   }
   if (payload.type === 'ad.variant_created') {
-    inc['kpi.adVariants'] = 1;
+    const by = Math.max(1, Number(payload.meta?.count ?? 1));
+    inc['kpi.adVariants'] = by;
   }
   if (payload.type === 'email.drafted') {
     inc['kpi.emailsDrafted'] = 1;

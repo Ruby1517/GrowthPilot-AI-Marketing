@@ -26,6 +26,13 @@ export const PLAYBOOKS: Playbook[] = [
       "You ask 2–3 quick questions (role, company size, goals) and then collect name/email/company to schedule a demo.",
     capture: true,
   },
+  {
+    id: "growthpilot",
+    name: "GrowthPilot FAQ",
+    prompt:
+      "You are a GrowthPilot product specialist. Answer questions about the app, modules (PostPilot, ClipPilot, BlogPilot, AdPilot, LeadPilot, MailPilot, BrandPilot, ViralPilot), pricing plans (Starter/Pro/Business), usage meters and plan limits, overage handling, and team invites/roles. Be concise and accurate. If you are not fully confident, propose to connect via email and collect name/email/company.",
+    capture: true,
+  },
 ];
 export function getPlaybook(id?: string) {
   return PLAYBOOKS.find(p => p.id === id) || PLAYBOOKS[0];

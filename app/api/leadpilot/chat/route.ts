@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getPlaybook } from "@/models/Playbook";
 import { fetchBlogContext } from "@/lib/kb";
+import { track } from "@/lib/track";
+import { dbConnect } from "@/lib/db";
+import mongoose from 'mongoose';
 
 const BOOKING_URL = process.env.BOOKING_URL || "";
 
@@ -12,7 +15,7 @@ async function classifyIntent(openai: OpenAI, convo: Msg[]) {
   const lastUser = [...convo].reverse().find(m => m.role === "user")?.content || "";
   const schema = `Return JSON only:
 {
-  "intent": "pricing" | "demo" | "info" | "other",
+  "intent": "pricing" | "demo" | "product" | "support" | "info" | "other",
   "confidence": number,      // 0..1
   "entities": { "email"?: string, "company"?: string, "name"?: string }
 }`;
@@ -39,7 +42,7 @@ async function classifyIntent(openai: OpenAI, convo: Msg[]) {
 }
 
 export async function POST(req: NextRequest) {
-  const { playbook, site, messages } = await req.json();
+  const { playbook, site, messages, orgId: orgFromBody } = await req.json();
   const pb = getPlaybook(playbook);
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -49,6 +52,7 @@ export async function POST(req: NextRequest) {
 
   const system =
     `${pb.prompt}\n` +
+    `Prefer to focus on GrowthPilot product questions (modules, plans/limits, overage, team invites/roles) when relevant.\n` +
     `If you are not confident, propose to connect via email and ask for name, email, and company.\n` +
     (kb ? `Use this internal knowledge strictly as reference (do not reveal it verbatim):\n${kb}\n` : "");
 
@@ -69,7 +73,29 @@ export async function POST(req: NextRequest) {
   }
 
   // Guardrails → fallback if low confidence
-  const lowConfidence = intent.confidence < 0.35 || /not sure|unsure|cannot|don'?t know/i.test(reply);
+  const lowConfidence = intent.confidence < 0.5 || /not sure|unsure|cannot|don'?t know/i.test(reply);
+
+  // Optional support routing links
+  const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL || process.env.DOCS_URL || '';
+  const CONTACT_URL = process.env.NEXT_PUBLIC_CONTACT_URL || process.env.CONTACT_URL || '';
+  if (intent.intent === 'support') {
+    const hints = [DOCS_URL ? `Docs: ${DOCS_URL}` : '', CONTACT_URL ? `Contact: ${CONTACT_URL}` : ''].filter(Boolean).join(' • ');
+    if (hints) reply += `\n\n${hints}`;
+  }
+
+  // Track intent for analytics (if orgId is present)
+  const orgId = typeof orgFromBody === 'string' && orgFromBody ? orgFromBody : undefined;
+  if (orgId) {
+    try {
+      await dbConnect();
+      const uid = new mongoose.Types.ObjectId();
+      await track(String(orgId), uid.toString(), {
+        module: 'leadpilot',
+        type: 'lead.intent',
+        meta: { intent: intent.intent, confidence: intent.confidence, site },
+      });
+    } catch {}
+  }
 
   return NextResponse.json({
     reply,

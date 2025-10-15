@@ -21,49 +21,40 @@ function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: strin
     case 'assets': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M4 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v9H4V7Zm3 7l2.5-3l2 2.5L14 11l3 3H7Z"/></svg>);
     case 'upload': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M12 3l4 4h-3v6h-2V7H8l4-4ZM4 19h16v2H4v-2Z"/></svg>);
     case 'calendar': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M7 2h2v3H7V2Zm8 0h2v3h-2V2ZM4 6h16v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Zm2 4h4v4H6v-4Z"/></svg>);
+    case 'youtube': return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden>
+        <path fill="currentColor" d="M10 15l5.19-3L10 9v6Zm12-3c0 0-0.02-2.04-.26-3.02a3.04 3.04 0 0 0-2.14-2.14C18.61 6.5 12 6.5 12 6.5s-6.61 0-7.6.24A3.04 3.04 0 0 0 2.26 8.88C2.02 9.86 2 11.9 2 11.9s.02 2.04.26 3.02a3.04 3.04 0 0 0 2.14 2.14c.99.24 7.6.24 7.6.24s6.61 0 7.6-.24a3.04 3.04 0 0 0 2.14-2.14c.24-.98.26-3.02.26-3.02Z" />
+      </svg>
+    );
     default: return null;
   }
 }
 
-const creators = [
-  { href: '/postpilot',  label: 'AI Image & Video', icon: 'post',    hint: 'Posts & visuals' },
-  { href: '/clips',      label: 'AI Voiceover',     icon: 'clip',    hint: 'VO & dubs' },
-  { href: '/blogpilot',  label: 'Music',            icon: 'blog',    hint: 'Blog/SEO' },     // tweak labels to your modules
-  { href: '/adpilot',    label: 'Footage',          icon: 'ad',      hint: 'Ads' },
-  { href: '/leadpilot',  label: 'Sound Effects',    icon: 'lead',    hint: 'Leads' },
-  { href: '/mailpilot',  label: 'Templates',        icon: 'mail',    hint: 'Email' },
-  { href: '/brandpilot', label: 'LUTs',             icon: 'brand',   hint: 'Brand' },
+export const creators = [
+  { href: '/postpilot',  label: 'PostPilot',  desc: 'AI Social Content',    icon: 'post' },
+  { href: '/clips',      label: 'ClipPilot',  desc: 'Video/Shorts Creator', icon: 'clip' },
+  { href: '/blogpilot',  label: 'BlogPilot',  desc: 'SEO Blog Writer',      icon: 'blog' },
+  { href: '/adpilot',    label: 'AdPilot',    desc: 'Ads Optimizer',        icon: 'ad' },
+  { href: '/leadpilot',  label: 'LeadPilot',  desc: 'Lead Gen Chatbot',     icon: 'lead' },
+  { href: '/mailpilot',  label: 'MailPilot',  desc: 'Email Campaigns',      icon: 'mail' },
+  { href: '/brandpilot', label: 'BrandPilot', desc: 'Brand & Design Kit',   icon: 'brand' }, 
+  { href: '/viralpilot', label: 'ViralPilot', desc: 'Brand & Design Kit',   icon: 'youtube' },
 ];
 
-const tools = [
-  { href: '/assets',   label: 'Tools',     icon: 'assets' },
-  { href: '/upload',   label: 'Uploads',   icon: 'upload' },
-  { href: '/calendar', label: 'Artboards', icon: 'calendar' },
+export const tools = [
+  { href: '/upload',   label: 'Upload',   icon: 'upload' },
+  { href: '/assets',   label: 'Assets',   icon: 'assets' },
+  { href: '/calendar', label: 'Calendar', icon: 'calendar' },
 ];
 
 export default function StudioSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 shrink-0 border-r border-white/10 bg-black/60 backdrop-blur-md">
+    <aside className="hidden md:flex md:w-64 lg:w-72 shrink-0">
       <div className="w-full p-3">
-        <Link href="/" className="flex items-center gap-2 px-3 py-2 mb-2">
-          <div className="size-7 rounded-lg bg-[linear-gradient(135deg,#D4AF37,#E7D292)]" />
-          <span className="font-semibold">GrowthPilot</span>
-        </Link>
-
-        <nav className="mt-3">
-          <div className="px-3 text-[11px] uppercase tracking-wide text-brand-muted">Home</div>
-          <Link
-            href="/"
-            className={`mt-1 block rounded-md px-3 py-2 text-sm ${isActive(pathname,'/') ? 'bg-white/10 text-white' : 'text-brand-muted hover:bg-white/5 hover:text-white'}`}
-          >
-            <div className="flex items-center gap-2">
-              <Icon name="home" />
-              <span>Home</span>
-            </div>
-          </Link>
-
+        <div className="card h-full p-4">
+        <nav className="mt-1">
           <div className="mt-4 px-3 text-[11px] uppercase tracking-wide text-brand-muted">AI Studio</div>
           <ul className="mt-1 space-y-1">
             {creators.map((l) => {
@@ -75,10 +66,10 @@ export default function StudioSidebar() {
                     className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <Icon name={l.icon} />
+                      <Icon name={l.icon} className="w-5 h-5 text-brand-gold" />
                       <div className="flex flex-col">
                         <span className="text-sm">{l.label}</span>
-                        {l.hint && <span className="text-xs opacity-70">{l.hint}</span>}
+                        {(l as any).desc && <span className="text-xs opacity-70">{(l as any).desc}</span>}
                       </div>
                     </div>
                   </Link>
@@ -98,7 +89,7 @@ export default function StudioSidebar() {
                     className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <Icon name={l.icon} />
+                      <Icon name={l.icon} className="w-5 h-5 text-brand-gold" />
                       <span className="text-sm">{l.label}</span>
                     </div>
                   </Link>
@@ -107,7 +98,12 @@ export default function StudioSidebar() {
             })}
           </ul>
         </nav>
+        </div>
       </div>
     </aside>
   );
 }
+
+
+
+ 

@@ -10,10 +10,12 @@ export default function LeadEmbedPage() {
   // read query params on client
   const [pb, setPb] = useState('homepage');
   const [site, setSite] = useState('');
+  const [orgId, setOrgId] = useState<string | null>(null);
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     setPb(sp.get('pb') || 'homepage');
     setSite(sp.get('site') || window.location.hostname || '');
+    setOrgId(sp.get('org') || sp.get('orgId'));
   }, []);
 
   const [messages, setMessages] = useState<Msg[]>([
@@ -50,7 +52,7 @@ export default function LeadEmbedPage() {
       const r = await fetch(`${base}/api/leadpilot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playbook: pb, site, messages: [...messages, user] }),
+        body: JSON.stringify({ playbook: pb, site, orgId, messages: [...messages, user] }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error || 'Chat failed');
@@ -80,6 +82,7 @@ export default function LeadEmbedPage() {
         body: JSON.stringify({
           playbook: pb,
           site,
+          orgId,
           name: leadName,
           email: leadEmail,
           company: leadCompany,

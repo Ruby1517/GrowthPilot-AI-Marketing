@@ -1,6 +1,7 @@
 // lib/kb.ts
 import { dbConnect } from "@/lib/db";
 import BlogDoc from "@/models/BlogDoc";
+import { GROWTHPILOT_FAQ } from "@/lib/kb-fallback";
 
 /**
  * Fetch lightweight context from recent BlogPilot drafts.
@@ -49,7 +50,9 @@ export async function fetchBlogContext(queryText: string, limit = 3) {
       return `Title: ${d.meta?.title || "(untitled)"}\nOutline: ${outline}\nBody: ${draft}\n---`;
     });
 
-  return ranked.length
-    ? `INTERNAL KNOWLEDGE (summaries from BlogPilot drafts):\n${ranked.join("\n")}`
-    : "";
+  if (ranked.length) {
+    return `INTERNAL KNOWLEDGE (summaries from BlogPilot drafts):\n${ranked.join("\n")}`;
+  }
+  // Fallback FAQ when no matching drafts exist
+  return `INTERNAL KNOWLEDGE (fallback):\n${GROWTHPILOT_FAQ}`;
 }

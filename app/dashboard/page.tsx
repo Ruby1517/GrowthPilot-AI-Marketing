@@ -43,6 +43,15 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+      <div className="card p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm text-brand-muted">Organization</div>
+            <div className="text-lg font-medium">Team & Invites</div>
+          </div>
+          <a href="/dashboard/team" className="btn-gold">Manage Team</a>
+        </div>
+      </div>
     </div>
   )
 }

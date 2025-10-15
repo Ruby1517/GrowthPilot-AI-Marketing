@@ -12,7 +12,7 @@ type ApiResp = {
   altText: string[];
   citations: string[];
   readability: { score: number; grade: string };
-  schema: { article: any; faq: any };
+  schema?: { article?: any; faq?: any }; // <-- optional now
   input: { keywords: string[]; url?: string; tone?: string; wordCount?: number; targetLinks?: TargetLink[] };
 };
 
@@ -133,7 +133,7 @@ export default function BlogPilotPage() {
   useEffect(() => { loadHistory(); }, []);
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative">
       <div className="card p-8 md:p-12">
         <span className="badge mb-4">BlogPilot</span>
         <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
@@ -192,7 +192,7 @@ export default function BlogPilotPage() {
                 className="mt-1 w-full rounded-md border p-3 h-24"
                 value={linksRaw}
                 onChange={(e) => setLinksRaw(e.target.value)}
-                placeholder="AI Marketing Suite | /postpilot&#10;ClipPilot Video Tool | /clips"
+                placeholder={`AI Marketing Suite | /postpilot\nClipPilot Video Tool | /clips`}
               />
             </div>
           </div>
@@ -313,16 +313,34 @@ export default function BlogPilotPage() {
           </div>
 
           {/* JSON-LD */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">JSON-LD (Article + FAQPage)</h2>
-              <div className="flex gap-2">
-                <button className="btn-ghost" onClick={() => copy(JSON.stringify(data.schema.article, null, 2))}>Copy Article</button>
-                <button className="btn-ghost" onClick={() => copy(JSON.stringify(data.schema.faq, null, 2))}>Copy FAQ</button>
+          {(data?.schema?.article || data?.schema?.faq) && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">JSON-LD (Article + FAQPage)</h2>
+                <div className="flex gap-2">
+                  <button
+                    className="btn-ghost"
+                    onClick={() => copy(JSON.stringify(data?.schema?.article ?? {}, null, 2))}
+                  >
+                    Copy Article
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => copy(JSON.stringify(data?.schema?.faq ?? {}, null, 2))}
+                  >
+                    Copy FAQ
+                  </button>
+                </div>
               </div>
+              <pre className="mt-3 text-xs overflow-x-auto">
+                {JSON.stringify(
+                  { article: data?.schema?.article ?? {}, faq: data?.schema?.faq ?? {} },
+                  null,
+                  2
+                )}
+              </pre>
             </div>
-            <pre className="mt-3 text-xs overflow-x-auto">{JSON.stringify({ article: data.schema.article, faq: data.schema.faq }, null, 2)}</pre>
-          </div>
+          )}
 
           {/* Fact-check notes placeholder */}
           <div className="card p-6">
@@ -376,6 +394,7 @@ export default function BlogPilotPage() {
                   </div>
 
                   <div className="mt-3 flex items-center gap-2">
+                    <a className="btn-ghost" href={`/blogpilot/${it._id}`}>Open</a>
                     <a className="btn-ghost" href={`/api/blogpilot/${it._id}`} target="_blank" rel="noreferrer">Open JSON</a>
                     <button
                       className="btn-ghost"

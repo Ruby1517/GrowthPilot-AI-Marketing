@@ -2,6 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
+import { dbConnect } from "@/lib/db";
+import Org from "@/models/Org";
+import { limiterPerOrg } from "@/lib/ratelimit";
+import { assertWithinLimit } from "@/lib/usage";
+import { recordOverageRow } from "@/lib/overage";
+import { track } from "@/lib/track";
 
 const AdVariantSchema = z.object({
   platform: z.enum(["meta", "google"]).optional().default("meta"),
@@ -70,10 +77,50 @@ function buildPrompt({ offer, url }: { offer?: string; url?: string }) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { offer, url } = await req.json();
 
     if (!offer && !url) {
       return NextResponse.json({ error: "Provide an offer or URL" }, { status: 400 });
+    }
+
+    // Resolve org + rate limit
+    await dbConnect();
+    const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+    if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    const orgId = String(me.orgId ?? me._id);
+    const org = await Org.findById(orgId).lean();
+    if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
+
+    const rl = await limiterPerOrg.limit(orgId);
+    if (!rl.success) {
+      return NextResponse.json(
+        { ok: false, error: 'Rate limit exceeded. Please wait a bit.' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': String(rl.limit),
+            'X-RateLimit-Remaining': String(rl.remaining),
+            'X-RateLimit-Reset': String(rl.reset),
+          },
+        }
+      );
+    }
+
+    // Enforce plan limits for AdPilot: count variants (A/B/C) as 3 units
+    const intendedVariants = 3; // A, B, C
+    const gate = await assertWithinLimit({
+      orgId,
+      key: 'adpilot_variants',
+      incBy: intendedVariants,
+      allowOverage: true,
+    });
+    if (!gate.ok) {
+      return NextResponse.json({ ok: false, error: 'Plan limit reached', details: gate }, { status: 402 });
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -135,10 +182,48 @@ export async function POST(req: NextRequest) {
       if (!finalCheck.success) {
         return NextResponse.json({ error: "Generated JSON invalid", issues: finalCheck.error.issues, output: parsed }, { status: 502 });
       }
-      return NextResponse.json({ result: finalCheck.data });
+      // Track analytics: generation + ad variants count
+      try {
+        await track(orgId, (session.user as any).id ?? String(me._id), {
+          module: 'adpilot',
+          type: 'generation.completed',
+          meta: { variants: intendedVariants },
+        });
+        // Single event with count informs KPI increments
+        await track(orgId, (session.user as any).id ?? String(me._id), {
+          module: 'adpilot',
+          type: 'ad.variant_created',
+          meta: { count: intendedVariants },
+        });
+      } catch {}
+
+      // If this run was overage, record row for invoicing
+      if (gate.overage && gate.overUnits) {
+        try { await recordOverageRow({ orgId, key: 'adpilot_variants', overUnits: gate.overUnits }); } catch {}
+      }
+
+      return NextResponse.json({ ok: true, result: finalCheck.data });
     }
 
-    return NextResponse.json({ result: safe.data });
+    // Track analytics: generation + ad variants count
+    try {
+      await track(orgId, (session.user as any).id ?? String(me._id), {
+        module: 'adpilot',
+        type: 'generation.completed',
+        meta: { variants: intendedVariants },
+      });
+      await track(orgId, (session.user as any).id ?? String(me._id), {
+        module: 'adpilot',
+        type: 'ad.variant_created',
+        meta: { count: intendedVariants },
+      });
+    } catch {}
+
+    if (gate.overage && gate.overUnits) {
+      try { await recordOverageRow({ orgId, key: 'adpilot_variants', overUnits: gate.overUnits }); } catch {}
+    }
+
+    return NextResponse.json({ ok: true, result: safe.data });
   } catch (e: any) {
     console.error("[adpilot/generate] fatal", e);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

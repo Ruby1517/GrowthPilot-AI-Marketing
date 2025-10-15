@@ -8,7 +8,7 @@ export type ModuleKey =
 export type EventType =
   | 'generation.requested' | 'generation.completed'
   | 'asset.uploaded' | 'email.drafted'
-  | 'ad.variant_created' | 'lead.captured'
+  | 'ad.variant_created' | 'lead.captured' | 'lead.intent'
   | 'watchtime.added';
 
 export interface EventDoc extends mongoose.Document {

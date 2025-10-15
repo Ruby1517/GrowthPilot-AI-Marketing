@@ -70,6 +70,7 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
       {meter('clippilot_minutes', 'ClipPilot Render Minutes')}
       {meter('viralpilot_minutes', 'ViralPilot Render/Watch Minutes')}
       {meter('postpilot_generated', 'PostPilot Posts')}
+      {meter('leadpilot_convos', 'LeadPilot Conversations')}
       {meter('adpilot_variants', 'AdPilot Variants')}
     </div>
   );

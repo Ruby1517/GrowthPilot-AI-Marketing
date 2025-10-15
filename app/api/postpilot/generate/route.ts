@@ -116,7 +116,7 @@ export async function POST(req: Request) {
       suggestions: g.suggestions,
     })),
     counts: { platforms: platforms.length, variants, total: generated.length },
-    usage: { model: 'gpt-4o-mini', totalTokens },
+    usage: { model: process.env.OPENAI_MODEL, totalTokens },
     scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
     createdAt: new Date(),
     updatedAt: new Date(),

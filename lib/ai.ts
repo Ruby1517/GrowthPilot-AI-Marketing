@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
 
+
 export type GenInput = {
   topic: string
   tone: 'casual'|'professional'|'witty'|'inspirational'|'authoritative'
@@ -59,7 +60,7 @@ Constraints:
 - Keep JSON strictly valid.` }
   ]
 
-  const model = 'gpt-4o-mini' // fast/cheap, swap as you like
+  const model = process.env.OPENAI_MODEL
   const resp = await openai.chat.completions.create({
     model,
     temperature: 0.7,
@@ -86,7 +87,7 @@ export async function suggestIdeas(niche: string) {
   const sys = "You are a YouTube strategist. Return exactly 5 evergreen, high-CTR ideas.";
   const user = `Niche: ${niche}. Output JSON: {"ideas":[{"title": "...", "hook":"...", "angle":"..."}]}`;
   const r = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: mo,
     messages: [{ role:"system", content: sys }, { role:"user", content: user }],
     response_format: { type: "json_object" }
   });

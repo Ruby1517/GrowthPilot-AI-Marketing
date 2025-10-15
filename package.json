@@ -39,6 +39,7 @@
     "framer-motion": "^12.23.22",
     "html2canvas": "^1.4.1",
     "ioredis": "^5.7.0",
+    "isomorphic-dompurify": "^2.29.0",
     "lucide-react": "^0.544.0",
     "mime": "^4.1.0",
     "mongoose": "^8.6.3",

@@ -1,4 +1,4 @@
-// app/blogpilot/[id]/page.tsx
+
 import Link from 'next/link';
 import { getBaseUrl } from "@/lib/base-url";
 
