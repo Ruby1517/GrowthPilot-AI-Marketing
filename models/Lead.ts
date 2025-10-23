@@ -2,6 +2,7 @@ import mongoose, { Schema, model } from "mongoose";
 
 const LeadSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, index: true, required: true }, // owner in your app
+  orgId: { type: Schema.Types.ObjectId, ref: 'Org', index: true },
   site: String,                      // site the widget is embedded on
   playbook: { type: String, index: true },
   name: String,

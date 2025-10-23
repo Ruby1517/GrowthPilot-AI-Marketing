@@ -1,5 +1,4 @@
-// // app/clips/page.tsx
-// "use client";
+"use client";
 
 // import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -396,11 +395,10 @@
 // }
 
 
-'use client';
+// Removed stale duplicate implementation below to avoid duplicate exports/imports
 
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
 const Uploader = dynamic(() => import('@/components/Uploader'), { ssr: false });
@@ -415,8 +413,6 @@ type Item = {
   createdAt: string;
 };
 
-const VOICE_STYLES = ['Friendly','Professional','Witty','Inspirational','Authoritative'] as const;
-type VoiceStyle = typeof VOICE_STYLES[number];
 type Aspect = '9:16' | '1:1' | '16:9';
 
 export default function ClipsHome() {
@@ -424,19 +420,14 @@ export default function ClipsHome() {
   const orgId = useMemo(() => (session as any)?.user?.orgId as string | undefined, [session]);
 
   const [items, setItems] = useState<Item[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  // tabs
-  const [tab, setTab] = useState<'tts' | 'video'>('tts');
 
   // shared
   const [aspect, setAspect] = useState<Aspect>('9:16');
   const [variants] = useState<number>(1);
-
-  // TTS
-  const [script, setScript] = useState('');
-  const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>('Friendly');
 
   // Video
   const [srcUrl, setSrcUrl] = useState('');
@@ -455,6 +446,16 @@ export default function ClipsHome() {
   }
 
   useEffect(() => { refresh(); }, []);
+  async function loadDetail(id: string) {
+    try {
+      const r = await fetch(`/api/clippilot/${id}/status`, { cache: 'no-store' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || 'Failed to load status');
+      setDetail(j);
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to load status');
+    }
+  }
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -466,20 +467,19 @@ export default function ClipsHome() {
       return;
     }
 
-    // build payload
-    let payload: any = { orgId, aspect, variants };
-    if (tab === 'tts') {
-      if (!script.trim()) { setErr('Please paste a script.'); return; }
-      payload = { ...payload, mode: 'tts', script, voiceStyle };
-    } else {
-      if (srcUrl.trim()) {
-        payload = { ...payload, mode: 'video', srcUrl };
-      } else if (storageKey) {
-        payload = { ...payload, mode: 'video', storageKey };
-      } else {
-        setErr('Paste a video URL or upload a file.'); return;
-      }
+    // build payload (video only)
+    if (!srcUrl.trim() && !storageKey) {
+      setErr('Paste a video URL or upload a file.');
+      return;
     }
+    const payload: any = {
+      orgId,
+      aspect,
+      variants,
+      mode: 'video',
+      ...(srcUrl.trim() ? { srcUrl } : {}),
+      ...(storageKey ? { storageKey } : {}),
+    };
 
     setLoading(true);
     try {
@@ -500,8 +500,8 @@ export default function ClipsHome() {
       }
 
       // reset form fields
-      if (tab === 'tts') setScript('');
-      else { setSrcUrl(''); setStorageKey(''); }
+      setSrcUrl('');
+      setStorageKey('');
 
       await refresh();
     } catch (e: any) {
@@ -511,120 +511,69 @@ export default function ClipsHome() {
     }
   }
 
-  const disabled = loading || (tab === 'tts' ? !script.trim() : !(srcUrl.trim() || storageKey));
+  const disabled = loading || !(srcUrl.trim() || storageKey);
 
   return (
     <section className="p-6 space-y-6 max-w-5xl">
       <h1 className="text-2xl font-semibold">ClipPilot — Create Shorts</h1>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className={`px-3 py-1.5 rounded-xl text-sm border ${tab==='tts' ? 'border-white/20' : 'border-white/10 text-brand-muted'}`}
-          onClick={() => setTab('tts')}
-        >
-          Script → TTS
-        </button>
-        <button
-          type="button"
-          className={`px-3 py-1.5 rounded-xl text-sm border ${tab==='video' ? 'border-white/20' : 'border-white/10 text-brand-muted'}`}
-          onClick={() => setTab('video')}
-        >
-          From Video
-        </button>
-      </div>
+      {/* From Video only */}
 
       <form onSubmit={onCreate} className="card p-6 space-y-4">
-        {tab === 'tts' ? (
-          <>
-            <textarea
-              className="w-full rounded-xl border border-white/10 bg-transparent p-3"
-              placeholder="Paste your script here…"
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              required
-            />
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm w-28">Voice style</label>
-                <select
-                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-                  value={voiceStyle}
-                  onChange={(e) => setVoiceStyle(e.target.value as VoiceStyle)}
-                >
-                  {VOICE_STYLES.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm w-28">Aspect</label>
-                <select
-                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-                  value={aspect}
-                  onChange={(e) => setAspect(e.target.value as Aspect)}
-                >
-                  <option value="9:16">9:16</option>
-                  <option value="1:1">1:1</option>
-                  <option value="16:9">16:9</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-brand-muted">Minutes billed by rendered length.</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm">Paste video URL</label>
-                <input
-                  className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-                  placeholder="https://… (MP4/MOV/WEBM)"
-                  value={srcUrl}
-                  onChange={(e) => setSrcUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm">Or upload a file</label>
-                <Uploader
-                  projectId={undefined /* TODO: wire your project/org id if needed */}
-                  onComplete={({ url, key }) => {
-                    if (url) {
-                      setSrcUrl(url);
-                      setStorageKey('');
-                    } else if (key) {
-                      setStorageKey(key);
-                      if (process.env.NEXT_PUBLIC_CDN_BASE) {
-                        const base = process.env.NEXT_PUBLIC_CDN_BASE.replace(/\/+$/, '');
-                        setSrcUrl(`${base}/${key}`);
-                      }
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm">Upload a file</label>
+              <Uploader
+                projectId={undefined /* TODO: wire your project/org id if needed */}
+                onComplete={({ url, key }) => {
+                  // Always prefer the storage key; the presigned URL is for PUT and cannot be used for GET
+                  if (key) {
+                    setStorageKey(key);
+                    if (process.env.NEXT_PUBLIC_CDN_BASE) {
+                      const base = process.env.NEXT_PUBLIC_CDN_BASE.replace(/\/+$/, '');
+                      setSrcUrl(`${base}/${key}`);
+                    } else {
+                      setSrcUrl(''); // will use storageKey on the server side to generate a signed GET
                     }
-                  }}
-                />
-                {storageKey && !srcUrl && (
-                  <div className="text-xs text-brand-muted break-all">
-                    Uploaded (private): {storageKey}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm w-28">Aspect</label>
-                <select
-                  className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-                  value={aspect}
-                  onChange={(e) => setAspect(e.target.value as Aspect)}
-                >
-                  <option value="9:16">9:16</option>
-                  <option value="1:1">1:1</option>
-                  <option value="16:9">16:9</option>
-                </select>
-              </div>
+                  } else if (url) {
+                    // As a fallback only (not ideal since it's a PUT URL); encourage using the key path
+                    setSrcUrl('');
+                    setStorageKey('');
+                  }
+                }}
+              />
+              {storageKey && !srcUrl && (
+                <div className="text-xs text-brand-muted break-all">
+                  Uploaded (private): {storageKey}
+                </div>
+              )}
             </div>
-          </>
-        )}
+
+            <div className="space-y-2">
+              <label className="text-sm">Or paste video URL</label>
+              <input
+                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                placeholder="https://… (MP4/MOV/WEBM)"
+                value={srcUrl}
+                onChange={(e) => setSrcUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm w-28">Aspect</label>
+              <select
+                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                value={aspect}
+                onChange={(e) => setAspect(e.target.value as Aspect)}
+              >
+                <option value="9:16">9:16</option>
+                <option value="1:1">1:1</option>
+                <option value="16:9">16:9</option>
+              </select>
+            </div>
+          </div>
+        </>
 
         <div className="flex items-center gap-3">
           <button className="btn-gold" disabled={disabled}>
@@ -643,11 +592,7 @@ export default function ClipsHome() {
         <div className="mt-3 divide-y divide-white/10">
           {items.length === 0 && <div className="text-sm text-brand-muted py-4">No jobs yet.</div>}
           {items.map(it => (
-            <Link
-              key={it.id}
-              href={`/clips/${it.id}`}
-              className="flex items-center justify-between py-3 hover:bg-white/5 rounded-md px-2"
-            >
+            <div key={it.id} className="flex items-center justify-between py-3 hover:bg-white/5 rounded-md px-2">
               <div className="flex items-center gap-3">
                 <div
                   className={`px-2 py-1 rounded text-xs capitalize ${
@@ -664,13 +609,86 @@ export default function ClipsHome() {
                   ~{Math.ceil((it.durationSec || 0) / 60)} min, {it.variants} variant{it.variants > 1 ? 's' : ''}
                 </div>
               </div>
-              <div className="text-xs text-brand-muted">
-                {new Date(it.createdAt).toLocaleString()}
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-brand-muted">
+                  {new Date(it.createdAt).toLocaleString()}
+                </div>
+                <button className="btn-ghost" onClick={() => { setSelectedId(it.id); loadDetail(it.id); }}>
+                  View Inline
+                </button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
+
+          {selectedId && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Job Details</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="btn-ghost text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={async () => {
+                      if (!selectedId) return;
+                      const sure = window.confirm('Delete this job and its outputs? This cannot be undone.');
+                      if (!sure) return;
+                      try {
+                        const r = await fetch(`/api/clippilot/${selectedId}`, { method: 'DELETE' });
+                        if (!r.ok) {
+                          const j = await r.json().catch(() => ({}));
+                          throw new Error(j?.error || `Delete failed (${r.status})`);
+                        }
+                        // Close panel and refresh list
+                        setSelectedId(null);
+                        setDetail(null);
+                        await refresh();
+                      } catch (e:any) {
+                        alert(e?.message || 'Failed to delete');
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                  {detail?.status !== 'done' && (
+                    <button
+                      className="btn-gold"
+                      onClick={async () => {
+                        if (!selectedId) return;
+                        await fetch(`/api/clippilot/${selectedId}/process`, { method: 'POST' });
+                        await loadDetail(selectedId);
+                      }}
+                    >
+                      Process Now
+                    </button>
+                  )}
+                  <button className="btn-ghost" onClick={() => { setSelectedId(null); setDetail(null); }}>Close</button>
+                </div>
+              </div>
+          {!detail && <div className="text-sm text-brand-muted mt-2">Loading…</div>}
+          {detail && (
+            <div className="mt-3 space-y-3">
+              <div className="text-sm">Status: <b className="capitalize">{detail.status}</b></div>
+              <div className="text-sm text-brand-muted">Est: {detail.estimateMinutes}m • Actual: {detail.actualMinutes}m</div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {(detail.outputs || []).map((o:any) => (
+                  <div key={o.index} className="card p-4">
+                    <div className="text-sm text-brand-muted">Clip #{o.index + 1}</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {o.url && <a className="btn-gold" href={o.url} target="_blank" rel="noreferrer">Download</a>}
+                      {o.thumb && <a className="btn-ghost" href={o.thumb} target="_blank" rel="noreferrer">Thumb</a>}
+                      {typeof o.durationSec === 'number' && <span className="text-xs text-brand-muted">{o.durationSec}s</span>}
+                    </div>
+                  </div>
+                ))}
+                {(!detail.outputs || !detail.outputs.length) && (
+                  <div className="text-sm text-brand-muted p-4">Outputs will appear once processing completes…</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

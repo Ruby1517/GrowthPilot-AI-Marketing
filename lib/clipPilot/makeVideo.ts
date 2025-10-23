@@ -61,7 +61,17 @@ export async function composeTTSVideo(opts: {
     outPath,
   ];
 
-  await execFile(FFMPEG_BIN, args);
+  // Prefer resolved static/path binary; fall back to system PATH name
+  const ffmpegBin = FFMPEG_BIN || 'ffmpeg';
+  try {
+    await execFile(ffmpegBin, args);
+  } catch (err: any) {
+    // Provide clearer error when binary is missing/unset
+    if (err?.code === 'ENOENT' || !FFMPEG_BIN) {
+      throw new Error('FFmpeg not found. Install ffmpeg or add ffmpeg-static, or set FFMPEG_PATH.');
+    }
+    throw err;
+  }
   const mp4 = await readFile(outPath);
   return { mp4, tempAudioPath: audioPath };
 }

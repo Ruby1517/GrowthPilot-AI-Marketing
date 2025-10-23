@@ -6,6 +6,10 @@ import { s3 } from '@/lib/s3';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import ViralProject from '@/models/ViralProject';
+import User from '@/models/User';
+import { assertWithinLimit } from '@/lib/usage';
+import { recordOverageRow } from '@/lib/overage';
+import { track } from '@/lib/track';
 import Asset from '@/models/Asset';
 import mongoose from 'mongoose';
 import ffmpeg from 'fluent-ffmpeg';
@@ -62,16 +66,36 @@ async function assembleSimpleVideo(audioPath: string, outPath: string, duration:
 async function run() {
   await mongoose.connect(MONGODB_URI);
 
+  // Honor env overrides for fluent-ffmpeg paths if provided
+  try {
+    const fbin = process.env.FFMPEG_PATH;
+    const pbin = process.env.FFPROBE_PATH;
+    if (fbin && (ffmpeg as any).setFfmpegPath) (ffmpeg as any).setFfmpegPath(fbin);
+    if (pbin && (ffmpeg as any).setFfprobePath) (ffmpeg as any).setFfprobePath(pbin);
+  } catch {}
+
   const worker = new Worker(
     'viralp-assemble',
     async (job) => {
       const { projectId, userId } = job.data as { projectId: string; userId: string };
       const doc = await ViralProject.findById(projectId);
       if (!doc?.tts?.key) throw new Error('No TTS asset');
+      const me = await User.findById(userId).lean().catch(()=>null);
+      const orgId = me?.orgId ? String(me.orgId) : null;
 
       // Download MP3
       const audioPath = await downloadToTmp(doc.tts.key);
       const duration = await ffprobeDuration(audioPath);
+      const minutes = Math.max(1, Math.ceil(duration / 60));
+      if (orgId) {
+        const gate = await assertWithinLimit({ orgId, key: 'viralpilot_minutes', incBy: minutes, allowOverage: true });
+        if (!gate.ok) {
+          throw new Error('usage_limit');
+        }
+        if (gate.overage && gate.overUnits) {
+          try { await recordOverageRow({ orgId, key: 'viralpilot_minutes', overUnits: gate.overUnits }); } catch {}
+        }
+      }
 
       // Assemble MP4
       const tmpOut = join(process.cwd(), 'tmp', `viralp-${projectId}.mp4`);
@@ -103,6 +127,10 @@ async function run() {
       doc.video = { key: videoKey, bucket: BUCKET, region: REGION, url, status: 'ready' };
       doc.status = 'video-ready';
       await doc.save();
+
+      if (orgId) {
+        try { await track(orgId, userId, { module: 'viralpilot', type: 'watchtime.added', meta: { minutes } }); } catch {}
+      }
 
       // cleanup
       try { unlinkSync(audioPath); } catch {}

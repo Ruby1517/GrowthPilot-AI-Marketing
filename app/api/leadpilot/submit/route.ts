@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 
   const lead = await Lead.create({
     userId: session?.user?.id ? new mongoose.Types.ObjectId((session.user as any).id) : new mongoose.Types.ObjectId(),
+    orgId: orgId ? new mongoose.Types.ObjectId(orgId) : undefined,
     site, playbook, name, email, company, message, confidence, transcript,
   });
 

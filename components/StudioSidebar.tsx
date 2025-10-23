@@ -38,7 +38,7 @@ export const creators = [
   { href: '/leadpilot',  label: 'LeadPilot',  desc: 'Lead Gen Chatbot',     icon: 'lead' },
   { href: '/mailpilot',  label: 'MailPilot',  desc: 'Email Campaigns',      icon: 'mail' },
   { href: '/brandpilot', label: 'BrandPilot', desc: 'Brand & Design Kit',   icon: 'brand' }, 
-  { href: '/viralpilot', label: 'ViralPilot', desc: 'Brand & Design Kit',   icon: 'youtube' },
+  { href: '/viralpilot', label: 'ViralPilot', desc: 'YouTube Content Creation',   icon: 'youtube' },
 ];
 
 export const tools = [

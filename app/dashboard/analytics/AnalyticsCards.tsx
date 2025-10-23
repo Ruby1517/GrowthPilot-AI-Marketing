@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { PLAN_LIMITS } from '@/lib/limits';
 
@@ -39,12 +40,16 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
     return (
-      <Card key={key}>
+      <Card key={key} className="border-white/20">
         <CardHeader><CardTitle className="text-base">{label}</CardTitle></CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span>{used.toLocaleString()} / {limit.toLocaleString()}</span>
-            <span>{pct}%</span>
+            <span>
+              <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{used.toLocaleString()}</span>
+              <span> / </span>
+              <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{limit.toLocaleString()}</span>
+            </span>
+            <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{pct}%</span>
           </div>
           <Progress value={pct} />
         </CardContent>
@@ -54,7 +59,7 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
+      <Card className="border-white/20">
         <CardHeader><CardTitle>Org KPIs (MTD)</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div>Contents produced: <b>{Number(data?.kpi?.contentsProduced ?? 0).toLocaleString()}</b></div>
@@ -65,12 +70,21 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
         </CardContent>
       </Card>
 
+      <Card className="border-white/20">
+        <CardHeader><CardTitle>Brand Assets (MTD)</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div>Total assets generated: <b>{Number((data?.usage as any)?.brandpilot_assets ?? 0).toLocaleString()}</b></div>
+          <Link href="/brandpilot" className="inline-block text-xs underline text-brand-muted hover:text-white">Open BrandPilot</Link>
+        </CardContent>
+      </Card>
+
       {meter('blogpilot_words', 'BlogPilot Words')}
       {meter('mailpilot_emails', 'MailPilot Emails')}
       {meter('clippilot_minutes', 'ClipPilot Render Minutes')}
       {meter('viralpilot_minutes', 'ViralPilot Render/Watch Minutes')}
       {meter('postpilot_generated', 'PostPilot Posts')}
       {meter('leadpilot_convos', 'LeadPilot Conversations')}
+      {meter('brandpilot_assets', 'BrandPilot Assets')}
       {meter('adpilot_variants', 'AdPilot Variants')}
     </div>
   );

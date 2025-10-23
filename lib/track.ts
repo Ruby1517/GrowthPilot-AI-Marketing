@@ -27,7 +27,8 @@ export async function track(
     inc['kpi.adVariants'] = by;
   }
   if (payload.type === 'email.drafted') {
-    inc['kpi.emailsDrafted'] = 1;
+    const by = Math.max(1, Number(payload.meta?.count ?? 1));
+    inc['kpi.emailsDrafted'] = by;
   }
   if (payload.type === 'watchtime.added' && payload.meta?.minutes) {
     inc['kpi.watchTimeMinutes'] = payload.meta.minutes;

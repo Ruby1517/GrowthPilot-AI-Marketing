@@ -7,6 +7,9 @@ import BrandDoc from "@/models/BrandDoc";
 import Asset from "@/models/Asset";
 import OpenAI from "openai";
 import { putBuffer, presignGet, publicUrlOrSigned, S3_BUCKET, S3_REGION } from "@/lib/s3";
+import { assertWithinLimit } from "@/lib/usage";
+import { recordOverageRow } from "@/lib/overage";
+import { track } from "@/lib/track";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -93,6 +96,19 @@ export async function POST(req: Request) {
         region: S3_REGION!,
         url: publicUrlOrSigned(key, signed),
       });
+    }
+
+    // Enforce plan usage for generated assets (count = presets.length)
+    const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
+    const orgId = me?.orgId ? String(me.orgId) : null;
+    const count = out.length;
+    if (orgId && count > 0) {
+      const gate = await assertWithinLimit({ orgId, key: 'brandpilot_assets', incBy: count, allowOverage: true });
+      if (!gate.ok) return NextResponse.json({ ok: false, error: 'Plan limit reached', details: gate }, { status: 402 });
+      if (gate.overage && gate.overUnits) {
+        try { await recordOverageRow({ orgId, key: 'brandpilot_assets', overUnits: gate.overUnits }); } catch {}
+      }
+      try { await track(orgId, (session.user as any).id, { module: 'brandpilot', type: 'asset.uploaded', meta: { count } }); } catch {}
     }
 
     doc.images = out;

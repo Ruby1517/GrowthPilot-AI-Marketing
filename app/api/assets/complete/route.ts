@@ -11,10 +11,20 @@ export async function POST(req: NextRequest) {
   await dbConnect();
 
   const userId = new mongoose.Types.ObjectId((session.user as any).id);
-  const { key, status, error, width, height } = await req.json(); // status: "ready"|"failed"|"processing"
+  const body = await req.json().catch(() => ({} as any));
+
+  const key: string | undefined = body?.key;
+  const assetId: string | undefined = body?.assetId;
+  const status: string = body?.status || 'ready'; // default to ready upon successful upload
+  const { error, width, height } = body || {};
+
+  const query = assetId ? { _id: assetId, userId } : { key, userId };
+  if (!((query as any)._id || (query as any).key)) {
+    return NextResponse.json({ error: 'Missing key or assetId' }, { status: 400 });
+  }
 
   const asset = await Asset.findOneAndUpdate(
-    { key, userId },
+    query as any,
     {
       status,
       ...(error ? { error } : { error: undefined }),
@@ -27,3 +37,4 @@ export async function POST(req: NextRequest) {
   if (!asset) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, asset });
 }
+

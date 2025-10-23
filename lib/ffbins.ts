@@ -2,47 +2,62 @@
 import 'server-only';
 import fs from 'fs';
 import path from 'path';
-import { createRequire } from 'module';
 
-const req = createRequire(__filename);
-
-/**
- * Resolve a static binary path safely at runtime.
- * Priority: ENV override -> package (ffmpeg-static/ffprobe-static) -> null
- */
-function resolveBinFrom(
-  envName: string,
-  pkgName: string,
-  exportName?: 'path'
-): string | null {
-  // 1) ENV override (e.g., set to C:\ffmpeg\bin\ffmpeg.exe)
-  const envPath = process.env[envName];
-  if (envPath && fs.existsSync(envPath)) return envPath;
-
-  // 2) Runtime require without bundler rewriting
-  try {
-    const mod = req(pkgName);
-    const p =
-      typeof mod === 'string'
-        ? (mod as string)
-        : exportName && mod && typeof mod[exportName] === 'string'
-        ? (mod[exportName] as string)
-        : null;
-    if (p && fs.existsSync(p)) return p;
-  } catch {
-    // package not installed or cannot resolve on this platform
+function sanitizeEnvPath(p?: string | null): string | null {
+  if (!p) return null;
+  let v = String(p).trim();
+  if (!v) return null;
+  // strip surrounding quotes if any
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1);
   }
+  // On Windows, if a directory is provided, append executable
+  if (process.platform === 'win32') {
+    const lower = v.toLowerCase();
+    if (lower.endsWith('\\') || lower.endsWith('/')) v = v.slice(0, -1);
+    const isExe = lower.endsWith('.exe');
+    const looksLikeDir = !isExe && !/\.[a-z0-9]+$/i.test(lower);
+    if (looksLikeDir) {
+      // If it looks like a bin folder, append appropriate exe name
+      const guessed = path.win32.join(v, v.toLowerCase().includes('ffprobe') ? 'ffprobe.exe' : 'ffmpeg.exe');
+      if (fs.existsSync(guessed)) return guessed;
+      // fall back to provided directory path; execFile can still fail with ENOENT which we catch upstream
+    } else if (!isExe) {
+      // If "ffmpeg" without extension, append .exe
+      const withExe = v + '.exe';
+      if (fs.existsSync(withExe)) return withExe;
+    }
+  }
+  return v;
+}
 
+// Resolve binary paths without forcing existence — upstream will attempt exec and provide clear errors.
+function resolveFfmpeg(envName: string): string | null {
+  const envPath = sanitizeEnvPath(process.env[envName]);
+  if (envPath) return envPath;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod: any = require('ffmpeg-static');
+    const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
+    if (p) return p as string;
+  } catch {}
   return null;
 }
 
-export const FFMPEG_BIN =
-  resolveBinFrom('FFMPEG_PATH', 'ffmpeg-static') ||
-  resolveBinFrom('FFMPEG_PATH', 'ffmpeg-static', 'path'); // some builds expose .path
+function resolveFfprobe(envName: string): string | null {
+  const envPath = sanitizeEnvPath(process.env[envName]);
+  if (envPath) return envPath;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod: any = require('ffprobe-static');
+    const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
+    if (p) return p as string;
+  } catch {}
+  return null;
+}
 
-export const FFPROBE_BIN =
-  resolveBinFrom('FFPROBE_PATH', 'ffprobe-static') ||
-  resolveBinFrom('FFPROBE_PATH', 'ffprobe-static', 'path');
+export const FFMPEG_BIN = resolveFfmpeg('FFMPEG_PATH');
+export const FFPROBE_BIN = resolveFfprobe('FFPROBE_PATH');
 
 /** Throw clear errors early if needed */
 export function assertFfmpegAvailable() {

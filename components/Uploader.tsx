@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 type UploadComplete = {
   key: string
@@ -15,10 +15,11 @@ export default function Uploader({
  }) {
   const [progress, setProgress] = useState(0)
   const [err, setErr] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(file: File) {
     setErr(null)
-    const file = e.target.files?.[0]
     if (!file) return
 
     // 1) Ask server for a presigned URL
@@ -66,7 +67,7 @@ export default function Uploader({
     await fetch('/api/assets/complete', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ assetId, key }),
+      body: JSON.stringify({ assetId, key, status: 'ready' }),
     })
 
     onComplete?.({ key, url, assetId });
@@ -75,9 +76,44 @@ export default function Uploader({
     alert('Uploaded!')
   }
 
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFile(file)
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      void handleFile(file)
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <input type="file" onChange={onFile} />
+      <div
+        className={`rounded-xl border border-white/10 p-6 text-sm text-center cursor-pointer select-none ${dragActive ? 'bg-white/5' : 'hover:bg-white/5'}`}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
+        onDrop={onDrop}
+        onClick={() => inputRef.current?.click()}
+      >
+        <div className="mb-2 font-medium">Drag and drop to upload</div>
+        <div className="text-xs text-brand-muted">or click to select a video file</div>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={onFile}
+      />
+
       {progress > 0 && <div className="text-sm">Uploading… {progress}%</div>}
       {err && <div className="text-sm text-red-400">{err}</div>}
     </div>

@@ -10,6 +10,10 @@ export async function POST() {
   await dbConnect();
   const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
   if (!me?._id) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const role = String((me as any).role || 'member');
+  if (!['owner','admin'].includes(role)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
 
   const outline = [
     'Overview of GrowthPilot plans',
@@ -35,4 +39,3 @@ export async function POST() {
 
   return NextResponse.json({ ok: true, id: String(doc._id) });
 }
-

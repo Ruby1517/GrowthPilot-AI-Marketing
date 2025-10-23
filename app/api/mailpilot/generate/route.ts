@@ -5,6 +5,9 @@ import { spamScore } from '@/lib/spamWords';
 import Usage from '@/models/Usage';
 import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
+import { assertWithinLimit } from '@/lib/usage';
+import { recordOverageRow } from '@/lib/overage';
+import { track } from '@/lib/track';
 
 const GenSchema = z.object({
   type: z.enum(['cold','warm','newsletter','nurture']),
@@ -25,6 +28,8 @@ export async function POST(req: NextRequest) {
   const session = await auth().catch(()=>null);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const userId = (session.user as any).id;
+  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
+  const orgId = me?.orgId ? String(me.orgId) : null;
 
   const body = await req.json();
   const parsed = GenSchema.safeParse(body);
@@ -57,16 +62,25 @@ Sender: ${JSON.stringify(sender || {})}`;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const model = process.env.MAILPILOT_MODEL || 'gpt-4o-mini';
 
-  const r = await openai.chat.completions.create({
-    model,
-    temperature: 0.5,
-    messages: [
-      { role: 'system', content: sys },
-      { role: 'user', content: userPrompt },
-    ],
-  });
+  let r;
+  for (let i=0;i<3;i++) {
+    try {
+      r = await openai.chat.completions.create({
+        model,
+        temperature: 0.5,
+        messages: [
+          { role: 'system', content: sys },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+      break;
+    } catch (e) {
+      if (i === 2) throw e;
+      await new Promise(res => setTimeout(res, 400*(i+1)));
+    }
+  }
 
-  const raw = r.choices?.[0]?.message?.content?.trim() || '';
+  const raw = r!.choices?.[0]?.message?.content?.trim() || '';
   const cleaned = raw.replace(/^```json\s*/i,'').replace(/```$/,'');
   let out: any;
   try { out = JSON.parse(cleaned); } catch {
@@ -76,6 +90,18 @@ Sender: ${JSON.stringify(sender || {})}`;
   // quick spam score on concatenated content
   const combined = (out.emails || []).map((e:any)=>`${e.subjectA}\n${e.subjectB}\n${e.preheader}\n${e.html}`).join('\n');
   const spam = spamScore(combined);
+
+  // Enforce plan usage (emails count)
+  const emailsCount = Array.isArray(out?.emails) ? out.emails.length : 0;
+  if (orgId && emailsCount > 0) {
+    const gate = await assertWithinLimit({ orgId, key: 'mailpilot_emails', incBy: emailsCount, allowOverage: true });
+    if (!gate.ok) {
+      return NextResponse.json({ ok: false, error: 'Plan limit reached', details: gate }, { status: 402 });
+    }
+    if (gate.overage && gate.overUnits) {
+      try { await recordOverageRow({ orgId, key: 'mailpilot_emails', overUnits: gate.overUnits }); } catch {}
+    }
+  }
 
   // log naive cost if usage available
   try {
@@ -87,6 +113,16 @@ Sender: ${JSON.stringify(sender || {})}`;
       meta: { model },
     });
   } catch {}
+
+  // Analytics
+  if (orgId) {
+    try {
+      await track(orgId, userId, { module: 'mailpilot', type: 'generation.completed', meta: { emails: emailsCount } });
+      if (emailsCount > 0) {
+        await track(orgId, userId, { module: 'mailpilot', type: 'email.drafted', meta: { count: emailsCount } });
+      }
+    } catch {}
+  }
 
   return NextResponse.json({ result: { ...out, spam } });
 }

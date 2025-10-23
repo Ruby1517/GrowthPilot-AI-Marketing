@@ -50,7 +50,7 @@ export type MeterKey = keyof typeof PLAN_LIMITS['Starter'];
 // Canonical meter keys
 export const USAGE_KEYS = {
   CLIPPILOT_MINUTES: 'clippilot_minutes' as MeterKey,
-  VIRALPILOT_MINUTES: 'viralppilot_minutes' as MeterKey, // if used
+  VIRALPILOT_MINUTES: 'viralpilot_minutes' as MeterKey,
   POSTPILOT_GENERATED: 'postpilot_generated' as MeterKey,
   BLOGPILOT_WORDS: 'blogpilot_words' as MeterKey,
   MAILPILOT_EMAILS: 'mailpilot_emails' as MeterKey,

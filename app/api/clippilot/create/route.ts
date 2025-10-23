@@ -84,107 +84,57 @@
 
 // app/api/clippilot/create/route.ts (relevant parts)
 import { NextRequest, NextResponse } from 'next/server';
-import { synthesizeTTS } from '@/lib/clipPilot/tts';
-import { composeTTSVideo } from '@/lib/clipPilot/makeVideo';
-import { uploadBufferToS3 } from '@/lib/s3-upload';
-import { checkUsageAndConsume } from '@/lib/usage';
-import { USAGE_KEYS } from '@/lib/limits';
-import { durationFromMp3Buffer } from '@/lib/clipPilot/duration';
-import { FFPROBE_BIN } from '@/lib/ffbins';
-import { exec as _exec } from 'child_process';
-import { promisify } from 'util';
-const exec = promisify(_exec);
+import { auth } from '@/lib/auth';
+import { dbConnect } from '@/lib/db';
+import mongoose from 'mongoose';
+import ClipJob from '@/models/ClipJob';
+import { getSimpleClipQueue } from '@/lib/clip-simple-queue';
+import { track } from '@/lib/track';
 
-function estimateMinutesFromScript(script: string) {
-  const wpm = 150; // rough speech rate
-  const words = script.trim().split(/\s+/).length;
-  return Math.max(1, Math.ceil(words / wpm));
-}
-
-async function probeDurationSeconds(audioPath: string) {
-  const out = await exec(`ffprobe -v error -show_entries format=duration -of default=nokey=1:noprint_wrappers=1 "${audioPath}"`);
-  const sec = parseFloat(out.stdout);
-  return Math.max(1, Math.floor(Number.isFinite(sec) ? sec : 0));
-}
+// ClipPilot create: video-only (long video → short video)
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth().catch(()=>null);
     const body = await req.json();
-    const { orgId, mode, script, aspect = '9:16', voiceStyle = 'Friendly' } = body;
+    const { orgId, aspect = '9:16' } = body;
 
     if (!orgId) return NextResponse.json({ error: 'org_required' }, { status: 400 });
 
-    if (mode !== 'tts') {
-      return NextResponse.json({ error: 'unsupported_mode', details: { mode } }, { status: 400 });
+    // Accept either a direct URL or a storage key (already uploaded)
+    const srcUrl = (body?.srcUrl || '').toString();
+    const storageKey = (body?.storageKey || '').toString();
+    if (!srcUrl && !storageKey) {
+      return NextResponse.json({ error: 'missing_source' }, { status: 400 });
     }
-    if (!script || script.trim().length < 10) {
-      return NextResponse.json({ error: 'script_too_short' }, { status: 400 });
-    }
-
-    // 1) PRE-CHECK usage by estimated minutes
-    const estMin = estimateMinutesFromScript(script);
-    const pre = await checkUsageAndConsume({
-      orgId,
-      key: USAGE_KEYS.CLIPPILOT_MINUTES,
-      incBy: estMin,
-      dryRun: true,
-      allowOverage: true,
-    });
-    if (!pre.ok) {
-      return NextResponse.json({ error: 'usage_limit', details: pre }, { status: 402 });
+    // Guard: avoid using presigned PUT URLs as source (not fetchable by GET)
+    if (!storageKey && /X-Amz-Algorithm=/i.test(srcUrl) && /PutObject/i.test(srcUrl)) {
+      return NextResponse.json({ error: 'invalid_source_url', hint: 'Use storageKey from uploader completion or provide a GET-accessible URL.' }, { status: 400 });
     }
 
-    // 2) TTS
-    const ttsMp3 = await synthesizeTTS(script, voiceStyle); // returns Buffer (mp3)
-
-    // 3) Compose simple video
-    const { mp4, tempAudioPath } = await composeTTSVideo({
-      ttsMp3,
-      title: script.length > 60 ? script.slice(0, 60) + '…' : script,
+    await dbConnect();
+    const userId = (session?.user as any)?.id ? new mongoose.Types.ObjectId((session!.user as any).id) : new mongoose.Types.ObjectId();
+    const job = await ClipJob.create({
+      orgId: new mongoose.Types.ObjectId(orgId),
+      userId,
+      src: storageKey || srcUrl,
+      prompt: '',
       aspect,
-    });
+      durationSec: 0,
+      variants: 1,
+      status: 'queued',
+      estimateMinutes: 0,
+      actualMinutes: 0,
+    } as any);
 
-    // 4) Measure ACTUAL minutes from audio (safer than estimating)
-    let durationSec = 60 * estMin;
+    // Optional analytics: request event
+    try { await track(orgId, userId.toString(), { module: 'clippilot', type: 'generation.requested', meta: { mode: 'video' } }); } catch {}
+    // Enqueue lightweight processor if Redis available
     try {
-      durationSec = await probeDurationSeconds(tempAudioPath); // make composeTTSVideo return the audio path
-    } catch { /* fallback to estimate */ }
-    const actualMin = Math.max(1, Math.ceil(durationSec / 60));
-
-    // If actual > estimate, ensure the delta also fits (or goes to overage if enabled)
-    const delta = actualMin - estMin;
-    if (delta > 0) {
-      const deltaCheck = await checkUsageAndConsume({
-        orgId,
-        key: USAGE_KEYS.CLIPPILOT_MINUTES,
-        incBy: delta,
-        dryRun: true,
-        allowOverage: true,
-      });
-      if (!deltaCheck.ok) {
-        return NextResponse.json({ error: 'usage_limit', details: deltaCheck }, { status: 402 });
-      }
-    }
-
-    // 5) Upload
-    const key = `clippilot/tts/${Date.now()}.mp4`;
-    const url = await uploadBufferToS3(mp4, key, 'video/mp4');
-
-    // 6) Consume ACTUAL minutes
-    await checkUsageAndConsume({
-      orgId,
-      key: USAGE_KEYS.CLIPPILOT_MINUTES,
-      incBy: actualMin,
-      dryRun: false,
-      allowOverage: true,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      url,
-      meters: { estMin, actualMin },
-      durationSec,
-    });
+      const q = getSimpleClipQueue();
+      if (q) await q.add('process', { jobId: String(job._id) }, { attempts: 1, removeOnComplete: true });
+    } catch {}
+    return NextResponse.json({ ok: true, jobId: String(job._id) }, { status: 201 });
   } catch (err: any) {
     console.error('[clippilot/create]', err);
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });

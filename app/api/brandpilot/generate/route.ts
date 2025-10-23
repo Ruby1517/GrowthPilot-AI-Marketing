@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import BrandDoc from "@/models/BrandDoc";
 import OpenAI from "openai";
+import { track } from "@/lib/track";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -107,6 +108,10 @@ Return JSON ONLY.
         ? parsed.slogans.map(String).filter(Boolean).slice(0, 5)
         : [];
 
+    // Resolve orgId for analytics
+    const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
+    const orgId = me?.orgId ? String(me.orgId) : undefined;
+
     const doc = await BrandDoc.create({
       userId: (session.user as any).id,
       company,
@@ -119,6 +124,16 @@ Return JSON ONLY.
       pdfUrl: "",
       slogans,   // if your BrandDoc doesn’t have this field yet, add it to the schema or remove this line
     } as any);
+    // Analytics: count as content produced
+    if (orgId) {
+      try {
+        await track(orgId, (session.user as any).id, {
+          module: 'brandpilot',
+          type: 'generation.completed',
+          meta: { company }
+        });
+      } catch {}
+    }
 
     return NextResponse.json({ doc });
   } catch (err: any) {
