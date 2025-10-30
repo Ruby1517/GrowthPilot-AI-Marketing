@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { createBullBoard } from '@bull-board/api'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { FastifyAdapter } from '@bull-board/fastify'
+import fastify from 'fastify'
 import { Queue } from 'bullmq'
 
 function buildConnection() {
@@ -20,12 +21,13 @@ function buildConnection() {
   }
 }
 
-let server: any
-let started = false
+let appInstance: ReturnType<typeof fastify> | null = null
+let initialized = false
 
 export async function GET() {
   try {
-    if (!server) {
+    // Lazy-init a Fastify instance in-process and mount Bull Board onto it.
+    if (!initialized) {
       const { connection } = buildConnection()
       const queues = [
         new Queue('postpilot-schedule', { connection }),
@@ -33,16 +35,24 @@ export async function GET() {
       ]
 
       const adapters = queues.map((q) => new BullMQAdapter(q))
-      const fastify = new FastifyAdapter()
-      fastify.setBasePath('/admin/queues')
-      createBullBoard({ queues: adapters, serverAdapter: fastify })
-      await fastify.registerPlugin()
-      server = fastify
+      const serverAdapter = new FastifyAdapter()
+      serverAdapter.setBasePath('/admin/queues')
+
+      // Create a fastify app and register Bull Board's plugin on it.
+      appInstance = fastify({ logger: false })
+      createBullBoard({ queues: adapters, serverAdapter })
+      appInstance.register(serverAdapter.registerPlugin())
+      await appInstance.ready()
+      initialized = true
     }
-    const html = await server.render('/admin/queues')
-    return new NextResponse(html, { headers: { 'content-type': 'text/html' } })
+
+    // Render the Bull Board HTML via Fastify's inject (no external server).
+    const res = await appInstance!.inject({ method: 'GET', url: '/admin/queues' })
+    const body = res.payload
+    const status = res.statusCode
+    const ctype = res.headers['content-type'] || 'text/html'
+    return new NextResponse(body, { status, headers: { 'content-type': String(ctype) } })
   } catch (e: any) {
     return new Response(`Queue UI error: ${e?.message || e}`, { status: 500 })
   }
 }
-

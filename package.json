@@ -12,13 +12,14 @@
     "worker": "tsx workers/clip-worker.ts",
     "worker:viralp": "tsx workers/viralp-worker.ts",
     "queues:ui": "node -e \"require('open')('http://localhost:3000/admin/queues')\" && next dev",
-    "queue:watch": "tsx workers/queueWatcher.ts",
-    "postinstall": "node scripts/postinstall.js"
+    "queue:watch": "tsx workers/queueWatcher.ts"
   },
   "dependencies": {
+    "fastify": "^4.28.1",
     "@aws-sdk/client-s3": "^3.888.0",
     "@aws-sdk/s3-request-presigner": "^3.888.0",
     "@bull-board/api": "^5.22.5",
+    "@bull-board/fastify": "^5.23.0",
     "@bull-board/ui": "^5.22.5",
     "@elevenlabs/react": "^0.7.1",
     "@radix-ui/react-progress": "^1.1.7",
