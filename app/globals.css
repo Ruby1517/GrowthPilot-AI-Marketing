@@ -14,9 +14,9 @@ body {
   /* light background */
   --gp-bg: theme(colors.brand.bg); /* default fallback */
 
-  /* light gold glows */
-  --gp-glow1: rgba(212,175,55,0.08);
-  --gp-glow2: rgba(231,210,146,0.05);
+  /* light teal glows */
+  --gp-glow1: rgba(20,184,166,0.10);
+  --gp-glow2: rgba(94,234,212,0.06);
 
   background:
     radial-gradient(1200px 700px at 20% 0%, var(--gp-glow1), transparent 40%),
@@ -25,8 +25,8 @@ body {
   color: theme(colors.brand.text);
 }
 
-html.dark body {
-  /* darker gold glows feel a tad stronger on dark */
+  html.dark body {
+  /* original gold glows for dark */
   --gp-glow1: rgba(212,175,55,0.10);
   --gp-glow2: rgba(231,210,146,0.08);
 
@@ -41,16 +41,62 @@ html.dark body {
   .card {
     @apply rounded-2xl border border-[color:var(--card-stroke,theme(colors.brand.stroke))] bg-[color:var(--card-bg,theme(colors.brand.card))] backdrop-blur-md;
   }
+  /* Dark glass look for cards */
+  html.dark .card {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.12);
+    -webkit-backdrop-filter: saturate(140%) blur(18px);
+    backdrop-filter: saturate(140%) blur(18px);
+    box-shadow:
+      0 10px 30px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  /* Utility for navbar/containers */
+  .glass-dark {
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    -webkit-backdrop-filter: saturate(140%) blur(18px);
+    backdrop-filter: saturate(140%) blur(18px);
+    box-shadow:
+      0 10px 30px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* In light mode, use a very soft navbar shadow */
+  html:not(.dark) .glass-dark {
+    box-shadow:
+      0 6px 14px rgba(0,0,0,0.08),
+      0 1px 3px rgba(0,0,0,0.04);
+  }
+  /* .glass was an experiment; removing to restore default look */
   .btn { @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium transition; }
   .btn-gold {
     @apply btn bg-[color:var(--gold,theme(colors.brand.gold))] text-black hover:brightness-110;
-    box-shadow: 0 6px 20px rgba(212,175,55,0.25);
+    box-shadow: 0 6px 20px var(--btn-shadow, rgba(212,175,55,0.25));
   }
   .btn-ghost {
     @apply btn border border-[color:var(--card-stroke,theme(colors.brand.stroke))] hover:bg-white/5;
   }
   .badge {
     @apply inline-flex items-center rounded-full border border-[color:var(--card-stroke,theme(colors.brand.stroke))] px-2 py-0.5 text-xs text-[color:var(--muted,theme(colors.brand.muted))];
+  }
+
+  /* ---- Light‑mode page hero shadows (first container on pages) ---- */
+  html:not(.dark) main section > .card:first-of-type,
+  html:not(.dark) .space-y-6 > .card:first-of-type,
+  html:not(.dark) section.space-y-6 > .card:first-of-type {
+    box-shadow: 0 12px 30px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.06);
+  }
+
+  /* ---- Light‑mode sidebar shadow (gray, like navbar) ---- */
+  html:not(.dark) .sidebar-card {
+    box-shadow:
+      0 12px 24px rgba(0,0,0,0.10),    /* ambient */
+      0 2px 8px rgba(0,0,0,0.05),      /* lift */
+      inset 0 1px 0 rgba(255,255,255,0.60); /* subtle top highlight */
+    border-color: rgba(0,0,0,0.08);
   }
 }
 
@@ -93,6 +139,18 @@ html.dark body {
     --chart-5: 27 87% 67%;
 
     --radius: 0.5rem;
+
+    /* Glass tokens (light) */
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-stroke: rgba(20,184,166,0.18);
+    /* Cards use these by default in light mode */
+    --card-bg: var(--glass-bg);
+    --card-stroke: var(--glass-stroke);
+
+    /* Light-mode accents: teal replaces gold */
+    --gold: #14B8A6;
+    --goldLight: #5EEAD4;
+    --btn-shadow: rgba(20,184,166,0.25);
   }
 
   /* DARK (via .dark on <html>) */
@@ -130,6 +188,18 @@ html.dark body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Glass tokens (dark) */
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-stroke: rgba(255,255,255,0.08);
+    /* Cards fall back to brand defaults in dark */
+    --card-bg: theme(colors.brand.card);
+    --card-stroke: theme(colors.brand.stroke);
+
+    /* Dark-mode accents: keep gold */
+    --gold: #D4AF37;
+    --goldLight: #E7D292;
+    --btn-shadow: rgba(212,175,55,0.25);
   }
 }
 
@@ -142,8 +212,8 @@ html.dark body {
 
 body {
   background:
-    radial-gradient(1200px 700px at 20% 0%, rgba(212,175,55,0.08), transparent 40%),
-    radial-gradient(1000px 600px at 100% 0%, rgba(231,210,146,0.05), transparent 45%),
+    radial-gradient(1200px 700px at 20% 0%, rgba(20,184,166,0.10), transparent 40%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(94,234,212,0.06), transparent 45%),
     hsl(var(--background)); /* ✅ dynamic background */
   color: hsl(var(--foreground));
 }
@@ -269,3 +339,15 @@ body {
     @apply border-border; }
   body {
     @apply bg-background text-foreground; } } */
+    /* Accent variables: teal in light */
+    --gold: #14B8A6;
+    --goldLight: #5EEAD4;
+    --accent1: #14B8A6;
+    --accent2: #5EEAD4;
+    --btn-shadow: rgba(20,184,166,0.25);
+    /* Accent variables: gold in dark */
+    --gold: #D4AF37;
+    --goldLight: #E7D292;
+    --accent1: #D4AF37;
+    --accent2: #E7D292;
+    --btn-shadow: rgba(212,175,55,0.25);

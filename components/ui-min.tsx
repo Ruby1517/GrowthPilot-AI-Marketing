@@ -1,4 +1,3 @@
-// components/ui-min.tsx
 export function Btn(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button

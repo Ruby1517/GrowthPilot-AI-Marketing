@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSession } from 'next-auth/react';
 
 type AssetItem = {
   _id: string;
@@ -21,6 +22,7 @@ type AssetItem = {
 };
 
 export default function AssetsPage() {
+  const { data: session, status } = useSession();
   const [items, setItems] = useState<AssetItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -42,6 +44,13 @@ export default function AssetsPage() {
     if (includePendingRef.current) params.set("includePending", "1");
     try {
       const r = await fetch(`/api/assets?${params.toString()}`, { cache: "no-store" });
+      if (r.status === 401) {
+        // not signed in; show prompt and stop
+        setItems([]);
+        setHasMore(false);
+        setCounts({ ready: 0, pending: 0, uploaded: 0, processing: 0, failed: 0 });
+        return;
+      }
       if (!r.ok) throw new Error(await r.text());
       const j = await r.json();
       setCounts(j.counts || {});
@@ -58,10 +67,16 @@ export default function AssetsPage() {
   }
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (status !== 'authenticated') {
+      setLoading(false);
+      setItems([]);
+      return;
+    }
     setCursor(null);
     load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [status]);
 
   const filtered = useMemo(
     () => items.filter((i) => i.key.toLowerCase().includes(filter.toLowerCase())),
@@ -105,6 +120,13 @@ export default function AssetsPage() {
 
   return (
     <section className="relative overflow-hidden">
+      {status !== 'authenticated' && (
+        <div className="card p-8 md:p-12">
+          <h1 className="text-3xl md:text-4xl font-semibold">Assets</h1>
+          <p className="mt-2 text-brand-muted">Please sign in to view your assets.</p>
+          <a href="/api/auth/signin?callbackUrl=/assets" className="mt-4 inline-block btn-gold">Sign In</a>
+        </div>
+      )}
       <div className="card p-8 md:p-12">
         <span className="badge mb-4">Library</span>
         <h1 className="text-3xl md:text-4xl font-semibold leading-tight">

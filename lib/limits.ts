@@ -1,13 +1,24 @@
 export const PLAN_LIMITS = {
+  Trial: {
+    postpilot_generated: 20,
+    blogpilot_words: 5000,
+    mailpilot_emails: 0,
+    adpilot_variants: 0,
+    clippilot_minutes: 0,
+    viralpilot_minutes: 0,
+    leadpilot_convos: 0,
+    brandpilot_assets: 0,
+  },
   Starter: {
+    // Starter allows only PostPilot and BlogPilot. All other meters set to 0.
     postpilot_generated: 100,
     blogpilot_words: 20000,
-    mailpilot_emails: 200,
-    adpilot_variants: 50,
-    clippilot_minutes: 15,
-    viralpilot_minutes: 15,
-    leadpilot_convos: 50,
-    brandpilot_assets: 50,
+    mailpilot_emails: 0,
+    adpilot_variants: 0,
+    clippilot_minutes: 0,
+    viralpilot_minutes: 0,
+    leadpilot_convos: 0,
+    brandpilot_assets: 0,
   },
   Pro: {
     postpilot_generated: 1000,

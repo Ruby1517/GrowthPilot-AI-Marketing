@@ -1,4 +1,3 @@
-// src/lib/generators/postpilot.ts
 import OpenAI from 'openai';
 
 export type PostSpec = {

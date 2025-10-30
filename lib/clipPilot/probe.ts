@@ -1,4 +1,3 @@
-// lib/clipPilot/probe.ts
 import { exec as _exec } from 'child_process';
 import { promisify } from 'util';
 import { FFPROBE_BIN } from '@/lib/ffbins';

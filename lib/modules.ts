@@ -1,18 +1,29 @@
-// /lib/modules.ts
-export type Plan = 'Starter' | 'Pro' | 'Business';
+export type Plan = 'Trial' | 'Starter' | 'Pro' | 'Business';
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
   | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'viralpilot';
 
 export const modulePlan: Record<ModuleKey, Plan> = {
-  postpilot: 'Starter',
+  postpilot: 'Trial',
   clippilot: 'Pro',
-  blogpilot: 'Starter',
+  blogpilot: 'Trial',
   adpilot: 'Pro',
   leadpilot: 'Business',
   mailpilot: 'Pro',
   brandpilot: 'Business',
   viralpilot: 'Pro',
+};
+
+// Human-friendly labels for modules
+export const moduleLabels: Record<ModuleKey, string> = {
+  postpilot: 'PostPilot',
+  clippilot: 'ClipPilot',
+  blogpilot: 'BlogPilot',
+  adpilot: 'AdPilot',
+  leadpilot: 'LeadPilot',
+  mailpilot: 'MailPilot',
+  brandpilot: 'BrandPilot',
+  viralpilot: 'ViralPilot',
 };
 
 // Dev switch: unlock all modules locally or in preview if you want

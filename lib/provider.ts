@@ -1,4 +1,3 @@
-// /lib/provider.ts
 import OpenAI from "openai";
 
 // --- ENV ---

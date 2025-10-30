@@ -4,6 +4,8 @@ import { dbConnect } from '@/lib/db';
 import Org from '@/models/Org';
 import Link from 'next/link';
 import PendingInvites from './pending-invites';
+import MemberRow from './member-row';
+import { hasFeature } from '@/lib/features';
 
 export default async function TeamPage() {
   const session = await auth();
@@ -24,42 +26,41 @@ export default async function TeamPage() {
     : [];
   const byId = new Map(users.map((u: any) => [String(u._id), u]));
 
+  const myRole = org.members?.find((m:any) => String(m.userId) === String(me._id))?.role || 'member';
+  const plan = (org as any).plan || 'Trial';
+  const canManageTeam = hasFeature(plan as any, 'team_management') && ['owner','admin'].includes(String(myRole));
+
+  async function refresh() {}
+
   return (
     <section className="p-6 space-y-4 max-w-3xl">
       <h1 className="text-2xl font-semibold">Team</h1>
-      <ul className="space-y-2">
+      <div className="text-sm text-brand-muted">Plan: <b>{String(plan)}</b> {(!canManageTeam) && <span className="ml-2">• Team management requires Business</span>}</div>
+      <ul className="space-y-2 mt-2">
         {org?.members?.length
           ? org.members.map((m:any, i:number) => {
               const u = byId.get(String(m.userId));
-              const name = u?.name || u?.email || String(m.userId);
-              const email = u?.email;
-              const image = u?.image;
               return (
-                <li key={i} className="flex items-center justify-between border border-white/10 rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-3">
-                    {image ? (
-                      <img src={image} alt="avatar" className="h-8 w-8 rounded-full" />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-white/10" />
-                    )}
-                    <div className="flex flex-col">
-                      <span className="text-sm">{name}</span>
-                      {email && <span className="text-xs text-brand-muted">{email}</span>}
-                    </div>
-                  </div>
-                  <span className="text-sm text-brand-muted">{m.role}</span>
+                <li key={i}>
+                  <MemberRow m={{ userId: String(m.userId), role: m.role, name: u?.name, email: u?.email, image: u?.image }} meRole={canManageTeam ? (myRole as any) : 'viewer'} onChanged={undefined} />
                 </li>
               );
             })
           : <li>No members yet.</li>
         }
       </ul>
-      <Link className="btn-gold inline-block mt-2" href="/dashboard/team/invite">Invite Member</Link>
+      {canManageTeam ? (
+        <Link className="btn-gold inline-block mt-2" href="/dashboard/team/invite">Invite Member</Link>
+      ) : (
+        <a className="btn-ghost inline-block mt-2" href="/billing">Upgrade to manage team</a>
+      )}
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">Pending Invites</h2>
-        <PendingInvites />
-      </div>
+      {canManageTeam && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-2">Pending Invites</h2>
+          <PendingInvites />
+        </div>
+      )}
     </section>
   );
 }

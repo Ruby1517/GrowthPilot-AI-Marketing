@@ -77,7 +77,7 @@ export default function UserMenu() {
             Profile
           </Link>
           <Link href="/billing" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
-            Billing
+            Plans & Pricing
           </Link>
           <Link href="/settings" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
             Settings

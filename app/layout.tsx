@@ -1,14 +1,60 @@
 // app/layout.tsx
 import './globals.css';
 import { ReactNode } from 'react';
+import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/Navbar';
 import StudioSidebar from '@/components/StudioSidebar';
 import AuthSessionProvider from '@/components/AuthSessionProvider';
 
-export const metadata = {
-  title: 'GrowthPilot — AI Suite',
-  description: 'All-in-one AI marketing suite',
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  title: {
+    default: 'GrowthPilot — AI Marketing Suite',
+    template: '%s — GrowthPilot',
+  },
+  description: 'Create posts, blogs, ads, emails & clips 10× faster with GrowthPilot — an all‑in‑one AI marketing suite.',
+  applicationName: 'GrowthPilot',
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      maxSnippet: -1,
+      maxImagePreview: 'large',
+      maxVideoPreview: -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: 'GrowthPilot',
+    title: 'GrowthPilot — AI Marketing Suite',
+    description: 'All-in-one AI suite for social posts, blogs, ads, email and video.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GrowthPilot — AI Marketing Suite',
+    description: 'All-in-one AI suite for social posts, blogs, ads, email and video.',
+    creator: '@growthpilot',
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: ['/favicon.svg'],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b0b0b' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

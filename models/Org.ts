@@ -2,15 +2,16 @@
 import mongoose, { Schema, Model, models, model } from 'mongoose';
 
 export type Role = 'owner' | 'admin' | 'member' | 'viewer';
-export const PLANS = ['Starter', 'Pro', 'Business'] as const;
+export const PLANS = ['Trial', 'Starter', 'Pro', 'Business'] as const;
 export type Plan = typeof PLANS[number];
 
 function toCanonicalPlan(v: any): Plan {
   const s = String(v ?? '').toLowerCase();
+  if (s === 'trial' || s === 'free' || s === 'freemonth' || s === 'free_trial') return 'Trial';
   if (s === 'starter') return 'Starter';
   if (s === 'pro') return 'Pro';
   if (s === 'business') return 'Business';
-  return 'Starter';
+  return 'Trial';
 }
 
 export interface OrgDoc extends mongoose.Document {
@@ -42,7 +43,7 @@ const OrgSchema = new Schema<OrgDoc>(
     plan: {
       type: String,
       enum: PLANS,
-      default: 'Starter',
+      default: 'Trial',
       index: true,
       set: toCanonicalPlan, // normalize on doc assignment AND (with option below) on update queries
     },

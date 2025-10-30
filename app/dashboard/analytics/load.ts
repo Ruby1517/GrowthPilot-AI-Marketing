@@ -22,16 +22,18 @@ import { startOfMonth } from 'date-fns';
 import Org from '@/models/Org';
 import Event from '@/models/Event';
 
-type Plan = 'Starter' | 'Pro' | 'Business';
+type Plan = 'Trial' | 'Starter' | 'Pro' | 'Business';
 
 export async function getOrgAnalytics(orgId: string) {
   const org = await Org.findById(orgId).lean();
-  if (!org) return { usage: {}, kpi: {}, period: { plan: 'Starter' as Plan } };
+  if (!org) return { usage: {}, kpi: {}, period: { plan: 'Trial' as Plan } };
 
-  const plan: Plan =
-    ['Starter','Pro','Business'].includes(String((org as any).plan)) 
-      ? (org as any).plan 
-      : 'Starter';
+  const planStr = String((org as any).plan);
+  const hasBilling = Boolean((org as any).billingCustomerId) || Boolean((org as any).subscription?.id);
+  let plan: Plan = (['Trial','Starter','Pro','Business'] as const).includes(planStr as any)
+    ? (planStr as Plan)
+    : 'Trial';
+  if (!hasBilling && plan !== 'Trial') plan = 'Trial';
 
   // MTD recent activity
   const since = startOfMonth(new Date());
@@ -83,6 +85,37 @@ export async function getOrgAnalytics(orgId: string) {
     .slice(0, 5)
     .map(([term, count]) => ({ term, count }));
 
+  // ---- Build simple 30d timeseries for overview charts
+  const days = 30;
+  const since30 = new Date(Date.now() - (days - 1) * 24*60*60*1000);
+  const dateFmt = { $dateToString: { format: '%Y-%m-%d', date: '$at' } } as const;
+
+  const contentAgg = await Event.aggregate([
+    { $match: { orgId: org._id, at: { $gte: since30 }, type: 'generation.completed' } },
+    { $group: { _id: dateFmt, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+  const trafficAgg = await Event.aggregate([
+    { $match: { orgId: org._id, at: { $gte: since30 } } },
+    { $group: { _id: dateFmt, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
+  function toSeries(agg: Array<{ _id: string; count: number }>) {
+    const map = new Map<string, number>();
+    for (const a of agg) map.set(a._id, a.count || 0);
+    const out: number[] = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(since30.getTime() + i * 24*60*60*1000);
+      const key = d.toISOString().slice(0,10);
+      out.push(map.get(key) || 0);
+    }
+    return out;
+  }
+
+  const contentDaily = toSeries(contentAgg as any);
+  const trafficDaily = toSeries(trafficAgg as any);
+
   return {
     usage: org.usage || {},
     kpi: org.kpi || {},
@@ -90,6 +123,10 @@ export async function getOrgAnalytics(orgId: string) {
     leadpilotIntents,
     leadpilotDaily,
     leadpilotTopTerms,
+    trends: {
+      contentDaily,
+      trafficDaily,
+    },
     period: {
       start: since,
       end: new Date(),

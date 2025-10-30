@@ -16,14 +16,14 @@ export async function getOrCreateStripeCustomer(orgId: string, email?: string | 
   if (!org) throw new Error('Org not found')
 
   // If we have a stored customer, verify it still exists
-  if (org.stripeCustomerId) {
+  if (org.billingCustomerId) {
     try {
-      await stripe.customers.retrieve(org.stripeCustomerId)
-      return org.stripeCustomerId
+      await stripe.customers.retrieve(org.billingCustomerId)
+      return org.billingCustomerId
     } catch (e: any) {
       if (e?.code === 'resource_missing') {
         // stale ID from another account/mode or deleted in dashboard
-        org.stripeCustomerId = undefined as any
+        org.billingCustomerId = undefined as any
         await org.save()
       } else {
         throw e
@@ -35,9 +35,9 @@ export async function getOrCreateStripeCustomer(orgId: string, email?: string | 
   if (email) {
     const list = await stripe.customers.list({ email, limit: 1 })
     if (list.data[0]) {
-      org.stripeCustomerId = list.data[0].id
+      org.billingCustomerId = list.data[0].id
       await org.save()
-      return org.stripeCustomerId
+      return org.billingCustomerId
     }
   }
 
@@ -46,7 +46,7 @@ export async function getOrCreateStripeCustomer(orgId: string, email?: string | 
     email: email || undefined,
     metadata: { orgId },
   })
-  org.stripeCustomerId = customer.id
+  org.billingCustomerId = customer.id
   await org.save()
   return customer.id
 }

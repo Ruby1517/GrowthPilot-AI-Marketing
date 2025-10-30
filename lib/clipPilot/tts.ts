@@ -1,4 +1,3 @@
-// src/lib/clipPilot/tts.ts
 export async function synthesizeTTS(text: string, voiceStyle: string) {
   const apiKey = process.env.ELEVENLABS_API_KEY!;
   const voiceId = process.env.ELEVENLABS_VOICE_ID!;

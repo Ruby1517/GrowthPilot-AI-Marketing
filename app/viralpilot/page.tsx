@@ -22,6 +22,7 @@ export default function ViralPilotPage() {
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [voice, setVoice] = useState('neutral');
+  const [lengthPreset, setLengthPreset] = useState<'short'|'medium'|'full'>('full');
 
   async function createIdeas() {
     setLoading(true);
@@ -67,10 +68,13 @@ export default function ViralPilotPage() {
       const r = await fetch('/api/viralpilot/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: doc._id, voice }),
+        body: JSON.stringify({ id: doc._id, voice, length: lengthPreset }),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data?.error || 'Failed');
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = data?.detail || data?.error || `Failed (${r.status})`;
+        throw new Error(msg);
+      }
       setDoc(data.doc);
     } catch (e: any) {
       alert(e.message || 'Error');
@@ -186,12 +190,17 @@ export default function ViralPilotPage() {
 
             <div>
               <div className="text-sm text-brand-muted">Voice</div>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex gap-2 flex-wrap">
                 <select className="border rounded p-2 text-sm" value={voice} onChange={(e) => setVoice(e.target.value)}>
                   <option value="neutral">Neutral</option>
                   <option value="alloy">Alloy (OpenAI)</option>
                   <option value="female">Female</option>
                   <option value="male">Male</option>
+                </select>
+                <select className="border rounded p-2 text-sm" value={lengthPreset} onChange={(e)=>setLengthPreset(e.target.value as any)}>
+                  <option value="short">Short (≤600 chars)</option>
+                  <option value="medium">Medium (≤1200 chars)</option>
+                  <option value="full">Full (no cap)</option>
                 </select>
                 <button className="btn-ghost" onClick={generateTTS} disabled={loading || !doc?.script?.sections?.length}>
                   {loading ? 'Working…' : 'Generate Voice-Over'}

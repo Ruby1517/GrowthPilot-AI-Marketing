@@ -1,4 +1,3 @@
-// /lib/track.ts
 import Event from '@/models/Event';
 import Org from '@/models/Org';
 

@@ -1,4 +1,3 @@
-// lib/base-url.ts
 import { headers } from "next/headers";
 
 export function getBaseUrl() {

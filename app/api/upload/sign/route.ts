@@ -1,4 +1,0 @@
-export async function POST(req: Request){ 
-    const { key } = await req.json(); if(!key) 
-        return new Response('Missing key',{status:400}); const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${encodeURIComponent(key)}`; 
-    return Response.json({ uploadUrl: url }) }

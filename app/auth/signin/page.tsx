@@ -36,7 +36,15 @@ export default function SignInPage() {
     <div className="min-h-[70vh] flex items-center justify-center px-6">
       <div className="card w-full max-w-md p-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 size-10 rounded-xl bg-[linear-gradient(135deg,#D4AF37,#E7D292)]" />
+          <svg
+            viewBox="0 0 24 24"
+            className="mx-auto mb-4 w-14 h-14"
+            aria-hidden
+            style={{ filter: 'drop-shadow(0 10px 22px rgba(0,0,0,0.35)) drop-shadow(0 0 16px var(--gold))' }}
+          >
+            <path d="M2 12L22 3l-9 19-2-8-8-2z" fill="var(--gold)" />
+            <path d="M22 3l-11 8 2 8z" fill="var(--goldLight)" />
+          </svg>
           <h1 className="text-2xl font-semibold">Welcome</h1>
           <p className="mt-1 text-sm text-brand-muted">Sign in to your account</p>
         </div>

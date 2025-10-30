@@ -1,4 +1,3 @@
-// lib/usage.ts
 import { Org } from '@/models/Org';
 import { PLAN_LIMITS, MeterKey } from '@/lib/limits';
 
@@ -6,6 +5,7 @@ type Plan = keyof typeof PLAN_LIMITS;                  // 'Starter' | 'Pro' | 'B
 // type UsageKey = keyof typeof PLAN_LIMITS['Starter'];   // union of meter keys, e.g. 'clippilot_videos' | ...
 
 const PLAN_NORMALIZE: Record<string, Plan> = {
+  Trial: 'Trial', trial: 'Trial', free: 'Trial',
   Starter: 'Starter', starter: 'Starter',
   Pro: 'Pro', pro: 'Pro',
   Business: 'Business', business: 'Business',
@@ -37,7 +37,7 @@ export async function assertWithinLimit(opts: {
   if (!org) return { ok: false, reason: 'org_not_found' };
 
   // normalize plan with a safe fallback
-  const plan: Plan = PLAN_NORMALIZE[String((org as any).plan ?? '')] ?? 'Starter';
+  const plan: Plan = PLAN_NORMALIZE[String((org as any).plan ?? '')] ?? 'Trial';
 
   // make sure the key exists for this plan definition
   const planObj = PLAN_LIMITS[plan];

@@ -1,4 +1,3 @@
-// lib/kb.ts
 import { dbConnect } from "@/lib/db";
 import BlogDoc from "@/models/BlogDoc";
 import { GROWTHPILOT_FAQ } from "@/lib/kb-fallback";

@@ -13,6 +13,9 @@ export async function POST(req: Request) {
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
+  if (String((org as any).plan || 'Trial') !== 'Business') {
+    return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
+  }
 
   const { id } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ ok: false, error: 'id required' }, { status: 400 });
@@ -23,4 +26,3 @@ export async function POST(req: Request) {
   // Optionally re-extend expiration here; for now, just return token (email sending out-of-scope)
   return NextResponse.json({ ok: true, token: inv.token });
 }
-

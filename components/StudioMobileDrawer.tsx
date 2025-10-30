@@ -42,15 +42,15 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
           </button>
         </div>
         <div className="mt-3">
-          <div className="px-2 text-[11px] uppercase tracking-wide text-brand-muted">Creators</div>
+          <div className="px-2 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Creators</div>
           <ul className="mt-1 space-y-1">
             {creators.map((l) => {
               const active = isActive(pathname, l.href);
               return (
                 <li key={l.href}>
-                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}>
+                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
                     <div className="flex items-start gap-2">
-                      <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 text-brand-gold" />
+                      <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
                       <div>
                         <div className="text-sm">{(l as any).label}</div>
                         {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
@@ -62,15 +62,15 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
             })}
           </ul>
 
-          <div className="mt-4 px-2 text-[11px] uppercase tracking-wide text-brand-muted">Tools</div>
+          <div className="mt-4 px-2 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
           <ul className="mt-1 space-y-1">
             {tools.map((l) => {
               const active = isActive(pathname, l.href);
               return (
                 <li key={l.href}>
-                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}>
+                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
                     <div className="flex items-center gap-2">
-                      <Icon name={(l as any).icon} className="w-4 h-4 text-brand-gold" />
+                      <Icon name={(l as any).icon} className="w-4 h-4 dark:text-brand-gold text-[#14B8A6]" />
                       <span className="text-sm">{(l as any).label}</span>
                     </div>
                   </Link>

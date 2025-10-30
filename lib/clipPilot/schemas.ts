@@ -1,4 +1,3 @@
-// src/lib/clipPilot/schemas.ts
 import { z } from "zod";
 
 export const CreateClipSchema = z.object({

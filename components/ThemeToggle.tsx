@@ -6,12 +6,11 @@ export default function ThemeToggle() {
   const { theme, setTheme, isDark } = useTheme();
 
   function nextTheme() {
-    // cycle: light -> dark -> system -> light
-    setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light');
+    // cycle: light <-> dark
+    setTheme(theme === 'light' ? 'dark' : 'light');
   }
 
-  const label =
-    theme === 'system' ? 'System' : isDark ? '🌙 Dark' : '☀️ Light';
+  const label = isDark ? '🌙 Dark' : '☀️ Light';
 
   return (
     <button

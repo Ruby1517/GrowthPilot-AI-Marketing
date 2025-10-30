@@ -22,6 +22,14 @@ function scriptToPlainText(doc: any) {
   return parts.join('\n\n');
 }
 
+type LengthPreset = 'short' | 'medium' | 'full';
+function applyLengthPreset(text: string, preset?: LengthPreset) {
+  const p = preset || 'full';
+  const cap = p === 'short' ? 600 : p === 'medium' ? 1200 : Infinity;
+  if (!Number.isFinite(cap)) return text;
+  return text.slice(0, cap);
+}
+
 function resolveVoiceId(voice?: string, explicitId?: string) {
   if (explicitId && typeof explicitId === 'string') return explicitId;
   const v = String(voice || '').toLowerCase();
@@ -44,10 +52,13 @@ async function ttsWithEleven(text: string, voiceId?: string) {
       model_id: 'eleven_monolingual_v1',
       voice_settings: { stability: 0.4, similarity_boost: 0.7 },
     }),
-  }, { retries: 2, backoffMs: 600 });
+  }, { retries: 2, backoffMs: 600, throwOnHttpError: false });
   if (!r.ok) {
-    const errText = await r.text().catch(() => '');
-    throw new Error(`ElevenLabs ${r.status} ${errText}`);
+    const msg = await r.text().catch(() => '');
+    if (r.status === 401) {
+      throw new Error(`ElevenLabs unauthorized (401). Check ELEVENLABS_API_KEY and voice permissions. ${msg}`);
+    }
+    throw new Error(`ElevenLabs ${r.status} ${msg}`);
   }
   const buf = Buffer.from(await r.arrayBuffer());
   return buf;
@@ -57,49 +68,60 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id, voiceId, voice } = await req.json().catch(() => ({}));
+  const { id, voiceId, voice, length }: { id?: string; voiceId?: string; voice?: string; length?: LengthPreset } = await req.json().catch(() => ({} as any));
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   if (!process.env.ELEVENLABS_API_KEY) {
     return NextResponse.json({ error: 'ELEVENLABS_API_KEY missing. Add it to .env.local' }, { status: 400 });
   }
 
-  await dbConnect();
-  const doc = await ViralProject.findById(id);
-  if (!doc?.script?.sections?.length) return NextResponse.json({ error: 'No script' }, { status: 400 });
-
-  // Optional rate limit per org (if Upstash configured)
   try {
-    const me = await User.findOne({ email: (session.user as any).email }).lean().catch(()=>null);
-    const orgId = me?.orgId ? String(me.orgId) : null;
-    if (orgId && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-      const { success } = await limiterPerOrg.limit(orgId);
-      if (!success) return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+    await dbConnect();
+    const doc = await ViralProject.findById(id);
+    if (!doc?.script?.sections?.length) return NextResponse.json({ error: 'No script' }, { status: 400 });
+
+    // Optional rate limit per org (if Upstash configured)
+    try {
+      const me = await User.findOne({ email: (session.user as any).email }).lean().catch(()=>null);
+      const orgId = me?.orgId ? String(me.orgId) : null;
+      if (orgId && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        const { success } = await limiterPerOrg.limit(orgId);
+        if (!success) return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+      }
+    } catch {}
+
+    let text = scriptToPlainText(doc);
+    // Optional server-side cap via preset to help avoid quota overages
+    text = applyLengthPreset(text, length);
+    const resolvedVoiceId = resolveVoiceId(voice, voiceId);
+    const mp3 = await ttsWithEleven(text, resolvedVoiceId);
+    const durSec = await durationFromMp3Buffer(mp3).catch(()=>0);
+
+    // Upload to S3
+    const key = `assets/user_${(session.user as any).id}/viralp/${doc._id}/voiceover.mp3`;
+    await s3.send(new PutObjectCommand({
+      Bucket: BUCKET, Key: key, Body: mp3, ContentType: 'audio/mpeg',
+    }));
+    const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 3600 });
+
+    await Asset.create({
+      userId: (session.user as any).id,
+      key, bucket: BUCKET, region: REGION,
+      contentType: 'audio/mpeg', size: mp3.length, status: 'ready', type: 'audio',
+    });
+
+    doc.tts = { key, bucket: BUCKET, region: REGION, url, durationSec: durSec } as any;
+    if (voice) (doc as any).voice = voice;
+    doc.status = 'tts-ready';
+    await doc.save();
+
+    return NextResponse.json({ doc });
+  } catch (e: any) {
+    const msg = String(e?.message || 'TTS failed');
+    // Bubble up quota information distinctly so the client can surface it
+    if (/quota_exceeded/i.test(msg)) {
+      return NextResponse.json({ error: 'quota_exceeded', detail: msg }, { status: 402 });
     }
-  } catch {}
-
-  const text = scriptToPlainText(doc);
-  const resolvedVoiceId = resolveVoiceId(voice, voiceId);
-  const mp3 = await ttsWithEleven(text, resolvedVoiceId);
-  const durSec = await durationFromMp3Buffer(mp3).catch(()=>0);
-
-  // Upload to S3
-  const key = `assets/user_${(session.user as any).id}/viralp/${doc._id}/voiceover.mp3`;
-  await s3.send(new PutObjectCommand({
-    Bucket: BUCKET, Key: key, Body: mp3, ContentType: 'audio/mpeg',
-  }));
-  const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 3600 });
-
-  await Asset.create({
-    userId: (session.user as any).id,
-    key, bucket: BUCKET, region: REGION,
-    contentType: 'audio/mpeg', size: mp3.length, status: 'ready', type: 'audio',
-  });
-
-  doc.tts = { key, bucket: BUCKET, region: REGION, url, durationSec: durSec } as any;
-  if (voice) (doc as any).voice = voice;
-  doc.status = 'tts-ready';
-  await doc.save();
-
-  return NextResponse.json({ doc });
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

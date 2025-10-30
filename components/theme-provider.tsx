@@ -2,18 +2,18 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 type ThemeCtx = { theme: Theme; setTheme: (t: Theme) => void; isDark: boolean };
 
 const ThemeContext = createContext<ThemeCtx | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system');
+  const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // initial: localStorage -> system
-    const saved = (localStorage.getItem('theme') as Theme) || 'system';
+    // initial: localStorage -> default 'dark'
+    const saved = (localStorage.getItem('theme') as Theme) || 'dark';
     setTheme(saved);
     setMounted(true);
   }, []);
@@ -22,19 +22,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return;
 
     const root = document.documentElement;
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const useDark = theme === 'dark' || (theme === 'system' && systemDark);
-
-    root.classList.toggle('dark', useDark);
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme, mounted]);
 
   // compute isDark for UI
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const isDark = theme === 'dark';
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, isDark }}>

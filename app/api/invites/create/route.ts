@@ -14,13 +14,31 @@ export async function POST(req: Request) {
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
+  if (String((org as any).plan || 'Trial') !== 'Business') {
+    return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
+  }
+  const myRole = org.members?.find(m => String(m.userId) === String(me._id))?.role || 'member'
 
   const { email, role } = await req.json().catch(() => ({}));
   if (!email) return NextResponse.json({ ok: false, error: 'Email required' }, { status: 400 });
 
+  // Authorization rules:
+  // - Only owner or admin can create invites
+  // - Only owner can assign 'admin' role via invite
+  // - Never allow inviting with role 'owner'
+  if (!['owner','admin'].includes(myRole)) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
+  const requestedRole = String(role || 'member');
+  if (requestedRole === 'owner') {
+    return NextResponse.json({ ok: false, error: 'Cannot invite as owner' }, { status: 400 });
+  }
+  if (requestedRole === 'admin' && myRole !== 'owner') {
+    return NextResponse.json({ ok: false, error: 'Only owner can assign admin' }, { status: 403 });
+  }
+
   const token = randomBytes(24).toString('base64url');
   const expiresAt = new Date(Date.now() + 7*24*60*60*1000);
-  const inv = await Invite.create({ orgId: org._id, email, role: role || 'member', token, expiresAt, status: 'pending' });
+  const inv = await Invite.create({ orgId: org._id, email, role: (requestedRole as any) || 'member', token, expiresAt, status: 'pending' });
   return NextResponse.json({ ok: true, token: inv.token });
 }
-

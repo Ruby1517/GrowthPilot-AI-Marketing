@@ -26,7 +26,17 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    serverActions: { allowedOrigins: ['*'] }
+    serverActions: {
+      // Tighten in production to your app host if provided
+      allowedOrigins: process.env.NODE_ENV === 'production'
+        ? (() => {
+            try {
+              const u = process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL) : null;
+              return u ? [u.host] : ['*'];
+            } catch { return ['*']; }
+          })()
+        : ['*']
+    }
   },
   images: {
     remotePatterns: [

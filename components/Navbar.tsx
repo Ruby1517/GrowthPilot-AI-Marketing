@@ -3,48 +3,71 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import UserMenu from '@/components/UserMenu'
 import ThemeToggle from './ThemeToggle';
 import StudioMobileDrawer from './StudioMobileDrawer';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
-  return pathname === href || pathname.startsWith(href + '/');
+  // Navbar should only highlight exact matches to avoid parent sections (e.g., '/dashboard')
+  // lighting up for nested routes like '/dashboard/team'.
+  return pathname === href;
 }
 
 // No AI Studio dropdown icons here anymore.
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const baseLinks = [
     { href: '/', label: 'Home' },
+    { href: '/about', label: 'About' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/dashboard/team', label: 'Team' },
-    { href: '/billing', label: 'Billing' },
-    { href: '/queue', label: 'Queue' },
+    { href: '/billing', label: 'Plans & Pricing' },
+    { href: '/profile', label: 'Profile' },
+    { href: '/settings', label: 'Settings' },
     { href: '/dashboard/analytics', label: 'Analytics' }
   ];
+  const authed = Boolean(session?.user);
+  const links = baseLinks.filter(l => {
+    if (!authed && (l.href === '/dashboard' || l.href.startsWith('/dashboard/') || l.href === '/profile' || l.href === '/settings')) return false;
+    return true;
+  });
 
   // AI Studio navigation is now in the fixed left sidebar.
 
   return (
-    <header className="relative z-50 flex items-center justify-between py-6">
+    <header className="relative z-50 flex items-center justify-between py-3 pl-6 pr-4 glass-dark">
       <Link href="/" className="flex items-center gap-2">
-        <div className="size-8 rounded-xl bg-[linear-gradient(135deg,#D4AF37,#E7D292)] shadow-glow" />
-        <span className="text-lg font-semibold tracking-wide">GrowthPilot</span>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-8 h-8"
+          aria-hidden
+          style={{ filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.35)) drop-shadow(0 0 14px var(--gold))' }}
+        >
+          <path d="M2 12L22 3l-9 19-2-8-8-2z" fill="var(--gold)" />
+          <path d="M22 3l-11 8 2 8z" fill="var(--goldLight)" />
+        </svg>
+        <span className="text-base font-semibold tracking-wide">GrowthPilot</span>
       </Link>
 
-      <nav className="flex items-center gap-6">
-        {baseLinks.map(l => {
+      <nav className="flex items-center gap-4">
+        {links.map(l => {
           const active = isActive(pathname, l.href);
           return (
             <Link
               key={l.href}
               href={l.href}
               aria-current={active ? 'page' : undefined}
-              className={`text-sm ${active ? 'text-white' : 'text-brand-muted hover:text-white'}`}
+              className={`text-sm ${
+                active
+                  ? 'dark:text-[color:var(--gold,theme(colors.brand.gold))] text-[#14B8A6]'
+                  : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]'
+              }`}
             >
               {l.label}
             </Link>
@@ -52,9 +75,10 @@ export default function Navbar() {
         })}
 
         {/* AI Studio moved to persistent left sidebar; no top entry */}
+        {authed && (
         <button
           type="button"
-          className="md:hidden text-sm text-brand-muted hover:text-white"
+          className="md:hidden text-sm dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]"
           onClick={() => setMobileOpen(true)}
           aria-label="Open AI Studio"
         >
@@ -63,6 +87,7 @@ export default function Navbar() {
             AI Studio
           </span>
         </button>
+        )}
         <ThemeToggle />
         <UserMenu />
       </nav>

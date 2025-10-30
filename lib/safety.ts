@@ -1,14 +1,3 @@
-// const PROFANITY = ['damn','shit','fuck']; 
-// const PII=[
-//     /\b\d{3}-\d{2}-\d{4}\b/i,/\b\d{16}\b/,/\b\+?\d{1,2}[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/]; 
-// export type SafetyResult={ok:boolean,reasons:string[]}; 
-// export function safetyCheck(t:string):SafetyResult{const r:string[]=[];
-//     const l=t.toLowerCase(); if(PROFANITY.some(p=>l.includes(p))) r.push('profanity'); 
-//     if(PII.some(rx=>rx.test(t))) r.push('possible_pii'); 
-//     return {ok:r.length===0,reasons:r}}
-
-
-// lib/safety.ts
 export function safetyCheck(str: string) {
   const reasons: string[] = [];
   const PROF = /(?:\bfuck\b|\bshit\b|\basshole\b)/i;

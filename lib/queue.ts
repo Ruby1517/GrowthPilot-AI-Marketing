@@ -1,4 +1,3 @@
-// lib/queue.ts
 import { Queue, Worker, QueueEvents } from 'bullmq'
 import IORedis from 'ioredis'
 

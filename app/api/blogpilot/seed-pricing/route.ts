@@ -10,8 +10,11 @@ export async function POST() {
   await dbConnect();
   const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
   if (!me?._id) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const role = String((me as any).role || 'member');
-  if (!['owner','admin'].includes(role)) {
+  // Derive role from org membership, not user.role
+  const Org = (await import('@/models/Org')).default;
+  const org = me?.orgId ? await Org.findById(me.orgId).lean().catch(()=>null) : null;
+  const myRole = org?.members?.find((m:any) => String(m.userId) === String(me?._id))?.role || 'member';
+  if (!['owner','admin'].includes(myRole)) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 

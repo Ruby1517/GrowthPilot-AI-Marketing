@@ -2,6 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { canAccess } from '@/lib/access';
+import type { ModuleKey } from '@/lib/modules';
+import { moduleLabels } from '@/lib/modules';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -30,73 +35,189 @@ function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: strin
   }
 }
 
-export const creators = [
-  { href: '/postpilot',  label: 'PostPilot',  desc: 'AI Social Content',    icon: 'post' },
-  { href: '/clips',      label: 'ClipPilot',  desc: 'Video/Shorts Creator', icon: 'clip' },
-  { href: '/blogpilot',  label: 'BlogPilot',  desc: 'SEO Blog Writer',      icon: 'blog' },
-  { href: '/adpilot',    label: 'AdPilot',    desc: 'Ads Optimizer',        icon: 'ad' },
-  { href: '/leadpilot',  label: 'LeadPilot',  desc: 'Lead Gen Chatbot',     icon: 'lead' },
-  { href: '/mailpilot',  label: 'MailPilot',  desc: 'Email Campaigns',      icon: 'mail' },
-  { href: '/brandpilot', label: 'BrandPilot', desc: 'Brand & Design Kit',   icon: 'brand' }, 
-  { href: '/viralpilot', label: 'ViralPilot', desc: 'YouTube Content Creation',   icon: 'youtube' },
+export const creators: Array<{
+  href: string;
+  label: string;
+  desc?: string;
+  icon: string;
+  module: ModuleKey;
+}> = [
+  { href: '/postpilot',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot' },
+  { href: '/clips',      label: moduleLabels.clippilot,  desc: 'Video/Shorts Creator',        icon: 'clip',   module: 'clippilot' },
+  { href: '/blogpilot',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot' },
+  { href: '/adpilot',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot' },
+  { href: '/leadpilot',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot' },
+  { href: '/mailpilot',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot' },
+  { href: '/brandpilot', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot' }, 
+  { href: '/viralpilot', label: moduleLabels.viralpilot, desc: 'YouTube Content Creation',    icon: 'youtube',module: 'viralpilot' },
 ];
 
+// Tools menu toggle (client env): set NEXT_PUBLIC_SHOW_TOOLS=false to hide
+const SHOW_TOOLS = process.env.NEXT_PUBLIC_SHOW_TOOLS !== 'false';
 export const tools = [
-  { href: '/upload',   label: 'Upload',   icon: 'upload' },
   { href: '/assets',   label: 'Assets',   icon: 'assets' },
   { href: '/calendar', label: 'Calendar', icon: 'calendar' },
 ];
 
 export default function StudioSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const [plan, setPlan] = useState<('Trial'|'Starter'|'Pro'|'Business') | null>(null);
+  const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown');
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPlan() {
+      try {
+        setLoadingPlan(true);
+        const r = await fetch('/api/org/settings', { cache: 'no-store' });
+        if (!r.ok) return;
+        const j = await r.json();
+        const eff = (j.effectivePlan as any) || (j.plan as any);
+        if (!cancelled) { setPlan(eff as any); setMyRole((j.myRole as any) || 'member'); }
+      } finally {
+        if (!cancelled) setLoadingPlan(false);
+      }
+    }
+    loadPlan();
+    return () => { cancelled = true };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('gpSidebarCollapsed');
+      setCollapsed(v === '1');
+    } catch {}
+    function onChanged() {
+      try {
+        const v = localStorage.getItem('gpSidebarCollapsed');
+        setCollapsed(v === '1');
+      } catch {}
+    }
+    window.addEventListener('gp:sidebar-changed', onChanged);
+    return () => window.removeEventListener('gp:sidebar-changed', onChanged);
+  }, []);
+
+  // Hide sidebar entirely until the user is authenticated
+  if (!session?.user) return null;
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 shrink-0">
+    <aside className={`hidden md:flex ${collapsed ? 'md:w-16 lg:w-20' : 'md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
       <div className="w-full p-3">
-        <div className="card h-full p-4">
-        <nav className="mt-1">
-          <div className="mt-4 px-3 text-[11px] uppercase tracking-wide text-brand-muted">AI Studio</div>
-          <ul className="mt-1 space-y-1">
+        <div className="card sidebar-card pt-3 pb-8 px-3">
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand' : 'Collapse'}
+              onClick={() => {
+                try {
+                  const next = collapsed ? '0' : '1';
+                  localStorage.setItem('gpSidebarCollapsed', next);
+                  window.dispatchEvent(new Event('gp:sidebar-changed'));
+                } catch {}
+              }}
+              className="inline-flex items-center justify-center rounded-lg p-2 border border-[color:var(--card-stroke,rgba(255,255,255,0.12))] hover:bg-white/5 dark:hover:bg-white/10 transition"
+            >
+              {/* window icon */}
+              <svg viewBox="0 0 24 24" className="w-4 h-4 opacity-80" aria-hidden>
+                <path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm1 3h14v9H5V8Zm0-2v1h14V6H5Z"/>
+              </svg>
+            </button>
+          </div>
+          <nav className="mt-1">
+          {!collapsed && (
+            <div className={`mt-3 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70 ${collapsed ? 'text-center px-0' : ''}`}>AI Studio</div>
+          )}
+          {!collapsed && (
+            <ul className="mt-1 space-y-1">
             {creators.map((l) => {
               const active = isActive(pathname, l.href);
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon name={l.icon} className="w-5 h-5 text-brand-gold" />
-                      <div className="flex flex-col">
-                        <span className="text-sm">{l.label}</span>
-                        {(l as any).desc && <span className="text-xs opacity-70">{(l as any).desc}</span>}
+              const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
+              const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
+              const userRole = ignoreAdmin ? undefined : rawRole;
+              const isAuthed = Boolean(session?.user);
+              const userPlanForGate = (isAuthed ? (plan ?? 'Starter') : null) as any;
+              const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
+              if (hasAccess) {
+                return (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
+                        active
+                          ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                          : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                        <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                        {!collapsed && (
+                          <div className="flex flex-col">
+                            <span className="text-sm">{l.label}</span>
+                            {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-4 px-3 text-[11px] uppercase tracking-wide text-brand-muted">Tools</div>
-          <ul className="mt-1 space-y-1">
-            {tools.map((l) => {
-              const active = isActive(pathname, l.href);
+                    </Link>
+                  </li>
+                );
+              }
               return (
                 <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={`block rounded-md px-3 py-2 ${active ? 'bg-white/10 text-white' : 'text-brand-muted hover:text-white hover:bg-white/5'}`}
+                  <div
+                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Icon name={l.icon} className="w-5 h-5 text-brand-gold" />
-                      <span className="text-sm">{l.label}</span>
+                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                      <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span className="text-sm">{l.label}</span>
+                          {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                        </div>
+                      )}
+                      {!collapsed && (
+                        <div className="ml-auto">
+                          <Link href="/billing" className="btn-ghost text-xs py-1 px-2">Upgrade</Link>
+                        </div>
+                      )}
                     </div>
-                  </Link>
+                  </div>
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          )}
+
+          {SHOW_TOOLS && !collapsed && (
+            <>
+              <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
+              <ul className="mt-1 space-y-1">
+                {tools.map((l) => {
+                  const active = isActive(pathname, l.href);
+                  return (
+                    <li key={l.href}>
+                      <Link
+                        href={l.href}
+                        className={`block rounded-md px-3 py-2 ${
+                          active
+                            ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                            : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                          <span className="text-sm">{l.label}</span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </nav>
         </div>
       </div>

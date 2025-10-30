@@ -42,9 +42,20 @@ export async function POST(req: Request) {
   const me = await Users.findOne({ email: session.user.email });
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
-  const orgId = String(me.orgId ?? me._id);
-  const org = await Org.findById(orgId).lean();
-  if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
+  let orgId = String(me.orgId ?? '');
+  let org = orgId ? await Org.findById(orgId).lean() : null;
+  if (!org) {
+    // Ensure a personal Trial org for users without an org
+    const UsersModel = (await import('@/models/User')).default;
+    const created = await Org.create({ name: `${(session.user as any).name || 'My'} Org` });
+    await UsersModel.updateOne({ _id: me._id }, { $set: { orgId: created._id } });
+    await Org.updateOne(
+      { _id: created._id },
+      { $set: { ownerId: me._id }, $push: { members: { userId: me._id, role: 'owner', joinedAt: new Date() } } }
+    );
+    org = await Org.findById(created._id).lean();
+    orgId = String(created._id);
+  }
 
   // ---- rate limit per org
   const { success, limit, remaining, reset } = await limiterPerOrg.limit(orgId);

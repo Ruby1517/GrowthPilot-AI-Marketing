@@ -10,10 +10,10 @@ export async function POST() {
   await dbConnect()
 
   const org = await Org.findById((session.user as any).orgId)
-  if (!org?.stripeCustomerId) return new Response('No Stripe customer', { status: 400 })
+  if (!org?.billingCustomerId) return new Response('No Stripe customer', { status: 400 })
 
   const portal = await stripe.billingPortal.sessions.create({
-    customer: org.stripeCustomerId,
+    customer: org.billingCustomerId,
     return_url: `${process.env.NEXTAUTH_URL}/billing`,
   })
   return Response.json({ url: portal.url })

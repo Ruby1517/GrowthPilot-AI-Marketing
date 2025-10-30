@@ -117,7 +117,7 @@ export default function LeadPilotPage() {
         type="button"
         onClick={()=>setWidgetOpen(v=>!v)}
         className="fixed bottom-5 right-5 z-[2147483647] rounded-full px-4 py-3 shadow-glow
-                   bg-[linear-gradient(135deg,#D4AF37,#E7D292)] text-black font-medium"
+                  bg-[linear-gradient(135deg,#D4AF37,#E7D292)] text-black font-medium"
         title={widgetOpen ? "Close chat preview" : "Open chat preview"}
         aria-label={widgetOpen ? "Close chat preview" : "Open chat preview"}
       >

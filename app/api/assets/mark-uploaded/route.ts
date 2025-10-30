@@ -7,8 +7,11 @@ import Asset from "@/models/Asset";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await dbConnect();
-  const doc = await Asset.findById(params.id).lean();
+  const userId = new mongoose.Types.ObjectId((session.user as any).id);
+  const doc = await Asset.findOne({ _id: params.id, userId }).lean();
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(doc);
 }
