@@ -1,4 +1,4 @@
-# Public Beta Checklist (Week 13)
+# Public Beta Checklist
 
 - [ ] Pricing page copy reviewed; checkout working in production mode.
 - [ ] Usage meters visible on Analytics; ViralPilot minutes enforced and overage recorded.

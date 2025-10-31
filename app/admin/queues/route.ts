@@ -41,7 +41,8 @@ export async function GET() {
       // Create a fastify app and register Bull Board's plugin on it.
       appInstance = fastify({ logger: false })
       createBullBoard({ queues: adapters, serverAdapter })
-      appInstance.register(serverAdapter.registerPlugin())
+      // Mount Bull Board under the desired base path
+      appInstance.register(serverAdapter.registerPlugin(), { prefix: '/admin/queues' })
       await appInstance.ready()
       initialized = true
     }

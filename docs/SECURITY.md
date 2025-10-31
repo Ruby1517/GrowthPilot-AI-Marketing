@@ -1,4 +1,4 @@
-# Security Hardening (Week 13)
+# Security Hardening 
 
 Baseline practices applied:
 
