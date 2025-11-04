@@ -44,27 +44,21 @@ export default async function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Layout: metrics left, insights right */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <AnalyticsCards initial={data} />
-          <Recent recent={data.recent} />
-          {/* Simple trends (preview) */}
-          {/* Trends removed per request */}
-        </div>
-        <div className="space-y-6">
-          {plan !== 'Trial' ? (
-            <>
-              <LeadIntent data={(data as any).leadpilotIntents?.map((x:any)=>({ _id: x._id, count: x.count }))} />
-              <LeadDaily data={(data as any).leadpilotDaily?.map((x:any)=>({ _id: x._id, count: x.count }))} />
-            </>
-          ) : (
-            <div className="card p-4 text-sm dark:text-brand-muted text-black/70">
-              Unlock LeadPilot insights with <b>Pro</b> or <b>Business</b>.
-              <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
-            </div>
-          )}
-        </div>
+      {/* All analytics cards stacked under header */}
+      <div className="space-y-6">
+        <AnalyticsCards initial={data} />
+        {plan !== 'Trial' ? (
+          <>
+            <LeadIntent data={(data as any).leadpilotIntents?.map((x:any)=>({ _id: x._id, count: x.count }))} />
+            <LeadDaily data={(data as any).leadpilotDaily?.map((x:any)=>({ _id: x._id, count: x.count }))} />
+          </>
+        ) : (
+          <div className="card p-4 text-sm dark:text-brand-muted text-black/70">
+            Unlock LeadPilot insights with <b>Pro</b> or <b>Business</b>.
+            <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
+          </div>
+        )}
+        <Recent recent={data.recent} />
       </div>
     </section>
   );

@@ -1,11 +1,16 @@
 
 import Link from 'next/link';
 import { getBaseUrl } from "@/lib/base-url";
+import { cookies } from 'next/headers';
 
 
 async function getDoc(id: string) {
   const base = getBaseUrl();
-  const r = await fetch(`${base}/api/blogpilot/${id}`, { cache: "no-store" });
+  const cookieHeader = cookies().toString();
+  const r = await fetch(`${base}/api/blogpilot/${id}`, {
+    cache: 'no-store',
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
   if (!r.ok) return null;
   return r.json();
 }

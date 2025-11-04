@@ -54,17 +54,26 @@ export default function Home() {
   }, [])
 
   const modules = [
-    { key:'postpilot',  t:'PostPilot',  d:'AI Social Content Generator', icon:'post',  href:'/postpilot' },
-    { key:'clippilot',  t:'ClipPilot',  d:'AI Video/Shorts Creator',     icon:'clip',  href:'/clips' },
-    { key:'blogpilot',  t:'BlogPilot',  d:'AI SEO Writer',               icon:'blog',  href:'/blogpilot' },
-    { key:'adpilot',    t:'AdPilot',    d:'AI Ads Optimizer',            icon:'ad',    href:'/adpilot' },
-    { key:'leadpilot',  t:'LeadPilot',  d:'AI Chatbot for Leads',        icon:'lead',  href:'/leadpilot' },
-    { key:'mailpilot',  t:'MailPilot',  d:'AI Email Writer',             icon:'mail',  href:'/mailpilot' },
-    { key:'brandpilot', t:'BrandPilot', d:'AI Design/Branding Assistant',icon:'brand', href:'/brandpilot' },
-    { key:'viralpilot', t:'ViralPilot', d:'YouTube Content Creation',    icon:'youtube',href:'/viralpilot' },
+    { key:'postpilot',  t:'PostPilot',  d:'AI Social Content Generator', icon:'post',  href:'/postpilot',  img:'/images/modules/postpilot.svg',
+      points: ['Generate posts across platforms', 'On-brand tone controls', 'Schedule + track performance'] },
+    { key:'clippilot',  t:'ClipPilot',  d:'AI Video/Shorts Creator',     icon:'clip',  href:'/clips',      img:'/images/modules/clippilot.svg',
+      points: ['Trim to shorts fast', 'Auto captions + resize', 'Templates for Reels/TikTok'] },
+    { key:'blogpilot',  t:'BlogPilot',  d:'AI SEO Writer',               icon:'blog',  href:'/blogpilot',  img:'/images/modules/blogpilot.svg',
+      points: ['SEO briefs to drafts', 'Optimizes for keywords', 'Images and headings ready'] },
+    { key:'adpilot',    t:'AdPilot',    d:'AI Ads Optimizer',            icon:'ad',    href:'/adpilot',    img:'/images/modules/adpilot.svg',
+      points: ['Generate ad variants', 'Iterate with scoring', 'Export to major platforms'] },
+    { key:'leadpilot',  t:'LeadPilot',  d:'AI Chatbot for Leads',        icon:'lead',  href:'/leadpilot',  img:'/images/modules/leadpilot.svg',
+      points: ['Qualify leads instantly', 'Route and capture context', 'CRM-friendly transcripts'] },
+    { key:'mailpilot',  t:'MailPilot',  d:'AI Email Writer',             icon:'mail',  href:'/mailpilot',  img:'/images/modules/mailpilot.svg',
+      points: ['Subject + body + sequences', 'Personalize at scale', 'ESP-ready output'] },
+    { key:'brandpilot', t:'BrandPilot', d:'AI Design/Branding Assistant',icon:'brand', href:'/brandpilot', img:'/images/modules/brandpilot.svg',
+      points: ['Logos, colors, fonts kit', 'Guidelines and templates', 'On-brand assets quickly'] },
+    { key:'viralpilot', t:'ViralPilot', d:'YouTube Content Creation',    icon:'youtube',href:'/viralpilot', img:'/images/modules/viralpilot.svg',
+      points: ['Ideas → script → TTS', 'Auto B-roll + captions', 'Render shorts quickly'] },
   ] as const;
 
-  const items = modules as Array<{ key:string; t:string; d:string }>
+  type ModuleItem = { key:string; t:string; d:string; img:string; points: string[] }
+  const items = modules as Array<ModuleItem>
   return (
     <section className="relative overflow-hidden">
       <div aria-hidden className="absolute inset-0 z-0 bg-center bg-cover hidden dark:block" style={{ backgroundImage: "url('/3d-bg.png')" }} />
@@ -84,7 +93,7 @@ export default function Home() {
         }) }}
       />
       {!session?.user ? (
-        <LandingHero />
+        <LandingHero items={items} demoMap={demoMap} />
       ) : (
         <>
           <div className="card p-8 md:p-12">
@@ -112,7 +121,7 @@ export default function Home() {
   )
 }
 
-function Slides({ items, demoMap }: { items: Array<{ key:string; t:string; d:string }>, demoMap: Record<string,string> }) {
+function Slides({ items, demoMap }: { items: Array<{ key:string; t:string; d:string; img?: string; points?: string[] }>, demoMap: Record<string,string> }) {
   const [idx, setIdx] = useState(0)
   const [playerUrl, setPlayerUrl] = useState<string | null>(null)
   const count = items.length
@@ -126,7 +135,7 @@ function Slides({ items, demoMap }: { items: Array<{ key:string; t:string; d:str
   }, [count])
 
   return (
-    <div className="relative mt-8">
+    <div className="relative mt-12 md:mt-16 mx-4 md:mx-8">
       <div className="overflow-hidden rounded-2xl">
         <div
           className="flex transition-transform duration-500 ease-out"
@@ -137,13 +146,28 @@ function Slides({ items, demoMap }: { items: Array<{ key:string; t:string; d:str
               <div className="rounded-3xl bg-transparent dark:bg-white/5 backdrop-blur-md p-4 md:p-6 shadow-[0_12px_36px_rgba(0,0,0,0.30)]">
                 <div className="h-6 w-24 rounded-full bg-black/10 dark:bg-white/10" />
                 <div className="mt-4 grid gap-3 md:gap-4 md:grid-cols-2">
-                  <button type="button" onClick={() => { const url = demoMap[m.key]; if (url) setPlayerUrl(url); else alert("Demo coming soon"); }} className="h-40 md:h-56 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center group" aria-label={`Open ${m.t} demo`}>
-                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-[color:var(--gold,theme(colors.brand.gold))] group-hover:scale-110 transition" aria-hidden><path fill="currentColor" d="M10 15l5.19-3L10 9v6Z"/></svg>
+                  <button
+                    type="button"
+                    onClick={() => { const url = demoMap[m.key]; if (url) setPlayerUrl(url); else alert("Demo coming soon"); }}
+                    className="relative h-40 md:h-56 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden group"
+                    aria-label={`Open ${m.t} demo`}
+                  >
+                    {m.img ? (
+                      <img src={m.img} alt={`${m.t} image`} className="h-full w-full object-contain p-4" />
+                    ) : (
+                      <div className="text-sm text-brand-muted">No preview</div>
+                    )}
+                    <svg viewBox="0 0 24 24" className="absolute w-10 h-10 text-[color:var(--gold,theme(colors.brand.gold))] opacity-90 group-hover:scale-110 transition" aria-hidden>
+                      <path fill="currentColor" d="M10 15l5.19-3L10 9v6Z"/>
+                    </svg>
                   </button>
-                  <div className="space-y-3">
-                    <div className="h-10 md:h-12 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
-                    <div className="h-10 md:h-12 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
-                    <div className="h-10 md:h-12 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
+                  <div className="space-y-2 md:space-y-3">
+                    {(m.points && m.points.length ? m.points : [m.d]).slice(0,3).map((pt, j) => (
+                      <div key={j} className="flex items-center gap-2 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm md:text-base">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]" />
+                        <span className="text-brand-muted">{pt}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -175,7 +199,7 @@ function Slides({ items, demoMap }: { items: Array<{ key:string; t:string; d:str
   )
 }
 
-function LandingHero() {
+function LandingHero({ items, demoMap }: { items: Array<{ key:string; t:string; d:string; img?: string; points?: string[] }>, demoMap: Record<string,string> }) {
   const chips = [
     { icon: 'post', label: 'AI Social Content' },
     { icon: 'blog', label: 'SEO Blog Writer' },
@@ -185,6 +209,15 @@ function LandingHero() {
     { icon: 'brand', label: 'Brand & Design Kit' },
     { icon: 'youtube', label: 'YouTube Creation' },
   ] as const
+  const [heroIdx, setHeroIdx] = useState(0)
+  const heroCount = items.length
+
+  useEffect(() => {
+    if (heroCount <= 1) return
+    const id = setInterval(() => setHeroIdx((i) => (i + 1) % heroCount), 5000)
+    return () => clearInterval(id)
+  }, [heroCount])
+
   return (
     <div className="relative">
       <div className="text-center">
@@ -196,20 +229,49 @@ function LandingHero() {
         </p>
       </div>
 
-      {/* Center app window card */}
-      <div className="mt-8 md:mt-12 mx-auto max-w-5xl">
-        <div className="rounded-3xl bg-transparent dark:bg-white/5 backdrop-blur-md p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-          <div className="h-8 w-28 rounded-full bg-white/10" />
-          <div className="mt-5 grid gap-4 md:gap-6 md:grid-cols-2">
-            <div className="h-48 md:h-64 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-8 h-8 text-[color:var(--gold,theme(colors.brand.gold))]" aria-hidden><path fill="currentColor" d="M10 15l5.19-3L10 9v6Z"/></svg>
-            </div>
-            <div className="space-y-3">
-              <div className="h-12 md:h-14 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
-              <div className="h-12 md:h-14 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
-              <div className="h-12 md:h-14 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10" />
-            </div>
+      {/* Center app window card slider (image + three points) */}
+      <div className="mt-8 md:mt-12 mx-auto max-w-5xl px-4 md:px-6">
+        <div className="overflow-visible">
+          <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${heroIdx * 100}%)` }}>
+            {items.map((m, i) => (
+              <div key={i} className="min-w-full shrink-0">
+                <div className="rounded-[24px] bg-[hsl(45_100%_97%)] dark:bg-white/5 p-6 md:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.12),_0_2px_8px_rgba(0,0,0,0.04)]">
+                  <div className="h-8 w-28 rounded-full bg-white/10" />
+                  <div className="mt-5 grid gap-4 md:gap-6 md:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => { const url = demoMap[m.key]; if (url) window.open(url, '_blank'); else alert('Demo coming soon'); }}
+                      className="relative h-48 md:h-64 rounded-[20px] bg-black/5 dark:bg-white/5 dark:border dark:border-white/10 flex items-center justify-center overflow-hidden group"
+                      aria-label={`Open ${m.t} demo`}
+                    >
+                      {m.img ? (
+                        <img src={m.img} alt={`${m.t} image`} className="h-full w-full object-contain p-4" />
+                      ) : (
+                        <div className="text-sm text-brand-muted">No preview</div>
+                      )}
+                      <svg viewBox="0 0 24 24" className="absolute w-10 h-10 text-[color:var(--gold,theme(colors.brand.gold))] opacity-90 group-hover:scale-110 transition" aria-hidden>
+                        <path fill="currentColor" d="M10 15l5.19-3L10 9v6Z"/>
+                      </svg>
+                    </button>
+                    <div className="space-y-3">
+                      {(m.points && m.points.length ? m.points : [m.d]).slice(0,3).map((pt, j) => (
+                        <div key={j} className="flex items-center gap-2 rounded-xl bg-black/5 dark:bg-white/5 dark:border dark:border-white/10 px-3 py-3">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]" />
+                          <span className="text-sm md:text-base text-brand-muted">{pt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          {items.map((_, i) => (
+            <button key={i} aria-label={`Go to slide ${i+1}`} onClick={() => setHeroIdx(i)}
+              className={`h-1.5 rounded-full transition-all ${heroIdx === i ? 'w-6 bg-[color:var(--gold,theme(colors.brand.gold))]' : 'w-2 bg-black/20 dark:bg-white/30'}`} />
+          ))}
         </div>
       </div>
 
@@ -227,6 +289,8 @@ function LandingHero() {
         <a href="/api/auth/signin" className="btn-gold">Get Started</a>
         <a href="/billing" className="btn-ghost">View Plans</a>
       </div>
+
+      {/* Removed bottom duplicate slider to keep one hero slider */}
     </div>
   )
 }

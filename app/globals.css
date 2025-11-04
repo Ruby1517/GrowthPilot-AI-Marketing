@@ -41,6 +41,15 @@ body {
   .card {
     @apply rounded-2xl border border-[color:var(--card-stroke,theme(colors.brand.stroke))] bg-[color:var(--card-bg,theme(colors.brand.card))] backdrop-blur-md;
   }
+  /* Light mode: make all .card backgrounds transparent, remove blur */
+  html:not(.dark) .card {
+    background: transparent !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.08),
+      0 1px 3px rgba(0,0,0,0.04);
+  }
   /* Dark glass look for cards */
   html.dark .card {
     background: rgba(255,255,255,0.04);
@@ -97,6 +106,10 @@ body {
       0 2px 8px rgba(0,0,0,0.05),      /* lift */
       inset 0 1px 0 rgba(255,255,255,0.60); /* subtle top highlight */
     border-color: rgba(0,0,0,0.08);
+    /* Make sidebar background transparent in light mode */
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
@@ -104,7 +117,8 @@ body {
 @layer base {
   /* LIGHT */
   :root {
-    --background: 0 0% 100%;
+    /* Light creamy background */
+    --background: 45 100% 97%;
     --foreground: 0 0% 3.9%;
 
     --card: 0 0% 100%;

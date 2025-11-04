@@ -41,7 +41,7 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
     return (
-      <Card key={key} className="border-white/20">
+      <Card key={key} className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
         <CardHeader><CardTitle className="text-base">{label}</CardTitle></CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm mb-2">
@@ -76,8 +76,8 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     : metersOrder;
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <Card className="border-white/20">
+    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 max-w-none mx-auto">
+      <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
         <CardHeader>
           <CardTitle>{isTrial ? 'Trial Usage' : 'Org KPIs (MTD)'}</CardTitle>
         </CardHeader>
@@ -103,11 +103,11 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
       </Card>
 
       {!isTrial && (
-        <Card className="border-white/20">
+        <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
           <CardHeader><CardTitle>Brand Assets (MTD)</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div>Total assets generated: <b>{Number((data?.usage as any)?.brandpilot_assets ?? 0).toLocaleString()}</b></div>
-            <Link href="/brandpilot" className="inline-block text-xs underline text-brand-muted hover:text-white">Open BrandPilot</Link>
+            {/* <Link href="/brandpilot" className="inline-block text-xs underline text-brand-muted hover:text-white">Open BrandPilot</Link> */}
           </CardContent>
         </Card>
       )}
