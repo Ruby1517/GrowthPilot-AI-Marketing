@@ -95,7 +95,9 @@ export default function Uploader({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-xl border border-white/10 p-6 text-sm text-center cursor-pointer select-none ${dragActive ? 'bg-white/5' : 'hover:bg-white/5'}`}
+        className={`rounded-md border p-6 text-sm text-center cursor-pointer select-none transition ${
+          dragActive ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5'
+        }`}
         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
         onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}

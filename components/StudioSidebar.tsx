@@ -114,9 +114,12 @@ export default function StudioSidebar() {
               title={collapsed ? 'Expand' : 'Collapse'}
               onClick={() => {
                 try {
-                  const next = collapsed ? '0' : '1';
-                  localStorage.setItem('gpSidebarCollapsed', next);
+                  // Persist, notify, and update local state so the UI reacts immediately
+                  const willCollapse = !collapsed;
+                  localStorage.setItem('gpSidebarCollapsed', willCollapse ? '1' : '0');
                   window.dispatchEvent(new Event('gp:sidebar-changed'));
+                  // Immediate local update (no reliance on the event listener)
+                  setCollapsed(willCollapse);
                 } catch {}
               }}
               className="inline-flex items-center justify-center rounded-lg p-2 border border-[color:var(--card-stroke,rgba(255,255,255,0.12))] hover:bg-white/5 dark:hover:bg-white/10 transition"
@@ -131,44 +134,25 @@ export default function StudioSidebar() {
           {!collapsed && (
             <div className={`mt-3 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70 ${collapsed ? 'text-center px-0' : ''}`}>AI Studio</div>
           )}
-          {!collapsed && (
-            <ul className="mt-1 space-y-1">
-            {creators.map((l) => {
-              const active = isActive(pathname, l.href);
-              const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
-              const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
-              const userRole = ignoreAdmin ? undefined : rawRole;
-              const isAuthed = Boolean(session?.user);
-              const userPlanForGate = (isAuthed ? (plan ?? 'Starter') : null) as any;
-              const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
-              if (hasAccess) {
-                return (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
-                        active
-                          ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
-                          : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                        <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                        {!collapsed && (
-                          <div className="flex flex-col">
-                            <span className="text-sm">{l.label}</span>
-                            {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              }
+          <ul className="mt-1 space-y-1">
+          {creators.map((l) => {
+            const active = isActive(pathname, l.href);
+            const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
+            const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
+            const userRole = ignoreAdmin ? undefined : rawRole;
+            const isAuthed = Boolean(session?.user);
+            const userPlanForGate = (isAuthed ? (plan ?? 'Starter') : null) as any;
+            const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
+            if (hasAccess) {
               return (
                 <li key={l.href}>
-                  <div
-                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10`}
+                  <Link
+                    href={l.href}
+                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
+                      active
+                        ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                        : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
                   >
                     <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
                       <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
@@ -178,22 +162,41 @@ export default function StudioSidebar() {
                           {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
                         </div>
                       )}
-                      {!collapsed && (
-                        <div className="ml-auto">
-                          <Link href="/billing" className="btn-ghost text-xs py-1 px-2">Upgrade</Link>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  </Link>
                 </li>
               );
-            })}
-            </ul>
-          )}
+            }
+            return (
+              <li key={l.href}>
+                <div
+                  className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10`}
+                >
+                  <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                    {!collapsed && (
+                      <div className="flex flex-col">
+                        <span className="text-sm">{l.label}</span>
+                        {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                      </div>
+                    )}
+                    {!collapsed && (
+                      <div className="ml-auto">
+                        <Link href="/billing" className="btn-ghost text-xs py-1 px-2">Upgrade</Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+          </ul>
 
-          {SHOW_TOOLS && !collapsed && (
+          {SHOW_TOOLS && (
             <>
-              <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
+              {!collapsed && (
+                <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
+              )}
               <ul className="mt-1 space-y-1">
                 {tools.map((l) => {
                   const active = isActive(pathname, l.href);
@@ -201,15 +204,15 @@ export default function StudioSidebar() {
                     <li key={l.href}>
                       <Link
                         href={l.href}
-                        className={`block rounded-md px-3 py-2 ${
+                        className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
                           active
                             ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
                             : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
                           <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                          <span className="text-sm">{l.label}</span>
+                          {!collapsed && <span className="text-sm">{l.label}</span>}
                         </div>
                       </Link>
                     </li>

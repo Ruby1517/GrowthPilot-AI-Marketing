@@ -114,7 +114,7 @@ export default function PostPilotPage() {
         <h1 className="text-2xl font-semibold">PostPilot — AI Social Content</h1>
         <form onSubmit={onGenerate} className="mt-4 space-y-4">
           <textarea
-            className="w-full rounded-xl border border-white/10 bg-transparent p-3"
+            className="w-full rounded-md border p-3"
             placeholder="Topic / brief / URL…"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -127,7 +127,7 @@ export default function PostPilotPage() {
               <select
                 value={voice}
                 onChange={(e) => setVoice(e.target.value as any)}
-                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="flex-1 rounded-md border px-3 py-2 text-sm"
               >
                 {voices.map((v) => (
                   <option key={v} value={v}>{v}</option>
@@ -140,7 +140,7 @@ export default function PostPilotPage() {
               <input
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="flex-1 rounded-md border px-3 py-2 text-sm"
                 placeholder="en-US"
               />
             </div>
@@ -150,7 +150,7 @@ export default function PostPilotPage() {
               <input
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="flex-1 rounded-md border px-3 py-2 text-sm"
                 placeholder="(optional) projectId"
               />
             </div>
@@ -161,7 +161,7 @@ export default function PostPilotPage() {
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
-                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="flex-1 rounded-md border px-3 py-2 text-sm"
               />
             </div>
 
@@ -173,7 +173,7 @@ export default function PostPilotPage() {
                 max={10}
                 value={variants}
                 onChange={(e) => setVariants(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
-                className="w-28 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="w-28 rounded-md border px-3 py-2 text-sm"
               />
             </div>
           </div>

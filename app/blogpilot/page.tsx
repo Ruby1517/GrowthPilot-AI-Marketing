@@ -393,11 +393,11 @@ export default function BlogPilotPage() {
                     {score !== null && <div><span className="opacity-70">Flesch:</span> {score}</div>}
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <a className="btn-ghost" href={`/blogpilot/${it._id}`}>Open</a>
-                    <a className="btn-ghost" href={`/api/blogpilot/${it._id}`} target="_blank" rel="noreferrer">Open JSON</a>
+                  <div className="mt-3 flex items-center gap-1 whitespace-nowrap">
+                    <a className="btn-ghost text-[11px] px-1.5 py-0.5" href={`/blogpilot/${it._id}`}>Open</a>
+                    <a className="btn-ghost text-[11px] px-1.5 py-0.5" href={`/api/blogpilot/${it._id}`} target="_blank" rel="noreferrer">Open JSON</a>
                     <button
-                      className="btn-ghost"
+                      className="btn-ghost text-[11px] px-1.5 py-0.5"
                       onClick={async () => {
                         const r = await fetch(`/api/blogpilot/${it._id}`);
                         const j = await r.json();
@@ -408,7 +408,7 @@ export default function BlogPilotPage() {
                     >
                       Copy Markdown
                     </button>
-                    <button className="btn-ghost text-red-500" onClick={() => handleDelete(it._id)}>
+                    <button className="btn-ghost text-[11px] px-1.5 py-0.5 text-red-500" onClick={() => handleDelete(it._id)}>
                       Delete
                     </button>
                   </div>

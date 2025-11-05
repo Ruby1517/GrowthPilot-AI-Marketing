@@ -553,7 +553,7 @@ export default function ClipsHome() {
             <div className="space-y-2">
               <label className="text-sm">Or paste video URL</label>
               <input
-                className="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="w-full rounded-md border px-3 py-2 text-sm"
                 placeholder="https://… (MP4/MOV/WEBM)"
                 value={srcUrl}
                 onChange={(e) => setSrcUrl(e.target.value)}
@@ -563,7 +563,7 @@ export default function ClipsHome() {
             <div className="flex items-center gap-2">
               <label className="text-sm w-28">Aspect</label>
               <select
-                className="flex-1 rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="flex-1 rounded-md border px-3 py-2 text-sm"
                 value={aspect}
                 onChange={(e) => setAspect(e.target.value as Aspect)}
               >
