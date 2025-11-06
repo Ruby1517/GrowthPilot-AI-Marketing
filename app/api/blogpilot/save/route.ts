@@ -53,10 +53,12 @@ export async function POST(req: NextRequest) {
     if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = new mongoose.Types.ObjectId(String(me._id));
-    const orgId = String(me.orgId ?? me._id); // keep if your model has orgId
+    const orgId = me.orgId ? new mongoose.Types.ObjectId(String(me.orgId)) : undefined;
 
     const doc = await BlogDoc.create({
       userId,
+      // ownership
+      orgId,
       // inputs
       keywords: b.input.keywords,
       url: b.input.url,

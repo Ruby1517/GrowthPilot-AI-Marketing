@@ -3,6 +3,9 @@ import mongoose, { Schema, model } from "mongoose";
 
 const BlogDocSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, index: true, required: true },
+  orgId: { type: Schema.Types.ObjectId, index: true, required: false },
+  status: { type: String, enum: ['draft', 'published'], default: 'draft', index: true },
+  publishedAt: { type: Date },
 
   // inputs
   keywords: [String],

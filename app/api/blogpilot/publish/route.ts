@@ -1,22 +1,43 @@
-// app/api/blog/publish/route.ts (NEW)
 import { NextResponse } from 'next/server'
-import BlogPost from '@/models/BlogPost'
-import Org from '@/models/Org'
+import mongoose from 'mongoose'
 import { auth } from '@/lib/auth'
+import { dbConnect } from '@/lib/db'
+import BlogDoc from '@/models/BlogDoc'
+import Org from '@/models/Org'
 
 export async function POST(req: Request) {
-  const { orgId, postId } = await req.json()
   const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ ok:false, error:'unauthorized' }, { status:401 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+  }
 
-  const post = await BlogPost.findOne({ _id: postId, orgId })
-  if (!post) return NextResponse.json({ ok:false, error:'not_found' }, { status:404 })
+  const body = await req.json().catch(() => ({}))
+  const postId = body?.postId as string | undefined
+  if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+    return NextResponse.json({ ok: false, error: 'invalid_post_id' }, { status: 400 })
+  }
+
+  await dbConnect()
+
+  const post = await BlogDoc.findOne({
+    _id: new mongoose.Types.ObjectId(postId),
+    userId: new mongoose.Types.ObjectId(String((session.user as any).id)),
+  })
+
+  if (!post) {
+    return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
+  }
 
   if (post.status !== 'published') {
     post.status = 'published'
+    post.publishedAt = new Date()
     await post.save()
-    await Org.updateOne({ _id: orgId }, { $inc: { 'kpi.contentsProduced': 1 } }) // you already aggregate contentsProduced
+
+    const orgId = post.orgId ?? (session.user as any).orgId ?? body?.orgId
+    if (orgId) {
+      await Org.updateOne({ _id: orgId }, { $inc: { 'kpi.contentsProduced': 1 } })
+    }
   }
 
-  return NextResponse.json({ ok:true })
+  return NextResponse.json({ ok: true, status: post.status })
 }
