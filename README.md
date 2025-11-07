@@ -23,7 +23,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 
 
 ## Architecture Highlights
-- Plans, modules, and gates
+<!-- - Plans, modules, and gates
   - Modules and required plan: `lib/modules.ts`
   - Feature gates by plan: `lib/features.ts`, `lib/plan-gate.ts`
 - Billing and usage
@@ -38,7 +38,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - AI providers and routing
   - OpenAI client wrapper: `lib/ai.ts`, `lib/provider.ts`
 - Media pipeline
-  - FFmpeg/FFprobe via static installers or system binaries
+  - FFmpeg/FFprobe via static installers or system binaries -->
 
 
 ## Badges
@@ -71,7 +71,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 
 
 ## Module Tour
-- PostPilot
+<!-- - PostPilot
   - Generate on‑brand social posts with hashtags, tracking optional usage for billing.
   - Entry: `app/postpilot/page.tsx`, API: `app/api/postpilot/generate/route.ts`
 - BlogPilot
@@ -94,7 +94,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
   - Worker: `scripts/viralp-worker.ts`
 - ClipPilot
   - Auto‑clip long videos into shorts with captions and aspect variants.
-  - Pipeline example: `workers/clip-pipeline.ts`
+  - Pipeline example: `workers/clip-pipeline.ts` -->
 
 ## Prerequisites
 - Node 18+
