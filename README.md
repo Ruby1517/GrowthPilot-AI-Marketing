@@ -133,14 +133,14 @@ pnpm run queues:ui
 
 
 ## Environment Variables
-See `.env.example` for the full list and defaults. Minimum set for local dev:
+<!-- See `.env.example` for the full list and defaults. Minimum set for local dev:
 - Auth: `NEXTAUTH_URL`, `AUTH_SECRET`
 - Database: `MONGODB_URI`, `MONGODB_DB`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - Storage: `AWS_REGION`, `S3_BUCKET` (+ IAM: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
 - Redis: `REDIS_URL` (or `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`)
 - AI: `OPENAI_API_KEY` (and optionally `ELEVENLABS_API_KEY`)
-- App: `NEXT_PUBLIC_APP_URL`
+- App: `NEXT_PUBLIC_APP_URL` -->
 
 Optional/advanced:
 - Upstash rate limit: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
@@ -150,12 +150,12 @@ Optional/advanced:
 
 
 ## Billing and Webhooks
-- Checkout and portal endpoints under `app/api/billing/*`
+<!-- - Checkout and portal endpoints under `app/api/billing/*`
 - Stripe webhook: `app/api/webhooks/stripe/route.ts`
   - Set `STRIPE_WEBHOOK_SECRET` and configure the endpoint in your Stripe dashboard.
   - Handles checkout completion, subscription updates, and invoicing hooks.
 - Usage metering (per tokens/minutes) via `lib/billing/usage.ts` with safe guards.
-- Overage invoicing support in `jobs/overage-invoice.ts`.
+- Overage invoicing support in `jobs/overage-invoice.ts`. -->
 
 
 ## Queues and Workers
