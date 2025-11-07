@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve org + rate limit
     await dbConnect();
-    const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean<any>();
+    const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
     if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     const orgId = String(me.orgId ?? me._id);
     const org = await Org.findById(orgId).lean();
