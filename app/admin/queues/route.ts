@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
 import { createBullBoard } from '@bull-board/api'
+import type { BaseAdapter } from '@bull-board/api/dist/src/queueAdapters/base'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { FastifyAdapter } from '@bull-board/fastify'
 import fastify from 'fastify'
@@ -34,7 +35,8 @@ export async function GET() {
         new Queue('viralp-assemble', { connection }),
       ]
 
-      const adapters = queues.map((q) => new BullMQAdapter(q))
+      // BullMQAdapter implements BaseAdapter but its bundled types lag behind BullMQ's latest JobProgress signature
+      const adapters: BaseAdapter[] = queues.map((q) => new BullMQAdapter(q)) as unknown as BaseAdapter[]
       const serverAdapter = new FastifyAdapter()
       serverAdapter.setBasePath('/admin/queues')
 

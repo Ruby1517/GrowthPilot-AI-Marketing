@@ -35,7 +35,6 @@ function resolveFfmpeg(envName: string): string | null {
   const envPath = sanitizeEnvPath(process.env[envName]);
   if (envPath) return envPath;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod: any = require('ffmpeg-static');
     const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
     if (p) return p as string;
@@ -47,7 +46,6 @@ function resolveFfprobe(envName: string): string | null {
   const envPath = sanitizeEnvPath(process.env[envName]);
   if (envPath) return envPath;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const mod: any = require('ffprobe-static');
     const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
     if (p) return p as string;
