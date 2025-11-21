@@ -54,7 +54,7 @@
 //       if (!put.ok) throw new Error('S3 upload failed');
 
 //       setMsg('Creating ClipPilot job…');
-//       const create = await fetch('/api/clips/create', {
+//       const create = await fetch('/api/clippilot/create', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify({
@@ -104,8 +104,8 @@
 //         {msg && <div className="mt-4 rounded-md border px-3 py-2 text-sm bg-black-50">{msg}</div>}
 
 //         <div className="mt-6 flex gap-3">
-//           <a href="/clips" className="btn-ghost">View All Jobs</a>
-//           {jobId && <a href={`/clips?focus=${jobId}`} className="btn-ghost">Open This Job</a>}
+//           <a href="/clippilot" className="btn-ghost">View All Jobs</a>
+//           {jobId && <a href={`/clippilot?focus=${jobId}`} className="btn-ghost">Open This Job</a>}
 //         </div>
 //       </div>
 //     </section>

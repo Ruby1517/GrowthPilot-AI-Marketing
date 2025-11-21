@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import UserMenu from '@/components/UserMenu'
 import ThemeToggle from './ThemeToggle';
 import StudioMobileDrawer from './StudioMobileDrawer';
+import MobileNavMenu from './MobileNavMenu';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -20,7 +21,8 @@ function isActive(pathname: string, href: string) {
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [studioDrawerOpen, setStudioDrawerOpen] = useState(false);
 
   const baseLinks = [
     { href: '/', label: 'Home' },
@@ -56,30 +58,42 @@ export default function Navbar() {
       </Link>
 
       <nav className="flex items-center gap-4">
-        {links.map(l => {
-          const active = isActive(pathname, l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-current={active ? 'page' : undefined}
-              className={`text-sm ${
-                active
-                  ? 'dark:text-[color:var(--gold,theme(colors.brand.gold))] text-[#14B8A6]'
-                  : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]'
-              }`}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
+        <button
+          type="button"
+          className="md:hidden rounded-md p-2 text-sm dark:text-white/80 text-black/80 hover:bg-white/10 hover:text-white"
+          onClick={() => setNavMenuOpen(true)}
+          aria-label="Open navigation menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z" />
+          </svg>
+        </button>
+        <div className="hidden md:flex items-center gap-4">
+          {links.map(l => {
+            const active = isActive(pathname, l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={active ? 'page' : undefined}
+                className={`text-sm ${
+                  active
+                    ? 'dark:text-[color:var(--gold,theme(colors.brand.gold))] text-[#14B8A6]'
+                    : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]'
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+        </div>
 
         {/* AI Studio moved to persistent left sidebar; no top entry */}
         {authed && (
         <button
           type="button"
           className="md:hidden text-sm dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]"
-          onClick={() => setMobileOpen(true)}
+          onClick={() => setStudioDrawerOpen(true)}
           aria-label="Open AI Studio"
         >
           <span className="inline-flex items-center gap-1">
@@ -91,7 +105,8 @@ export default function Navbar() {
         <ThemeToggle />
         <UserMenu />
       </nav>
-      <StudioMobileDrawer open={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <MobileNavMenu open={navMenuOpen} onClose={() => setNavMenuOpen(false)} links={links} authed={authed} />
+      <StudioMobileDrawer open={studioDrawerOpen} onClose={() => setStudioDrawerOpen(false)} />
     </header>
   );
 }

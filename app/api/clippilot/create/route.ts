@@ -131,9 +131,11 @@ export async function POST(req: NextRequest) {
     try { await track(orgId, userId.toString(), { module: 'clippilot', type: 'generation.requested', meta: { mode: 'video' } }); } catch {}
     // Enqueue lightweight processor if Redis available
     try {
-      const q = getSimpleClipQueue();
+      const q = await getSimpleClipQueue();
       if (q) await q.add('process', { jobId: String(job._id) }, { attempts: 1, removeOnComplete: true });
-    } catch {}
+    } catch (err: any) {
+      console.warn('[clippilot/create] enqueue failed:', err?.message || err);
+    }
     return NextResponse.json({ ok: true, jobId: String(job._id) }, { status: 201 });
   } catch (err: any) {
     console.error('[clippilot/create]', err);

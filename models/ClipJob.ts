@@ -19,7 +19,8 @@
 
 
 // models/ClipJob.ts
-import mongoose, { Schema, models, model } from 'mongoose';
+import mongoose from 'mongoose';
+const { Schema, model, models } = mongoose;
 
 const ClipJobSchema = new Schema({
   orgId:   { type: Schema.Types.ObjectId, ref: 'Org', index: true, required: true },
@@ -30,6 +31,20 @@ const ClipJobSchema = new Schema({
   aspect:  { type: String, enum: ['9:16','1:1','16:9'], default: '9:16' },
   durationSec: { type: Number, required: true },  // requested per variant
   variants:    { type: Number, default: 1, min: 1, max: 10 },
+  branding: {
+    subtitles: {
+      color: { type: String, default: '#FFFFFF' },
+      background: { type: String, default: '#000000' },
+    },
+    progressBar: {
+      enabled: { type: Boolean, default: true },
+      color: { type: String, default: '#FFFFFF' },
+    },
+    watermark: {
+      text: { type: String, default: '' },
+    },
+    music: { type: String, default: '' },
+  },
 
   // lifecycle
   status:  { type: String, enum: ['queued','processing','done','error'], default: 'queued', index: true },
@@ -42,6 +57,6 @@ const ClipJobSchema = new Schema({
 }, { timestamps: true });
 
 ClipJobSchema.index({ orgId: 1, createdAt: -1 });
-
-export const ClipJob = (models.ClipJob as any) || model('ClipJob', ClipJobSchema);
+const existing = models.ClipJob as mongoose.Model<any> | undefined;
+export const ClipJob = existing || model('ClipJob', ClipJobSchema);
 export default ClipJob;

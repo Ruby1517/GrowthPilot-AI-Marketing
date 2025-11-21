@@ -31,6 +31,50 @@ type Campaign = {
   createdAt: string;
 };
 
+type BrandProfile = {
+  _id: string;
+  company?: string;
+  vibe?: string;
+  voice?: string[];
+  voiceSelected?: string[];
+};
+
+const DEFAULT_TONE = 'friendly, clear, professional';
+const DEFAULT_SENDER_NAME = 'GrowthPilot Team';
+const DEFAULT_SENDER_COMPANY = 'GrowthPilot';
+const DEFAULT_SENDER_EMAIL = 'noreply@example.com';
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function toLocalInputValue(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const y = date.getFullYear();
+  const m = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const h = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  return `${y}-${m}-${d}T${h}:${min}`;
+}
+
+function nextHourDate() {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  return d;
+}
+
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setTime(d.getTime() + days * MS_PER_DAY);
+  return d;
+}
+
+function parseLocalInput(value: string | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
 function parseCSV(csv: string) {
   // super-light CSV parser: email,first_name,last_name,company
   const rows = csv.split(/\r?\n/).map(r => r.trim()).filter(Boolean);
@@ -50,11 +94,20 @@ export default function MailPilotPage() {
   const [title, setTitle] = useState('');
   const [offer, setOffer] = useState('');
   const [audience, setAudience] = useState('');
-  const [tone, setTone] = useState('friendly, clear, professional');
+  const [tone, setTone] = useState(DEFAULT_TONE);
 
-  const [sender_name, setSenderName] = useState('GrowthPilot Team');
-  const [sender_company, setSenderCompany] = useState('GrowthPilot');
-  const [sender_email, setSenderEmail] = useState('noreply@example.com');
+  const [sender_name, setSenderName] = useState(DEFAULT_SENDER_NAME);
+  const [sender_company, setSenderCompany] = useState(DEFAULT_SENDER_COMPANY);
+  const [sender_email, setSenderEmail] = useState(DEFAULT_SENDER_EMAIL);
+
+  const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+  const [brandPrefillApplied, setBrandPrefillApplied] = useState(false);
+  const [showKlaviyoModal, setShowKlaviyoModal] = useState(false);
+  const [klaviyoListId, setKlaviyoListId] = useState('');
+  const [klaviyoSegmentId, setKlaviyoSegmentId] = useState('');
+  const [klaviyoSchedule, setKlaviyoSchedule] = useState<Array<{ step: number; sendAt: string; variant: 'A'|'B' }>>([]);
+  const [klaviyoBaseStart, setKlaviyoBaseStart] = useState(() => toLocalInputValue(nextHourDate()));
+  const [klaviyoSubmitting, setKlaviyoSubmitting] = useState(false);
 
   // recipients
   const [csvText, setCsvText] = useState('');
@@ -74,6 +127,21 @@ export default function MailPilotPage() {
   const testToRef = useRef<HTMLInputElement>(null);
 
   useEffect(()=>{ loadHistory(); },[]);
+  useEffect(()=>{ loadBrandProfile(); },[]);
+  useEffect(()=> {
+    if (!gen?.emails?.length) {
+      setShowKlaviyoModal(false);
+      setKlaviyoSchedule([]);
+      return;
+    }
+    const base = nextHourDate();
+    setKlaviyoBaseStart(toLocalInputValue(base));
+    setKlaviyoSchedule(gen.emails.map((email, idx) => ({
+      step: email.step || idx + 1,
+      variant: 'A',
+      sendAt: toLocalInputValue(addDays(base, email.delayDays || 0)),
+    })));
+  }, [gen]);
   async function loadHistory() {
     const r = await fetch('/api/mailpilot/list', { cache: 'no-store' });
     if (!r.ok) { setHistory([]); return; }
@@ -81,8 +149,127 @@ export default function MailPilotPage() {
     setHistory(j.items || []);
   }
 
+  async function loadBrandProfile() {
+    try {
+      const r = await fetch('/api/brandpilot/profile', { cache: 'no-store' });
+      if (!r.ok) { setBrandProfile(null); return; }
+      const j = await r.json();
+      setBrandProfile(j.doc || null);
+    } catch {
+      setBrandProfile(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!brandProfile || brandPrefillApplied) return;
+    const voiceList = (brandProfile.voiceSelected?.length ? brandProfile.voiceSelected : brandProfile.voice) || [];
+    const voiceSummary = voiceList.join(', ').trim();
+    if (voiceSummary && (tone === DEFAULT_TONE || !tone?.trim())) {
+      setTone(voiceSummary);
+    }
+    if (!audience && brandProfile.vibe) {
+      setAudience(brandProfile.vibe);
+    }
+    if (brandProfile.company) {
+      if (sender_name === DEFAULT_SENDER_NAME) {
+        setSenderName(`${brandProfile.company} Team`);
+      }
+      if (sender_company === DEFAULT_SENDER_COMPANY) {
+        setSenderCompany(brandProfile.company);
+      }
+    }
+    setBrandPrefillApplied(true);
+  }, [brandProfile, brandPrefillApplied, tone, audience, sender_name, sender_company]);
+
   function handleCSVImport() {
     setRecipients(parseCSV(csvText));
+  }
+
+  function applyBaseToSchedule(baseInput?: string) {
+    if (!gen?.emails?.length) return;
+    const base = parseLocalInput(baseInput || klaviyoBaseStart);
+    if (!base) {
+      alert('Enter a valid base send time');
+      return;
+    }
+    setKlaviyoSchedule((prev) =>
+      gen.emails.map((email, idx) => ({
+        step: email.step || idx + 1,
+        variant: prev[idx]?.variant || 'A',
+        sendAt: toLocalInputValue(addDays(base, email.delayDays || 0)),
+      }))
+    );
+  }
+
+  function updateSchedule(index: number, patch: Partial<{ variant: 'A'|'B'; sendAt: string }>) {
+    setKlaviyoSchedule((prev) =>
+      prev.map((row, idx) => (idx === index ? { ...row, ...patch } : row))
+    );
+  }
+
+  async function handleSendToKlaviyo() {
+    if (!gen) return alert('Generate a sequence first');
+    if (!klaviyoListId.trim() && !klaviyoSegmentId.trim()) {
+      alert('Enter a Klaviyo list or segment ID');
+      return;
+    }
+    const schedulePayload = [];
+    for (let i = 0; i < klaviyoSchedule.length; i++) {
+      const cfg = klaviyoSchedule[i];
+      const email = gen.emails[i];
+      if (!cfg || !cfg.sendAt) {
+        alert(`Set a send time for step ${cfg?.step || i + 1}`);
+        return;
+      }
+      const sendDate = parseLocalInput(cfg.sendAt);
+      if (!sendDate) {
+        alert(`Invalid send time for step ${cfg.step}`);
+        return;
+      }
+      const subject =
+        cfg.variant === 'B'
+          ? (email.subjectB || email.subjectA || '')
+          : (email.subjectA || email.subjectB || '');
+      if (!subject) {
+        alert(`Missing subject for step ${cfg.step}`);
+        return;
+      }
+      schedulePayload.push({
+        step: email.step || i + 1,
+        subject,
+        preheader: email.preheader,
+        html: email.html,
+        text: email.text,
+        sendAt: sendDate.toISOString(),
+        variant: cfg.variant,
+      });
+    }
+    if (!schedulePayload.length) {
+      alert('No steps to push');
+      return;
+    }
+    setKlaviyoSubmitting(true);
+    try {
+      const res = await fetch('/api/mailpilot/klaviyo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listId: klaviyoListId.trim() || undefined,
+          segmentId: klaviyoSegmentId.trim() || undefined,
+          sequenceName: title?.trim() || `${sender_company || 'GrowthPilot'} campaign`,
+          sender: { sender_name, sender_company, sender_email },
+          emails: schedulePayload,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to push to Klaviyo');
+      alert('Sequence scheduled via Klaviyo!');
+      setShowKlaviyoModal(false);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to push to Klaviyo');
+    } finally {
+      setKlaviyoSubmitting(false);
+    }
   }
 
   async function generate() {
@@ -140,6 +327,18 @@ export default function MailPilotPage() {
     a.click();
   }
 
+  async function deleteCampaign(id: string) {
+    if (!window.confirm('Delete this campaign from history?')) return;
+    const res = await fetch('/api/mailpilot/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return alert(data?.error || 'Delete failed');
+    await loadHistory();
+  }
+
   async function sendTest(id: string) {
     const to = testToRef.current?.value?.trim();
     if (!to) return alert('Enter a test email address');
@@ -159,6 +358,7 @@ export default function MailPilotPage() {
   }, [gen, activeStepIdx]);
 
   return (
+    <>
     <section className="relative overflow-hidden">
       <div className="card p-8 md:p-12">
         <span className="badge mb-4">MailPilot</span>
@@ -168,6 +368,31 @@ export default function MailPilotPage() {
         <p className="mt-3 max-w-2xl text-brand-muted">
           Outreach, newsletters, or nurture sequences with subject A/B, preheaders, spam check, exports, and test send.
         </p>
+
+        {brandProfile && (
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-brand-muted">
+            <div className="flex items-center justify-between text-xs uppercase tracking-wide">
+              <span>BrandPilot profile</span>
+              <a className="text-brand-muted underline hover:text-white" href="/brandpilot">
+                Edit
+              </a>
+            </div>
+            <div className="mt-2 text-white text-base font-medium">{brandProfile.company || 'Saved brand profile'}</div>
+            {brandProfile.vibe && (
+              <div className="mt-1">Vibe keywords: <span className="text-white/90">{brandProfile.vibe}</span></div>
+            )}
+            {(brandProfile.voiceSelected?.length || brandProfile.voice?.length) && (
+              <div className="mt-1">
+                Tone:
+                <span className="text-white/90">
+                  {' '}
+                  {(brandProfile.voiceSelected?.length ? brandProfile.voiceSelected : brandProfile.voice)?.join(', ')}
+                </span>
+              </div>
+            )}
+            <div className="mt-1 text-xs text-brand-muted">Defaults auto-fill MailPilot fields.</div>
+          </div>
+        )}
 
         {/* Builder */}
         <div className="mt-6 grid md:grid-cols-2 gap-4">
@@ -242,12 +467,34 @@ export default function MailPilotPage() {
             </div>
 
             <div className="mt-4">
-              <div className="text-sm text-brand-muted mb-1">Sender</div>
-              <div className="grid grid-cols-3 gap-3">
-                <input className="rounded-md border p-2.5" placeholder="Name" value={sender_name} onChange={e=>setSenderName(e.target.value)} />
-                <input className="rounded-md border p-2.5" placeholder="Company" value={sender_company} onChange={e=>setSenderCompany(e.target.value)} />
-                <input className="rounded-md border p-2.5" placeholder="Email" value={sender_email} onChange={e=>setSenderEmail(e.target.value)} />
+            <div className="text-sm text-brand-muted mb-1">Sender / merge snippets</div>
+            <div className="grid grid-cols-3 gap-3">
+              <input className="rounded-md border p-2.5" placeholder="Name" value={sender_name} onChange={e=>setSenderName(e.target.value)} />
+              <input className="rounded-md border p-2.5" placeholder="Company" value={sender_company} onChange={e=>setSenderCompany(e.target.value)} />
+              <input className="rounded-md border p-2.5" placeholder="Email" value={sender_email} onChange={e=>setSenderEmail(e.target.value)} />
+            </div>
+            {gen?.mergeVars?.length ? (
+              <div className="mt-3 text-xs text-brand-muted space-y-1">
+                <div>Available merge tags when editing emails:</div>
+                <div className="flex flex-wrap gap-2">
+                  {gen.mergeVars.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
+                      className="rounded-full border border-white/10 px-2 py-1 text-[11px] hover:bg-white/5"
+                    >
+                      {'{{'}{v}{'}}'}
+                    </button>
+                  ))}
+                </div>
+                <p>Paste emails into ESPs that support merge fields, or replace tags manually before sending.</p>
               </div>
+            ) : (
+              <p className="mt-3 text-xs text-brand-muted">
+                Use tags like <code>{'{{first_name}}'}</code>, <code>{'{{company}}'}</code>, <code>{'{{sender_name}}'}</code> directly in the editor before exporting/sending.
+              </p>
+            )}
             </div>
 
             <div className="mt-4 flex gap-2">
@@ -297,6 +544,9 @@ export default function MailPilotPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button className="btn-gold" onClick={save}>Save</button>
+                <button className="btn-ghost" onClick={()=>setShowKlaviyoModal(true)}>
+                  Send to Klaviyo
+                </button>
               </div>
             </div>
 
@@ -425,6 +675,7 @@ export default function MailPilotPage() {
                       <button className="btn-ghost" onClick={()=>exportFile(h._id, 'html')}>Export HTML</button>
                       <button className="btn-ghost" onClick={()=>exportFile(h._id, 'eml')}>Export .EML</button>
                       <button className="btn-ghost" onClick={()=>sendTest(h._id)}>Send test</button>
+                      <button className="btn-ghost text-red-300" onClick={()=>deleteCampaign(h._id)}>Delete</button>
                       <a
                         className="btn-ghost"
                         href="#"
@@ -441,5 +692,122 @@ export default function MailPilotPage() {
         </div>
       </div>
     </section>
+
+      {showKlaviyoModal && gen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={()=>!klaviyoSubmitting && setShowKlaviyoModal(false)} />
+          <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-white/10 bg-[#10131c] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-brand-muted">MailPilot → Klaviyo</div>
+                <h3 className="text-xl font-semibold text-white mt-1">Send sequence to Klaviyo</h3>
+                <p className="text-sm text-brand-muted mt-1">
+                  Requires <code>KLAVIYO_API_KEY</code> on the server. Choose your list/segment and confirm send times for each step.
+                </p>
+              </div>
+              <button className="btn-ghost" onClick={()=>setShowKlaviyoModal(false)} disabled={klaviyoSubmitting}>
+                Close
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-brand-muted mb-1 block">List ID</label>
+                  <input
+                    className="w-full rounded-md border p-2.5"
+                    placeholder="List ID from Klaviyo"
+                    value={klaviyoListId}
+                    onChange={(e)=>setKlaviyoListId(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-brand-muted mb-1 block">Segment ID (optional)</label>
+                  <input
+                    className="w-full rounded-md border p-2.5"
+                    placeholder="Segment/flow audience"
+                    value={klaviyoSegmentId}
+                    onChange={(e)=>setKlaviyoSegmentId(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-brand-muted">If both are set, segment takes priority.</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-[1fr_auto] gap-3 items-end">
+                <div>
+                  <label className="text-sm text-brand-muted mb-1 block">Base send time</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full rounded-md border p-2.5"
+                    value={klaviyoBaseStart}
+                    onChange={(e)=>setKlaviyoBaseStart(e.target.value)}
+                  />
+                </div>
+                <button className="btn-ghost" onClick={()=>applyBaseToSchedule()}>
+                  Apply delays
+                </button>
+              </div>
+
+              <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
+                {klaviyoSchedule.map((row, idx) => {
+                  const email = gen.emails[idx];
+                  return (
+                    <div key={`${row.step}-${idx}`} className="rounded-lg border border-white/10 p-3 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <div className="font-medium text-white">
+                          Email {row.step} {email.delayDays ? `( +${email.delayDays}d )` : ''}
+                        </div>
+                        <div className="text-brand-muted">
+                          Preheader: <span className="text-white/80">{email.preheader}</span>
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-brand-muted mb-1 block">Subject variant</label>
+                          <select
+                            className="w-full rounded-md border p-2.5"
+                            value={row.variant}
+                            onChange={(e)=>updateSchedule(idx, { variant: e.target.value as 'A'|'B' })}
+                          >
+                            <option value="A">Use Subject A</option>
+                            <option value="B">Use Subject B</option>
+                          </select>
+                          <div className="mt-1 text-xs text-brand-muted">
+                            {row.variant === 'B' ? (email.subjectB || email.subjectA) : (email.subjectA || email.subjectB)}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-brand-muted mb-1 block">Send time</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full rounded-md border p-2.5"
+                            value={row.sendAt}
+                            onChange={(e)=>updateSchedule(idx, { sendAt: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!klaviyoSchedule.length && (
+                  <div className="rounded-md border border-white/10 p-3 text-sm text-brand-muted">
+                    Generate a sequence first to configure Klaviyo scheduling.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button className="btn-ghost" onClick={()=>setShowKlaviyoModal(false)} disabled={klaviyoSubmitting}>
+                  Cancel
+                </button>
+                <button className="btn-gold" onClick={handleSendToKlaviyo} disabled={klaviyoSubmitting || !klaviyoSchedule.length}>
+                  {klaviyoSubmitting ? 'Sending…' : 'Push to Klaviyo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

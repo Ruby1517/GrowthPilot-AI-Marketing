@@ -14,6 +14,7 @@ Set all required env vars in your deployment platform. See `.env.example` for th
 - Rate limiting (recommended): `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - AI: `OPENAI_API_KEY`, `ELEVENLABS_API_KEY`
 - Email: `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+- ESP integrations: `KLAVIYO_API_KEY` (and optional `KLAVIYO_API_REVISION`)
 
 Rotate any previously exposed secrets (e.g., database credentials) before launch.
 

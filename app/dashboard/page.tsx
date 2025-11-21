@@ -10,7 +10,7 @@ type ModuleKey = keyof typeof modulePlan
 
 const moduleRoute: Record<ModuleKey, string> = {
   postpilot: '/postpilot',
-  clippilot: '/clips',
+  clippilot: '/clippilot',
   blogpilot: '/blogpilot',
   adpilot: '/adpilot',
   leadpilot: '/leadpilot',

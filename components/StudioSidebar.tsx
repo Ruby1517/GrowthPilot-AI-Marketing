@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { canAccess } from '@/lib/access';
-import type { ModuleKey } from '@/lib/modules';
-import { moduleLabels } from '@/lib/modules';
+import type { ModuleKey, ModuleStatus } from '@/lib/modules';
+import { moduleLabels, moduleStatus } from '@/lib/modules';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -41,15 +41,16 @@ export const creators: Array<{
   desc?: string;
   icon: string;
   module: ModuleKey;
+  status: ModuleStatus;
 }> = [
-  { href: '/postpilot',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot' },
-  { href: '/clips',      label: moduleLabels.clippilot,  desc: 'Video/Shorts Creator',        icon: 'clip',   module: 'clippilot' },
-  { href: '/blogpilot',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot' },
-  { href: '/adpilot',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot' },
-  { href: '/leadpilot',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot' },
-  { href: '/mailpilot',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot' },
-  { href: '/brandpilot', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot' }, 
-  { href: '/viralpilot', label: moduleLabels.viralpilot, desc: 'YouTube Content Creation',    icon: 'youtube',module: 'viralpilot' },
+  { href: '/postpilot',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot',  status: moduleStatus.postpilot },
+  { href: '/clippilot',      label: moduleLabels.clippilot,  desc: 'Video/Shorts Creator',        icon: 'clip',   module: 'clippilot',  status: moduleStatus.clippilot },
+  { href: '/blogpilot',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot',  status: moduleStatus.blogpilot },
+  { href: '/adpilot',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot',    status: moduleStatus.adpilot },
+  { href: '/leadpilot',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot',  status: moduleStatus.leadpilot },
+  { href: '/mailpilot',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot',  status: moduleStatus.mailpilot },
+  { href: '/brandpilot', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot', status: moduleStatus.brandpilot }, 
+  { href: '/viralpilot', label: moduleLabels.viralpilot, desc: 'YouTube Content Creation',    icon: 'youtube',module: 'viralpilot', status: moduleStatus.viralpilot },
 ];
 
 // Tools menu toggle (client env): set NEXT_PUBLIC_SHOW_TOOLS=false to hide
@@ -136,12 +137,33 @@ export default function StudioSidebar() {
           )}
           <ul className="mt-1 space-y-1">
           {creators.map((l) => {
+            const isComingSoon = l.status === 'coming_soon';
+            if (isComingSoon) {
+              return (
+                <li key={l.href}>
+                  <div
+                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 border border-dashed border-white/10 bg-white/0`}
+                  >
+                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                      <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span className="text-sm">{l.label}</span>
+                          {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                          <span className="text-[10px] uppercase tracking-wide text-brand-muted mt-1">Coming soon</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            }
             const active = isActive(pathname, l.href);
             const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
             const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
             const userRole = ignoreAdmin ? undefined : rawRole;
             const isAuthed = Boolean(session?.user);
-            const userPlanForGate = (isAuthed ? (plan ?? 'Starter') : null) as any;
+            const userPlanForGate = (isAuthed ? (plan ?? 'Trial') : null) as any;
             const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
             if (hasAccess) {
               return (

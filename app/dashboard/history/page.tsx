@@ -30,7 +30,7 @@ export default async function HistoryPage() {
         <div className="text-brand-muted">Created</div>
 
         {jobs.map((j:any) => (
-          <Link key={String(j._id)} href={`/clips/${j._id}`} className="contents">
+          <Link key={String(j._id)} href={`/clippilot/${j._id}`} className="contents">
             <div className="truncate">{String(j._id).slice(-8)}</div>
             <div className="capitalize">{j.status}</div>
             <div>{Math.round(j.durationSec)}s</div>

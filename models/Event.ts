@@ -1,5 +1,6 @@
 // models/Event.ts
-import mongoose, { Schema, Model, models, model } from 'mongoose';
+import mongoose from 'mongoose';
+const { Schema, Model, models, model } = mongoose;
 
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'

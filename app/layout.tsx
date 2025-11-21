@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/Navbar';
 import StudioSidebar from '@/components/StudioSidebar';
 import AuthSessionProvider from '@/components/AuthSessionProvider';
+import SupportChat from '@/components/SupportChat';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 </footer>
               </div>
             </div>
+            <SupportChat />
           </AuthSessionProvider>
         </ThemeProvider>
       </body>

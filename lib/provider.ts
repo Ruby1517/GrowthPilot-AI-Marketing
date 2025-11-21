@@ -97,7 +97,7 @@ export async function callImage(opts: ImageOptions): Promise<ImageResult> {
     prompt: opts.prompt,
     n: opts.n ?? 1,
     size: opts.size ?? '1024x1024',
-    quality: opts.quality ?? 'standard',
+    quality: opts.quality ?? 'high',
     // You can add background: 'transparent' when supported for logos
   } as any);
 

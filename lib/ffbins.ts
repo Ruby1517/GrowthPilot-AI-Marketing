@@ -1,6 +1,9 @@
-import 'server-only';
 import fs from 'fs';
 import path from 'path';
+try {
+  require('server-only');
+} catch {}
+import { createRequire } from 'module';
 
 function sanitizeEnvPath(p?: string | null): string | null {
   if (!p) return null;
@@ -31,28 +34,74 @@ function sanitizeEnvPath(p?: string | null): string | null {
 }
 
 // Resolve binary paths without forcing existence — upstream will attempt exec and provide clear errors.
+function existing(p?: string | null): string | null {
+  if (!p) return null;
+  try {
+    return fs.existsSync(p) ? p : null;
+  } catch {
+    return null;
+  }
+}
+
+const nodeRequire = typeof createRequire === 'function' ? createRequire(import.meta.url) : null;
+
+function optionalRequire<T = unknown>(id: string): T | null {
+  if (!nodeRequire) return null;
+  try {
+    return nodeRequire(id) as T;
+  } catch {
+    return null;
+  }
+}
+
 function resolveFfmpeg(envName: string): string | null {
   const envPath = sanitizeEnvPath(process.env[envName]);
-  if (envPath) return envPath;
+  const envCandidate = existing(envPath);
+  if (envCandidate) return envCandidate;
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod: any = require('ffmpeg-static');
-    const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
-    if (p) return p as string;
+    const mod: any = optionalRequire('ffmpeg-static');
+    const staticPath = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
+    const staticCandidate = existing(staticPath);
+    if (staticCandidate) return staticCandidate;
   } catch {}
-  return null;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const installer: any = optionalRequire('@ffmpeg-installer/ffmpeg');
+    const installerCandidate = existing(
+      typeof installer?.path === 'string' ? installer.path : (typeof installer?.default?.path === 'string' ? installer.default.path : null)
+    );
+    if (installerCandidate) return installerCandidate;
+  } catch {}
+
+  return envPath || null;
 }
 
 function resolveFfprobe(envName: string): string | null {
   const envPath = sanitizeEnvPath(process.env[envName]);
-  if (envPath) return envPath;
+  const envCandidate = existing(envPath);
+  if (envCandidate) return envCandidate;
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod: any = require('ffprobe-static');
-    const p = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
-    if (p) return p as string;
+    const mod: any = optionalRequire('ffprobe-static');
+    const staticPath = typeof mod === 'string' ? (mod as string) : (typeof mod?.path === 'string' ? mod.path : null);
+    const staticCandidate = existing(staticPath);
+    if (staticCandidate) return staticCandidate;
   } catch {}
-  return null;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const installer: any = optionalRequire('@ffprobe-installer/ffprobe');
+    const installerCandidate = existing(
+      typeof installer?.path === 'string' ? installer.path : (typeof installer?.default?.path === 'string' ? installer.default.path : null)
+    );
+    if (installerCandidate) return installerCandidate;
+  } catch {}
+
+  return envPath || null;
 }
 
 export const FFMPEG_BIN = resolveFfmpeg('FFMPEG_PATH');

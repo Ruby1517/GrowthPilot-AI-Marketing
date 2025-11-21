@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ModuleComingSoon from '@/components/ModuleComingSoon';
+import { moduleStatus } from '@/lib/modules';
 
 type Idea = { title: string; angle: string; type: 'trending' | 'evergreen' }
 type Section = { type: string; title: string; text: string; ts?: string }
@@ -16,7 +18,30 @@ type Doc = {
   status?: string;
 }
 
+const viralComingSoon = moduleStatus.viralpilot !== 'live';
+
 export default function ViralPilotPage() {
+  if (viralComingSoon) {
+    return (
+      <ModuleComingSoon
+        moduleName="ViralPilot"
+        tagline="goes from keyword to finished YouTube video"
+        description="We are polishing the long-form pipeline before relaunching ViralPilot. Script quality, TTS clarity, and the rendering worker are all being hardened so every export sounds polished."
+        highlights={[
+          'Research trending angles from your niche automatically',
+          'One click to turn a script into pro-grade narration',
+          'Queue-to-render worker with MP4 + captions handoff',
+        ]}
+        etaLabel="Returning soon"
+        ctaHref="/blogpilot"
+        ctaLabel="Create content with BlogPilot"
+      />
+    );
+  }
+  return <ViralPilotStudio />;
+}
+
+function ViralPilotStudio() {
   const [keyword, setKeyword] = useState('');
   const [doc, setDoc] = useState<Doc | null>(null);
   const [loading, setLoading] = useState(false);

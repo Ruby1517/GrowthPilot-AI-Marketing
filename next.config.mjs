@@ -1,3 +1,6 @@
+import path from 'path';
+const projectRoot = path.resolve(new URL('.', import.meta.url).pathname);
+
 /** @type {import('next').NextConfig} */
 function buildCsp() {
   const isDev = process.env.NODE_ENV !== 'production';
@@ -50,6 +53,10 @@ const nextConfig = {
     return [
       { source: '/(.*)', headers: securityHeaders },
     ];
+  },
+  webpack(config) {
+    config.resolve.alias['@'] = config.resolve.alias['@'] || projectRoot;
+    return config;
   },
 };
 export default nextConfig;

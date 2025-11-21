@@ -1,4 +1,5 @@
-import mongoose, { Schema, Types } from 'mongoose'
+import mongoose from 'mongoose'
+const { Schema, Types, model, models } = mongoose as typeof mongoose & { model: typeof mongoose.model };
 
 export type Platform = 'instagram' | 'tiktok' | 'linkedin' | 'x'
 export type Tone = 'casual' | 'professional' | 'witty' | 'inspirational' | 'authoritative'

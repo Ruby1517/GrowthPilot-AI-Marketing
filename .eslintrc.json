@@ -1,5 +1,19 @@
+// {
+//   "extends": [
+//     "next/core-web-vitals"
+//   ]
+// }
+
 {
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "extends": [
-    "next/core-web-vitals"
-  ]
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    // optional: if you *need* require() in a TS file, you can turn this off
+    // "@typescript-eslint/no-var-requires": "off"
+  }
 }

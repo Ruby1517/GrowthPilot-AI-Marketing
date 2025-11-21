@@ -1,5 +1,9 @@
 // models/Org.ts
-import mongoose, { Schema, Model, models, model } from 'mongoose';
+import mongoose from 'mongoose';
+const { Schema, Model, models, model } = mongoose as typeof mongoose & {
+  models: mongoose.Mongoose['models'];
+  model: mongoose.Model<any>;
+};
 
 export type Role = 'owner' | 'admin' | 'member' | 'viewer';
 export const PLANS = ['Trial', 'Starter', 'Pro', 'Business'] as const;

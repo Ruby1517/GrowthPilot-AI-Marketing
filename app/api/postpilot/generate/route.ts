@@ -6,20 +6,74 @@ import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
 import { limiterPerOrg } from '@/lib/ratelimit';
 import { generatePlatformPost } from '@/lib/generators/postpilot';
-import { Org } from '@/models/Org';
+import { Org, type Plan as OrgPlan } from '@/models/Org';
 import { reportUsageForOrg } from '@/lib/billing/usage'; // Stripe metering (optional but recommended)
 import { assertWithinLimit } from '@/lib/usage';         // If you want plan hard-caps here
 import { track } from '@/lib/track';                     // If you want analytics events
+import { callImage } from '@/lib/provider';
+import { resolveModelSpec, type Plan as RoutingPlan } from '@/lib/model-routing';
+
+const cadences = ['none','daily','weekly'] as const;
 
 const Body = z.object({
-  topic: z.string().min(3),
+  topic: z.string().max(2000).optional(),
+  sourceUrl: z.string().url().optional(),
+  industry: z.string().min(2).max(120),
+  offers: z.string().max(500).optional(),
+  audience: z.string().max(500).optional(),
   voice: z.enum(['Friendly','Professional','Witty','Inspirational','Authoritative']).default('Friendly'),
   language: z.string().default('en-US'),
-  platforms: z.array(z.enum(['instagram','tiktok','linkedin','x'])).min(1).default(['instagram','x']),
-  variants: z.number().int().min(1).max(10).default(1),
+  platforms: z.array(z.enum(['instagram','tiktok','linkedin','x','facebook'])).min(1).default(['instagram','x']),
+  variants: z.number().int().min(1).max(5).default(1),
   projectId: z.string().optional(),
   scheduledAt: z.string().datetime().optional(),
+  automationCadence: z.enum(cadences).default('none'),
+  automationSlots: z.number().int().min(1).max(7).default(1),
+  automationStart: z.string().datetime().optional(),
+  includeImages: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  const topic = data.topic?.trim();
+  if (!topic && !data.sourceUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['topic'],
+      message: 'Provide a topic or a source URL.',
+    });
+  }
+  if (topic && topic.length < 3) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['topic'],
+      message: 'Topic must be at least 3 characters.',
+    });
+  }
 });
+
+type Cadence = typeof cadences[number];
+
+function toRoutingPlan(plan?: OrgPlan | null): RoutingPlan | undefined {
+  if (plan === 'Starter' || plan === 'Pro' || plan === 'Business') return plan;
+  return undefined;
+}
+
+function buildSchedule(params: { cadence: Cadence; slots: number; start?: string | null }): Date[] {
+  const { cadence, slots, start } = params;
+  const list: Date[] = [];
+  const startDate = start ? new Date(start) : new Date();
+  const base = isNaN(startDate.getTime()) ? new Date() : startDate;
+  const normalizedBase = base < new Date() ? new Date() : base;
+  const useSlots = cadence === 'none' ? 1 : slots;
+  for (let i = 0; i < useSlots; i++) {
+    const d = new Date(normalizedBase);
+    if (cadence === 'daily') {
+      d.setDate(normalizedBase.getDate() + i);
+    } else if (cadence === 'weekly') {
+      d.setDate(normalizedBase.getDate() + i * 7);
+    }
+    list.push(d);
+  }
+  return list;
+}
 
 export async function POST(req: Request) {
   // ---- auth
@@ -34,7 +88,23 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });
   }
-  const { topic, voice, language, platforms, variants, projectId, scheduledAt } = parsed.data;
+  const {
+    topic,
+    sourceUrl,
+    industry,
+    offers,
+    audience,
+    voice,
+    language,
+    platforms,
+    variants,
+    projectId,
+    scheduledAt,
+    automationCadence,
+    automationSlots,
+    automationStart,
+    includeImages,
+  } = parsed.data;
 
   // ---- db + org
   await dbConnect();
@@ -74,7 +144,8 @@ export async function POST(req: Request) {
   }
 
   // ---- (optional) hard cap by plan: count posts as 'postpilot_generated'
-  const incBy = platforms.length * variants;
+  const scheduleDates = buildSchedule({ cadence: automationCadence, slots: automationSlots, start: automationStart || scheduledAt || null });
+  const incBy = scheduleDates.length * platforms.length * variants;
   const gate = await assertWithinLimit({ 
     orgId, 
     key: 'postpilot_generated', 
@@ -83,20 +154,65 @@ export async function POST(req: Request) {
   });
   if (!gate.ok) return NextResponse.json({ ok:false, error: 'Plan limit reached', details: gate }, { status: 402 });
 
+  const routingPlan = toRoutingPlan(org?.plan);
+  const textModel = resolveModelSpec({ module: 'postpilot', task: 'text.generate', plan: routingPlan }).model;
+  const imageModel = includeImages === false ? null : resolveModelSpec({ module: 'postpilot', task: 'image.generate', plan: routingPlan }).model;
+
+  let effectiveTopic = topic?.trim() || '';
+  let siteContext: { title: string | null; description: string | null; snippet: string | null } | null = null;
+  if (sourceUrl) {
+    siteContext = await extractSiteContext(sourceUrl).catch(() => null);
+    if (!effectiveTopic && siteContext?.title) effectiveTopic = siteContext.title;
+  }
+  if (!effectiveTopic) effectiveTopic = 'Social media campaign';
+  const sourceSummary = siteContext?.snippet || siteContext?.description || null;
+
   // ---- generate posts
   const generated: Array<{
     platform: string;
+    headline: string;
     caption: string;
     hashtags: string[];
     altText: string;
-    suggestions: string[];
+    visualIdeas: string[];
+    visualPrompt: string;
     usage: { inputTokens: number; outputTokens: number; totalTokens: number };
+    scheduledFor: string | null;
+    imageDataUrl?: string | null;
   }> = [];
 
-  for (const platform of platforms) {
-    for (let i = 0; i < variants; i++) {
-      const post = await generatePlatformPost({ topic, voice, language, platform });
-      generated.push(post);
+  for (const slot of scheduleDates) {
+    for (const platform of platforms) {
+      for (let i = 0; i < variants; i++) {
+        const post = await generatePlatformPost(
+          {
+            topic: effectiveTopic,
+            voice,
+            language,
+            platform: platform as any,
+            industry,
+            offers,
+            audience,
+            sourceSummary,
+            sourceUrl: sourceUrl || null,
+          },
+          { model: textModel }
+        );
+
+        let imageDataUrl: string | null = null;
+        if (imageModel) {
+          try {
+            const prompt = `${post.visualPrompt}. Platform: ${platform}. Industry: ${industry}. Target audience: ${audience || 'general social users'}. Offer: ${offers || 'evergreen value'}. ${sourceSummary ? `Source details: ${sourceSummary.slice(0, 400)}` : ''}`;
+            const img = await callImage({ prompt, model: imageModel, size: '1024x1024' });
+            const b64 = img.images?.[0]?.b64;
+            if (b64) imageDataUrl = `data:image/png;base64,${b64}`;
+          } catch (err) {
+            console.warn('PostPilot image generation failed', err);
+          }
+        }
+
+        generated.push({ ...post, scheduledFor: slot?.toISOString() ?? null, imageDataUrl });
+      }
     }
   }
 
@@ -117,18 +233,33 @@ export async function POST(req: Request) {
     userId: String(me._id),
     orgId,
     projectId,
-    topic,
+    topic: effectiveTopic,
+    sourceUrl: sourceUrl || null,
+    sourceSummary,
+    industry,
+    offers,
+    audience,
     tone: voice.toLowerCase(),
     items: generated.map(g => ({
       platform: g.platform,
+      headline: g.headline,
       caption: g.caption,
       hashtags: g.hashtags,
       altText: g.altText,
-      suggestions: g.suggestions,
+      visualIdeas: g.visualIdeas,
+      visualPrompt: g.visualPrompt,
+      scheduledFor: g.scheduledFor,
+      imageDataUrl: g.imageDataUrl,
     })),
-    counts: { platforms: platforms.length, variants, total: generated.length },
-    usage: { model: process.env.OPENAI_MODEL, totalTokens },
-    scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+    counts: { platforms: platforms.length, variants, total: generated.length, scheduleSlots: scheduleDates.length },
+    usage: { model: textModel, totalTokens },
+    scheduledAt: scheduleDates[0] ?? null,
+    automation: {
+      cadence: automationCadence,
+      slots: automationCadence === 'none' ? 1 : automationSlots,
+      plan: scheduleDates.map((d) => d.toISOString()),
+    },
+    sourceContext: siteContext,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -145,5 +276,35 @@ export async function POST(req: Request) {
     postId: String(insert.insertedId),
     items: generated.map(({ usage, ...rest }) => rest), // omit usage per-item in payload
     usage: { totalTokens },
+    automationPlan: scheduleDates.map((d) => d.toISOString()),
   });
+}
+async function extractSiteContext(url: string) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, {
+      headers: { 'user-agent': 'GrowthPilotBot/1.0 (+https://growthpilot.ai)' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const cleaned = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+    const titleMatch = cleaned.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const ogDescMatch = cleaned.match(/<meta[^>]+property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+    const metaDescMatch = cleaned.match(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+    const text = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const snippet = text.slice(0, 2000);
+    return {
+      title: titleMatch?.[1]?.trim() || null,
+      description: ogDescMatch?.[1]?.trim() || metaDescMatch?.[1]?.trim() || null,
+      snippet,
+    };
+  } catch (err) {
+    console.warn('PostPilot site fetch failed', err);
+    return null;
+  }
 }

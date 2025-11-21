@@ -48,13 +48,24 @@ export async function GET(
     durationSec: job.durationSec || 0,
     variants: job.variants || 1,
     error: job.error || null,
-    outputs: outputs.map(o => ({
-      index: o.index ?? 0,
-      url: o.url,
-      thumb: o.thumb,
-      bytes: o.bytes ?? null,
-      durationSec: o.durationSec ?? null,
-    })),
+    outputs: outputs.map(o => {
+      const storageKey = typeof o.storageKey === 'string' && o.storageKey.length ? o.storageKey : null;
+      const fallbackKey =
+        !storageKey && typeof job.src === 'string' && job.src.length && !/^https?:\/\//i.test(job.src)
+          ? job.src
+          : null;
+      const keyForView = storageKey || fallbackKey;
+      const assetUrl = keyForView
+        ? `/api/assets/view?key=${encodeURIComponent(keyForView)}`
+        : o.url;
+      return {
+        index: o.index ?? 0,
+        url: assetUrl,
+        thumb: o.thumb,
+        bytes: o.bytes ?? null,
+        durationSec: o.durationSec ?? null,
+      };
+    }),
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
   });

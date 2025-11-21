@@ -131,6 +131,12 @@ pnpm dlx tsx -r tsconfig-paths/register scripts/viralp-worker.ts
 pnpm run queues:ui
 ```
 
+## Testing
+- `pnpm test` — run the entire Vitest suite headlessly.
+- `pnpm vitest run tests/adpilot/generate.test.ts` — exercise the AdPilot API module in isolation (mocks OpenAI/auth/db so it’s safe to run locally).
+- `pnpm vitest run tests/mailpilot/generate.test.ts` — run the MailPilot generator tests (ensures auth, usage gating, and spam scoring don’t regress).
+- Extend `tests/` with similar specs per module to keep coverage focused and fast; Vitest picks up any `*.test.ts` under that directory.
+
 
 ## Environment Variables
 <!-- See `.env.example` for the full list and defaults. Minimum set for local dev:

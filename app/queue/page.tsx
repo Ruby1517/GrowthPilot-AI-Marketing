@@ -70,15 +70,15 @@ export default function QueuePage() {
               <div className="mt-3 flex items-center justify-between text-xs text-brand-muted">
                 <span>{new Date(j.createdAt).toLocaleString()}</span>
                 <div className="flex gap-2">
-                  <a className="btn-ghost" href={`/clips?focus=${j._id}`}>Open in ClipPilot</a>
-                  {j.status === 'done' && <a className="btn-gold" href={`/clips?focus=${j._id}`}>Download Clips</a>}
+                  <a className="btn-ghost" href={`/clippilot?focus=${j._id}`}>Open in ClipPilot</a>
+                  {j.status === 'done' && <a className="btn-gold" href={`/clippilot?focus=${j._id}`}>Download Clips</a>}
                 </div>
               </div>
             </li>
           ))}
 
           {jobs.length === 0 && (
-            <li className="py-6 text-sm text-brand-muted">No jobs yet. Start one from <a className="underline" href="/clips/upload">ClipPilot → Upload Video</a>.</li>
+            <li className="py-6 text-sm text-brand-muted">No jobs yet. Start one from <a className="underline" href="/clippilot/upload">ClipPilot → Upload Video</a>.</li>
           )}
         </ul>
       </div>

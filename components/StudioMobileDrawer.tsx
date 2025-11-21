@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { creators, tools } from './StudioSidebar';
+import { canAccess } from '@/lib/access';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -29,6 +32,25 @@ function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: strin
 
 export default function StudioMobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const [plan, setPlan] = useState<('Trial'|'Starter'|'Pro'|'Business') | null>(null);
+  const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown');
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPlan() {
+      try {
+        const r = await fetch('/api/org/settings', { cache: 'no-store' });
+        if (!r.ok) return;
+        const j = await r.json();
+        const eff = (j.effectivePlan as any) || (j.plan as any);
+        if (!cancelled) { setPlan(eff as any); setMyRole((j.myRole as any) || 'member'); }
+      } catch {}
+    }
+    if (session?.user) loadPlan();
+    return () => { cancelled = true };
+  }, [session?.user]);
+
   if (!open) return null;
 
   return (
@@ -45,18 +67,57 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
           <div className="px-2 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Creators</div>
           <ul className="mt-1 space-y-1">
             {creators.map((l) => {
-              const active = isActive(pathname, l.href);
-              return (
-                <li key={l.href}>
-                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                    <div className="flex items-start gap-2">
-                      <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
-                      <div>
-                        <div className="text-sm">{(l as any).label}</div>
-                        {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
+              const comingSoon = l.status === 'coming_soon';
+              if (comingSoon) {
+                return (
+                  <li key={l.href}>
+                    <div className="block rounded-md px-3 py-2 border border-dashed border-white/10 dark:text-white/70 text-black/70">
+                      <div className="flex items-start gap-2">
+                        <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
+                        <div>
+                          <div className="text-sm">{(l as any).label}</div>
+                          {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
+                          <div className="text-[10px] uppercase tracking-wide text-brand-muted mt-1">Coming soon</div>
+                        </div>
                       </div>
                     </div>
-                  </Link>
+                  </li>
+                );
+              }
+              const active = isActive(pathname, l.href);
+              const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
+              const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
+              const userRole = ignoreAdmin ? undefined : rawRole;
+              const isAuthed = Boolean(session?.user);
+              const userPlanForGate = (isAuthed ? (plan ?? 'Trial') : null) as any;
+              const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
+              if (hasAccess) {
+                return (
+                  <li key={l.href}>
+                    <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
+                      <div className="flex items-start gap-2">
+                        <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
+                        <div>
+                          <div className="text-sm">{(l as any).label}</div>
+                          {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              }
+              return (
+                <li key={l.href}>
+                  <div className="block rounded-md px-3 py-2 dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10">
+                    <div className="flex items-start gap-2">
+                      <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
+                      <div className="flex flex-col">
+                        <span className="text-sm">{(l as any).label}</span>
+                        {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
+                        <Link href="/billing" onClick={onClose} className="text-xs underline mt-1">Upgrade plan</Link>
+                      </div>
+                    </div>
+                  </div>
                 </li>
               );
             })}

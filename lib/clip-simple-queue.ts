@@ -1,19 +1,46 @@
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 
-let q: Queue | null | undefined;
+let cachedQueue: Queue | null | undefined;
+let initPromise: Promise<Queue | null> | null = null;
 
-export function getSimpleClipQueue(): Queue | null {
-  if (q !== undefined) return q;
-  const url = process.env.REDIS_URL;
+export async function getSimpleClipQueue(): Promise<Queue | null> {
+  if (cachedQueue !== undefined) return cachedQueue;
+  if (initPromise) return initPromise;
+
+  const url = process.env.REDIS_URL?.trim();
   if (!url) {
     console.warn('[clip-simple-queue] REDIS_URL not set; queue disabled');
-    q = null;
-    return q;
+    cachedQueue = null;
+    return cachedQueue;
   }
-  const connection = new IORedis(url, { lazyConnect: true, maxRetriesPerRequest: 1 });
-  connection.connect().catch((e) => console.warn('[clip-simple-queue] connect failed:', e?.message || e));
-  q = new Queue('clip-simple', { connection });
-  return q;
-}
 
+  initPromise = (async () => {
+    const connection = new IORedis(url, {
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 0,
+      retryStrategy: () => null,
+    });
+    connection.on('error', (err) => {
+      console.warn('[clip-simple-queue] redis error:', err?.message || err);
+    });
+
+    try {
+      await connection.connect();
+      cachedQueue = new Queue('clip-simple', { connection });
+    } catch (err: any) {
+      console.warn('[clip-simple-queue] connect failed:', err?.message || err);
+      try {
+        connection.disconnect();
+      } catch {}
+      cachedQueue = null;
+    } finally {
+      initPromise = null;
+    }
+
+    return cachedQueue;
+  })();
+
+  return initPromise;
+}

@@ -17,6 +17,16 @@ export default function LeadEmbedPage() {
     setSite(sp.get('site') || window.location.hostname || '');
     setOrgId(sp.get('org') || sp.get('orgId'));
   }, []);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.classList.add('leadpilot-embed');
+    document.body.classList.add('leadpilot-embed-body');
+    return () => {
+      root.classList.remove('leadpilot-embed');
+      document.body.classList.remove('leadpilot-embed-body');
+    };
+  }, []);
 
   const [messages, setMessages] = useState<Msg[]>([
     { role: 'assistant', content: 'Hi! How can I help today?' },
@@ -100,14 +110,9 @@ export default function LeadEmbedPage() {
   }
 
   return (
-    <div className="h-screen w-screen bg-[rgba(18,18,18,0.96)] text-white rounded-xl overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.1)] font-medium">
-        LeadPilot • {pb}
-      </div>
-
+    <div className="h-screen w-screen bg-[rgba(18,18,18,0.96)] text-white rounded-xl overflow-hidden flex flex-col relative">
       {/* Messages */}
-      <div ref={boxRef} className="flex-1 overflow-auto p-3 space-y-2">
+      <div ref={boxRef} className="flex-1 overflow-auto px-3 pb-24 space-y-2">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -173,16 +178,16 @@ export default function LeadEmbedPage() {
       </div>
 
       {/* Composer */}
-      <div className="p-3 border-t border-[rgba(255,255,255,0.1)]">
+      <div className="sticky bottom-0 w-full bg-[rgba(18,18,18,0.96)] border-t border-[rgba(255,255,255,0.08)] p-3">
         <div className="flex gap-2">
           <input
-            className="flex-1 rounded-md border border-[rgba(255,255,255,0.15)] bg-transparent px-3 py-2"
+            className="flex-1 rounded-full border border-[rgba(255,255,255,0.2)] bg-black/30 px-4 py-2"
             placeholder="Type your message…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
           />
-          <button className="btn-gold" disabled={pending} onClick={send}>
+          <button className="btn-gold rounded-full" disabled={pending} onClick={send}>
             {pending ? '…' : 'Send'}
           </button>
         </div>

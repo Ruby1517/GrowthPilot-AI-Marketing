@@ -1,5 +1,6 @@
 // models/BlogDoc.ts
-import mongoose, { Schema, model } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model, models } = mongoose;
 
 const BlogDocSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, index: true, required: true },

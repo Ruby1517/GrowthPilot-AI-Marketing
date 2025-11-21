@@ -1,0 +1,9 @@
+node_modules
+.next
+dist
+npm-debug.log*
+*.tsbuildinfo
+.git
+.github
+.idea
+.vscode

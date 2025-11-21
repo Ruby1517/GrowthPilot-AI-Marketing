@@ -8,7 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/pricing',
     '/billing',
     '/postpilot',
-    '/clips',
+    '/clippilot',
     '/blogpilot',
     '/adpilot',
     '/leadpilot',
@@ -24,4 +24,3 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === '/' ? 1 : 0.6,
   }))
 }
-

@@ -192,7 +192,7 @@ export default function BlogPilotPage() {
                 className="mt-1 w-full rounded-md border p-3 h-24"
                 value={linksRaw}
                 onChange={(e) => setLinksRaw(e.target.value)}
-                placeholder={`AI Marketing Suite | /postpilot\nClipPilot Video Tool | /clips`}
+                placeholder={`AI Marketing Suite | /postpilot\nClipPilot Video Tool | /clippilot`}
               />
             </div>
           </div>

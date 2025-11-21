@@ -1,5 +1,6 @@
 // models/Invite.ts
-import mongoose, { Schema, Model, models, model } from 'mongoose';
+import mongoose from 'mongoose';
+const { Schema, Model, models, model } = mongoose;
 import type { Role } from './Org';
 
 export interface InviteDoc extends mongoose.Document {

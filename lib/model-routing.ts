@@ -60,10 +60,11 @@ export const PLAN_MODEL_OVERRIDES: Partial<Record<Plan, Partial<Record<TaskKind,
     'text.generate':     { provider: 'openai:text', model: process.env.STARTER_TEXT_MODEL || 'gpt-4o-mini' },
   },
   Pro: {
-    'text.generate':     { provider: 'openai:text', model: process.env.PRO_TEXT_MODEL     || 'gpt-4o'      },
+    'text.generate':     { provider: 'openai:text', model: process.env.PRO_TEXT_MODEL     || 'gpt-4.1-mini' },
   },
   Business: {
-    'text.generate':     { provider: 'openai:text', model: process.env.BIZ_TEXT_MODEL     || 'gpt-4.1'     },
+    // gpt-5-mini is default; set BIZ_TEXT_MODEL=gpt-4.1 if you prefer longer-context SEO generations
+    'text.generate':     { provider: 'openai:text', model: process.env.BIZ_TEXT_MODEL     || 'gpt-5-mini'   },
   },
 };
 

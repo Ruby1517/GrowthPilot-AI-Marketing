@@ -25,15 +25,13 @@ body {
   color: theme(colors.brand.text);
 }
 
-  html.dark body {
-  /* original gold glows for dark */
-  --gp-glow1: rgba(212,175,55,0.10);
-  --gp-glow2: rgba(231,210,146,0.08);
-
+html.dark body {
+  /* Glassy midnight backdrop */
   background:
-    radial-gradient(1200px 700px at 20% 0%, var(--gp-glow1), transparent 40%),
-    radial-gradient(1000px 600px at 100% 0%, var(--gp-glow2), transparent 45%),
-    theme(colors.brand.bg);
+    radial-gradient(900px 600px at 15% 0%, rgba(94, 234, 212, 0.08), transparent 45%),
+    radial-gradient(1100px 700px at 85% 0%, rgba(212, 175, 55, 0.10), transparent 50%),
+    linear-gradient(135deg, #02040B 0%, #050B17 45%, #080F1F 100%);
+  color: theme(colors.brand.text);
 }
 
 /* ===== Components (unchanged) ===== */
@@ -52,13 +50,18 @@ body {
   }
   /* Dark glass look for cards */
   html.dark .card {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,255,255,0.12);
-    -webkit-backdrop-filter: saturate(140%) blur(18px);
-    backdrop-filter: saturate(140%) blur(18px);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(93, 154, 255, 0.08), transparent 55%),
+      radial-gradient(circle at 80% 0%, rgba(212, 175, 55, 0.10), transparent 60%),
+      linear-gradient(135deg, rgba(10, 16, 32, 0.95), rgba(5, 9, 21, 0.78));
+    border-color: rgba(255,255,255,0.16);
+    -webkit-backdrop-filter: saturate(170%) blur(26px);
+    backdrop-filter: saturate(170%) blur(26px);
     box-shadow:
-      0 10px 30px rgba(0,0,0,0.45),
-      inset 0 1px 0 rgba(255,255,255,0.08);
+      0 22px 60px rgba(1,5,15,0.65),
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      inset 0 -1px 0 rgba(0,0,0,0.25);
   }
   /* Utility for navbar/containers */
   .glass-dark {
@@ -338,21 +341,28 @@ body {
   .badge {
     @apply inline-flex items-center rounded-full border border-[color:var(--card-stroke,theme(colors.brand.stroke))] px-2 py-0.5 text-xs text-[color:var(--muted,theme(colors.brand.muted))];
   }
-}
 
-
-
-@layer base {
-  :root { --background: 0 0% 100%; --foreground: 0 0% 3.9%; --card: 0 0% 100%; --card-foreground: 0 0% 3.9%; --popover: 0 0% 100%; --popover-foreground: 0 0% 3.9%; --primary: 0 0% 9%; --primary-foreground: 0 0% 98%; --secondary: 0 0% 96.1%; --secondary-foreground: 0 0% 9%; --muted: 0 0% 96.1%; --muted-foreground: 0 0% 45.1%; --accent: 0 0% 96.1%; --accent-foreground: 0 0% 9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --border: 0 0% 89.8%; --input: 0 0% 89.8%; --ring: 0 0% 3.9%; --chart-1: 12 76% 61%; --chart-2: 173 58% 39%; --chart-3: 197 37% 24%; --chart-4: 43 74% 66%; --chart-5: 27 87% 67%; --radius: 0.5rem; }
-  .dark { --background: 0 0% 3.9%; --foreground: 0 0% 98%; --card: 0 0% 3.9%; --card-foreground: 0 0% 98%; --popover: 0 0% 3.9%; --popover-foreground: 0 0% 98%; --primary: 0 0% 98%; --primary-foreground: 0 0% 9%; --secondary: 0 0% 14.9%; --secondary-foreground: 0 0% 98%; --muted: 0 0% 14.9%; --muted-foreground: 0 0% 63.9%; --accent: 0 0% 14.9%; --accent-foreground: 0 0% 98%; --destructive: 0 62.8% 30.6%; --destructive-foreground: 0 0% 98%; --border: 0 0% 14.9%; --input: 0 0% 14.9%; --ring: 0 0% 83.1%; --chart-1: 220 70% 50%; --chart-2: 160 60% 45%; --chart-3: 30 80% 55%; --chart-4: 280 65% 60%; --chart-5: 340 75% 55%; } }
-
-
-
-@layer base {
-  * {
-    @apply border-border; }
-  body {
-    @apply bg-background text-foreground; } } */
+  /* LeadPilot embed chrome removal */
+  html.leadpilot-embed header,
+  html.leadpilot-embed footer,
+  html.leadpilot-embed aside {
+    display: none !important;
+  }
+  html.leadpilot-embed body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  html.leadpilot-embed main {
+    max-width: none !important;
+    padding: 0 !important;
+    min-height: 100vh;
+  }
+  html.leadpilot-embed main > * {
+    border-radius: 0 !important;
+    min-height: 100vh;
+    padding: 0 !important;
+  }
     /* Accent variables: teal in light */
     --gold: #14B8A6;
     --goldLight: #5EEAD4;

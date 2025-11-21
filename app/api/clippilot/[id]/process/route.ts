@@ -31,11 +31,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!job) return new Response('Not found', { status: 404 });
 
   // Derive a fetchable URL from job.src
-  let sourceUrl = String(job.src || '');
-  if (!/^https?:\/\//i.test(sourceUrl)) {
-    // use signed viewer endpoint for private assets
-    sourceUrl = `/api/assets/view?key=${encodeURIComponent(sourceUrl)}`;
-  }
+  const rawSrc = String(job.src || '');
+  const storageKey = /^https?:\/\//i.test(rawSrc) ? undefined : rawSrc;
+  const sourceUrl = storageKey
+    ? `/api/assets/view?key=${encodeURIComponent(storageKey)}`
+    : rawSrc;
 
   // Measure duration (best effort)
   const durationSec = await probeDurationSec(sourceUrl);
@@ -57,7 +57,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   // Persist output
   await ClipOutput.deleteMany({ jobId: job._id });
-  await ClipOutput.create({ jobId: job._id, index: 0, url: sourceUrl, durationSec });
+  await ClipOutput.create({
+    jobId: job._id,
+    index: 0,
+    url: sourceUrl,
+    storageKey,
+    durationSec,
+  });
 
   job.status = 'done';
   job.actualMinutes = actualMinutes;
@@ -69,4 +75,3 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   return NextResponse.json({ ok: true });
 }
-

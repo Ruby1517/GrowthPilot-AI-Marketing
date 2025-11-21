@@ -1,4 +1,5 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose from 'mongoose';
+const { Schema, model, models } = mongoose;
 
 const ScriptSection = new mongoose.Schema(
   {
@@ -10,7 +11,7 @@ const ScriptSection = new mongoose.Schema(
   { _id: false }
 );
 
-const ViralProjectSchema = new mongoose.Schema(
+const ViralProjectSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, index: true, required: true },
     keyword: { type: String, index: true },
@@ -48,4 +49,4 @@ const ViralProjectSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.ViralProject || mongoose.model('ViralProject', ViralProjectSchema);
+export default models.ViralProject || model('ViralProject', ViralProjectSchema);
