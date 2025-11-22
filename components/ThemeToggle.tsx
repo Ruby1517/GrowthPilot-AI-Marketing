@@ -10,16 +10,15 @@ export default function ThemeToggle() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   }
 
-  const label = isDark ? '🌙 Dark' : '☀️ Light';
-
   return (
     <button
       type="button"
       onClick={nextTheme}
-      className="px-3 py-1.5 rounded-xl border border-white/10 text-sm hover:border-white/20"
-      title="Toggle theme"
+      className="p-2 rounded-xl border border-white/10 text-sm hover:border-white/20 flex items-center justify-center"
+      title={isDark ? 'Switch to light' : 'Switch to dark'}
     >
-      Theme: {label}
+      <span aria-hidden>{isDark ? '🌙' : '☀️'}</span>
+      <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
     </button>
   );
 }

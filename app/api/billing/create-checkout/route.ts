@@ -131,7 +131,8 @@ export async function POST(req: Request) {
   if (!org) {
     org = await Org.create({
       name: (me as any).name || 'My Organization',
-      plan: 'Starter',
+      // New orgs start on Trial; plan upgrades happen after successful checkout/webhook
+      plan: 'Trial',
       members: [{ userId: me._id, role: 'owner', joinedAt: new Date() }],
       usage: {},
       kpi: {},

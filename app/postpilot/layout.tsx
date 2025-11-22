@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'PostPilot — AI Social Content',
-  description: 'Generate on-brand captions, hashtags, alt text and ideas for social platforms with PostPilot.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function PostPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="postpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

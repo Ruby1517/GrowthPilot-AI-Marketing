@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { modulePlan, moduleLabels } from '@/lib/modules'
 import Uploader from '@/components/Uploader'
 import { canAccess } from '@/lib/access'
@@ -21,6 +22,7 @@ const moduleRoute: Record<ModuleKey, string> = {
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [plan, setPlan] = useState<Plan>('Trial')
   const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown')
   const [loading, setLoading] = useState(true)
@@ -45,6 +47,14 @@ export default function Dashboard() {
     if (status === 'authenticated') load(); else setLoading(false)
     return () => { cancelled = true }
   }, [status])
+
+  // Admins/owners get routed to the admin dashboard
+  useEffect(() => {
+    if (status !== 'authenticated') return
+    if (myRole === 'admin' || myRole === 'owner') {
+      router.replace('/admin/dashboard')
+    }
+  }, [status, myRole, router])
 
   const items = useMemo(() => {
     const rawRole = myRole || ((session?.user as any)?.role as string | undefined)

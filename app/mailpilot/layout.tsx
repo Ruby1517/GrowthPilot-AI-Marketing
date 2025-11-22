@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'MailPilot — AI Email Writer',
-  description: 'Draft campaigns and sequences faster with MailPilot’s AI email assistant.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function MailPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="mailpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

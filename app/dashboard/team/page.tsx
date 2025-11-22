@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PendingInvites from './pending-invites';
 import MemberRow from './member-row';
 import { hasFeature } from '@/lib/features';
+import Invite from '@/models/Invite';
 
 export default async function TeamPage() {
   const session = await auth();
@@ -15,6 +16,8 @@ export default async function TeamPage() {
   if (!me) return <div className="p-6">User not found.</div>;
   const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
   if (!org) return <div className="p-6">Org not found.</div>;
+
+  const pendingInvites = await Invite.countDocuments({ orgId: org._id, status: 'pending' }).catch(() => 0);
 
   // fetch member emails for display
   const userIds = (org.members || []).map((m: any) => m.userId).filter(Boolean);
@@ -33,8 +36,37 @@ export default async function TeamPage() {
   async function refresh() {}
 
   return (
-    <section className="p-6 space-y-4 max-w-3xl">
+    <section className="p-6 space-y-4 max-w-4xl">
       <h1 className="text-2xl font-semibold">Team</h1>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="card p-4">
+          <div className="text-sm text-brand-muted">Org plan</div>
+          <div className="text-lg font-semibold flex items-center gap-2">
+            <span>{String(plan)}</span>
+            {org.overageEnabled ? <span className="badge">Overages On</span> : <span className="badge">Overages Off</span>}
+          </div>
+          <div className="text-sm text-brand-muted mt-2">
+            Members: <b>{org.members?.length || 0}</b> • Pending invites: <b>{pendingInvites}</b>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Link href="/billing" className="btn-ghost text-sm">Manage Plan</Link>
+            <Link href="/dashboard/analytics" className="btn-ghost text-sm">View Usage</Link>
+          </div>
+        </div>
+        <div className="card p-4">
+          <div className="text-sm text-brand-muted">Roles & permissions</div>
+          <div className="text-sm mt-2 text-brand-muted">
+            Owners can promote/demote admins and remove members.
+            Admins can manage members/viewers. Everyone shares the same org plan.
+          </div>
+          {!canManageTeam && (
+            <div className="mt-3 text-sm">
+              <Link href="/billing" className="btn-ghost text-sm">Upgrade to manage team</Link>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="text-sm text-brand-muted">Plan: <b>{String(plan)}</b> {(!canManageTeam) && <span className="ml-2">• Team management requires Business</span>}</div>
       <ul className="space-y-2 mt-2">
         {org?.members?.length

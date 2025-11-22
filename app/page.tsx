@@ -1,10 +1,11 @@
 "use client";
 import Link from 'next/link';
 import Script from 'next/script';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import type { ModuleKey, ModuleStatus } from '@/lib/modules';
-import { moduleStatus } from '@/lib/modules';
+import { canAccess } from '@/lib/access';
+import type { ModuleKey, ModuleStatus, Plan } from '@/lib/modules';
+import { modulePlan, moduleStatus } from '@/lib/modules';
 
 const WAITLIST_EMAIL = process.env.NEXT_PUBLIC_WAITLIST_EMAIL || 'hello@growthpilot.ai';
 
@@ -87,9 +88,12 @@ function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: strin
 }
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const isAuthed = Boolean(session?.user);
   const [demoMap, setDemoMap] = useState<Record<string, string>>({});
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -112,6 +116,35 @@ export default function Home() {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (status !== 'authenticated') {
+      setPlan(null);
+      setRole(null);
+      setPlanLoading(false);
+      return;
+    }
+    async function load() {
+      try {
+        setPlanLoading(true);
+        const r = await fetch('/api/org/settings', { cache: 'no-store' });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!cancelled) {
+          const eff = (j.effectivePlan as Plan) || (j.plan as Plan) || 'Trial';
+          setPlan(eff);
+          setRole((j.myRole as any) || null);
+        }
+      } finally {
+        if (!cancelled) setPlanLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [status]);
+
+  const userPlanForGate: Plan | null = isAuthed ? (plan ?? 'Trial') : null;
+
   return (
     <section className="space-y-16 md:space-y-24 relative overflow-hidden">
       <div className="relative z-10 space-y-16 md:space-y-24">
@@ -128,9 +161,16 @@ export default function Home() {
             }
           }) }}
         />
-        <LandingHero items={moduleConfigs} demoMap={demoMap} isAuthed={isAuthed} />
+        <LandingHero
+          items={moduleConfigs}
+          demoMap={demoMap}
+          isAuthed={isAuthed}
+          userPlan={userPlanForGate}
+          userRole={role ?? undefined}
+          planLoading={planLoading}
+        />
         <StatsStrip />
-        <ModulesShowcase modules={moduleConfigs} demoMap={demoMap} isAuthed={isAuthed} />
+        <ModulesShowcase modules={moduleConfigs} demoMap={demoMap} isAuthed={isAuthed} userPlan={userPlanForGate} userRole={role ?? undefined} planLoading={planLoading} />
         <FeatureHighlights />
         <WorkflowSection />
         <TestimonialsSection />
@@ -144,32 +184,101 @@ export default function Home() {
   );
 }
 
-function HeroSlider({ items, demoMap, className }: { items: ModuleInfo[]; demoMap: Record<string, string>; className?: string }) {
+function HeroSlider({
+  items,
+  demoMap,
+  className,
+  isAuthed,
+  userPlan,
+  userRole,
+  planLoading,
+}: {
+  items: ModuleInfo[];
+  demoMap: Record<string, string>;
+  className?: string;
+  isAuthed: boolean;
+  userPlan: Plan | null;
+  userRole?: string;
+  planLoading: boolean;
+}) {
   const [heroIdx, setHeroIdx] = useState(0);
+  const [pause, setPause] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const heroCount = items.length;
 
   useEffect(() => {
+    try {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setReducedMotion(mq.matches);
+      const onChange = () => setReducedMotion(mq.matches);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     if (heroCount <= 1) return;
-    const id = setInterval(() => setHeroIdx((i) => (i + 1) % heroCount), 5000);
+    if (reducedMotion || pause) return;
+    const id = setInterval(() => setHeroIdx((i) => (i + 1) % heroCount), 6000);
     return () => clearInterval(id);
-  }, [heroCount]);
+  }, [heroCount, reducedMotion, pause]);
 
   const outerClass = `mt-8 md:mt-12 w-screen max-w-none px-0 relative left-1/2 -translate-x-1/2 ${className ?? ''}`;
 
+  const goPrev = () => setHeroIdx((i) => (i - 1 + heroCount) % heroCount);
+  const goNext = () => setHeroIdx((i) => (i + 1) % heroCount);
+
   return (
     <div className={outerClass.trim()}>
-      <div className="relative overflow-hidden bg-[#01030b] text-white backdrop-blur-xl">
+      <div
+        className="relative overflow-hidden text-white bg-[#01030b] backdrop-blur-xl"
+        onMouseEnter={() => setPause(true)}
+        onMouseLeave={() => setPause(false)}
+        onFocus={() => setPause(true)}
+        onBlur={() => setPause(false)}
+      >
         <div className="absolute inset-0 opacity-40 pointer-events-none" aria-hidden>
           <div className="absolute -left-32 top-0 h-64 w-64 rounded-full bg-sky-500/30 blur-[140px]" />
-          <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]/20 blur-[120px]" />
+          <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]/25 blur-[120px]" />
         </div>
         <div className="relative flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${heroIdx * 100}%)` }}>
-          {items.map((m, i) => (
+          {items.map((m) => (
             <div key={m.key} className="min-w-full shrink-0">
-              <SlidePanel module={m} demoMap={demoMap} />
+              <SlidePanel
+                module={m}
+                demoMap={demoMap}
+                isAuthed={isAuthed}
+                userPlan={userPlan}
+                userRole={userRole}
+                planLoading={planLoading}
+              />
             </div>
           ))}
         </div>
+        {heroCount > 1 && (
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Previous slide"
+              className="pointer-events-auto rounded-full bg-black/40 hover:bg-black/60 p-2 border border-white/20"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
+                <path fill="currentColor" d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Next slide"
+              className="pointer-events-auto rounded-full bg-black/40 hover:bg-black/60 p-2 border border-white/20"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
+                <path fill="currentColor" d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
       <div className="mt-4 flex items-center justify-center gap-2">
         {items.map((m, i) => (
@@ -177,7 +286,7 @@ function HeroSlider({ items, demoMap, className }: { items: ModuleInfo[]; demoMa
             key={m.key}
             aria-label={`Go to slide ${i + 1}`}
             onClick={() => setHeroIdx(i)}
-            className={`h-1.5 rounded-full transition-all ${heroIdx === i ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
+            className={`h-2 w-2 rounded-full transition-all ${heroIdx === i ? 'w-3 bg-white' : 'bg-white/30'}`}
           />
         ))}
       </div>
@@ -185,7 +294,28 @@ function HeroSlider({ items, demoMap, className }: { items: ModuleInfo[]; demoMa
   );
 }
 
-function LandingHero({ items, demoMap, isAuthed }: { items: ModuleInfo[]; demoMap: Record<string, string>; isAuthed: boolean }) {
+function LandingHero({
+  items,
+  demoMap,
+  isAuthed,
+  userPlan,
+  userRole,
+  planLoading,
+}: {
+  items: ModuleInfo[];
+  demoMap: Record<string, string>;
+  isAuthed: boolean;
+  userPlan: Plan | null;
+  userRole?: string;
+  planLoading: boolean;
+}) {
+  const heroItems = useMemo(() => {
+    const preferred: ModuleKey[] = ['leadpilot', 'mailpilot', 'brandpilot'];
+    const preferredItems = items.filter((m) => preferred.includes(m.key) && m.status === 'live');
+    if (preferredItems.length >= 1) return preferredItems;
+    return items.filter((m) => m.status === 'live').slice(0, 3);
+  }, [items]);
+
   const chips = [
     { icon: 'post', label: 'AI Social Content' },
     { icon: 'blog', label: 'SEO Blog Writer' },
@@ -207,7 +337,7 @@ function LandingHero({ items, demoMap, isAuthed }: { items: ModuleInfo[]; demoMa
         </p>
       </div>
 
-      <HeroSlider items={items} demoMap={demoMap} />
+      <HeroSlider items={heroItems} demoMap={demoMap} isAuthed={isAuthed} userPlan={userPlan} userRole={userRole} planLoading={planLoading} />
 
       <div className="mt-6 md:mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
         {chips.map((c, i) => (
@@ -230,9 +360,32 @@ function LandingHero({ items, demoMap, isAuthed }: { items: ModuleInfo[]; demoMa
   );
 }
 
-function SlidePanel({ module, demoMap }: { module: ModuleInfo; demoMap: Record<string, string> }) {
+function SlidePanel({
+  module,
+  demoMap,
+  isAuthed,
+  userPlan,
+  userRole,
+  planLoading,
+}: {
+  module: ModuleInfo;
+  demoMap: Record<string, string>;
+  isAuthed: boolean;
+  userPlan: Plan | null;
+  userRole?: string;
+  planLoading: boolean;
+}) {
   const details = module.points?.length ? module.points : [module.d];
   const isComingSoon = module.status === 'coming_soon';
+  const required = modulePlan[module.key];
+  const unlocked = !planLoading && canAccess({ userPlan: userPlan as any, module: module.key, userRole });
+  const ctaHref = isComingSoon
+    ? waitlistHrefFor(module.t)
+    : !isAuthed
+    ? '/api/auth/signin'
+    : unlocked
+    ? module.href
+    : '/billing';
 
   return (
     <div className="relative mx-auto max-w-6xl px-4 md:px-10 py-8">
@@ -275,32 +428,32 @@ function SlidePanel({ module, demoMap }: { module: ModuleInfo; demoMap: Record<s
                 ))}
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
-                {isComingSoon ? (
-                  <a
-                    href={waitlistHrefFor(module.t)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2 text-xs md:text-sm font-medium text-white/80 hover:text-white"
+                <Link
+                  href={ctaHref}
+                  className="inline-flex items-center gap-2 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))] px-5 py-2 text-xs md:text-sm font-semibold text-black shadow-[0_15px_35px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5"
+                >
+                  {isComingSoon
+                    ? 'Join Waitlist'
+                    : !isAuthed
+                    ? 'Sign in to explore'
+                    : unlocked
+                    ? `Launch ${module.t}`
+                    : `Unlock ${required}`}
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                    <path fill="currentColor" d="M7 12l5-5v3h4v4h-4v3z" />
+                  </svg>
+                </Link>
+                {!isComingSoon && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = demoMap[module.key];
+                      if (url) window.open(url, '_blank');
+                    }}
+                    className="inline-flex items-center gap-2 text-xs md:text-sm text-white/80 hover:text-white"
                   >
-                    Join Waitlist
-                  </a>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => { const url = demoMap[module.key]; if (url) window.open(url, '_blank'); else alert('Demo coming soon'); }}
-                      className="inline-flex items-center gap-2 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))] px-5 py-2 text-xs md:text-sm font-semibold text-black shadow-[0_15px_35px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5"
-                    >
-                      Watch Demo
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                        <path fill="currentColor" d="M5 12h12.17l-4.58-4.59L14 6l7 6l-7 6l-1.41-1.41L17.17 13H5z" />
-                      </svg>
-                    </button>
-                    <Link href={module.href} className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2 text-xs md:text-sm font-medium text-white/80 hover:text-white">
-                      Explore Module
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                        <path fill="currentColor" d="M7 12l5-5v3h4v4h-4v3z" />
-                      </svg>
-                    </Link>
-                  </>
+                    Watch demo
+                  </button>
                 )}
               </div>
             </div>
@@ -353,7 +506,21 @@ function StatsStrip() {
   );
 }
 
-function ModulesShowcase({ modules, demoMap, isAuthed }: { modules: ModuleInfo[]; demoMap: Record<string, string>; isAuthed: boolean }) {
+function ModulesShowcase({
+  modules,
+  demoMap,
+  isAuthed,
+  userPlan,
+  userRole,
+  planLoading,
+}: {
+  modules: ModuleInfo[];
+  demoMap: Record<string, string>;
+  isAuthed: boolean;
+  userPlan: Plan | null;
+  userRole?: string;
+  planLoading: boolean;
+}) {
   const ordered = [...modules].sort((a, b) => (a.status === 'coming_soon' ? 1 : 0) - (b.status === 'coming_soon' ? 1 : 0));
   return (
     <section className="space-y-6" id="modules">
@@ -364,6 +531,15 @@ function ModulesShowcase({ modules, demoMap, isAuthed }: { modules: ModuleInfo[]
       <div className="grid gap-5 md:grid-cols-2">
         {ordered.map((module) => {
           const isComingSoon = module.status === 'coming_soon';
+          const required = modulePlan[module.key];
+          const unlocked = !planLoading && canAccess({ userPlan: userPlan as any, module: module.key, userRole });
+          const launchHref = isComingSoon
+            ? waitlistHrefFor(module.t)
+            : !isAuthed
+            ? '/api/auth/signin'
+            : unlocked
+            ? module.href
+            : '/billing';
           return (
             <div key={module.key} className="card p-6 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
@@ -395,8 +571,14 @@ function ModulesShowcase({ modules, demoMap, isAuthed }: { modules: ModuleInfo[]
                   </a>
                 ) : (
                   <>
-                    <Link href={isAuthed ? module.href : '/api/auth/signin'} className="btn-gold text-sm">
-                      Launch {module.t}
+                    <Link href={launchHref} className="btn-gold text-sm">
+                      {isComingSoon
+                        ? 'Join waitlist'
+                        : !isAuthed
+                        ? 'Sign in to launch'
+                        : unlocked
+                        ? `Launch ${module.t}`
+                        : `Unlock ${required}`}
                     </Link>
                     <button
                       type="button"

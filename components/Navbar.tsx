@@ -6,8 +6,6 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import UserMenu from '@/components/UserMenu'
 import ThemeToggle from './ThemeToggle';
-import StudioMobileDrawer from './StudioMobileDrawer';
-import MobileNavMenu from './MobileNavMenu';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -21,22 +19,16 @@ function isActive(pathname: string, href: string) {
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [navMenuOpen, setNavMenuOpen] = useState(false);
-  const [studioDrawerOpen, setStudioDrawerOpen] = useState(false);
 
   const baseLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/team', label: 'Team' },
     { href: '/billing', label: 'Plans & Pricing' },
-    { href: '/profile', label: 'Profile' },
-    { href: '/settings', label: 'Settings' },
-    { href: '/dashboard/analytics', label: 'Analytics' }
+    { href: '/dashboard', label: 'Dashboard' },
   ];
   const authed = Boolean(session?.user);
   const links = baseLinks.filter(l => {
-    if (!authed && (l.href === '/dashboard' || l.href.startsWith('/dashboard/') || l.href === '/profile' || l.href === '/settings')) return false;
+    if (!authed && l.href === '/dashboard') return false;
     return true;
   });
 
@@ -58,16 +50,6 @@ export default function Navbar() {
       </Link>
 
       <nav className="flex items-center gap-4">
-        <button
-          type="button"
-          className="md:hidden rounded-md p-2 text-sm dark:text-white/80 text-black/80 hover:bg-white/10 hover:text-white"
-          onClick={() => setNavMenuOpen(true)}
-          aria-label="Open navigation menu"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z" />
-          </svg>
-        </button>
         <div className="hidden md:flex items-center gap-4">
           {links.map(l => {
             const active = isActive(pathname, l.href);
@@ -89,24 +71,9 @@ export default function Navbar() {
         </div>
 
         {/* AI Studio moved to persistent left sidebar; no top entry */}
-        {authed && (
-        <button
-          type="button"
-          className="md:hidden text-sm dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))]"
-          onClick={() => setStudioDrawerOpen(true)}
-          aria-label="Open AI Studio"
-        >
-          <span className="inline-flex items-center gap-1">
-            <svg width="18" height="18" viewBox="0 0 24 24" className="opacity-80"><path fill="currentColor" d="M3 6h18v2H3V6Zm0 5h18v2H3v-2Zm0 5h18v2H3v-2Z"/></svg>
-            AI Studio
-          </span>
-        </button>
-        )}
         <ThemeToggle />
         <UserMenu />
       </nav>
-      <MobileNavMenu open={navMenuOpen} onClose={() => setNavMenuOpen(false)} links={links} authed={authed} />
-      <StudioMobileDrawer open={studioDrawerOpen} onClose={() => setStudioDrawerOpen(false)} />
     </header>
   );
 }

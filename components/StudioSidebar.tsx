@@ -66,7 +66,7 @@ export default function StudioSidebar() {
   const [plan, setPlan] = useState<('Trial'|'Starter'|'Pro'|'Business') | null>(null);
   const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown');
   const [loadingPlan, setLoadingPlan] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +89,7 @@ export default function StudioSidebar() {
   useEffect(() => {
     try {
       const v = localStorage.getItem('gpSidebarCollapsed');
-      setCollapsed(v === '1');
+      setCollapsed(v === null ? true : v === '1');
     } catch {}
     function onChanged() {
       try {
@@ -101,14 +101,11 @@ export default function StudioSidebar() {
     return () => window.removeEventListener('gp:sidebar-changed', onChanged);
   }, []);
 
-  // Hide sidebar entirely until the user is authenticated
-  if (!session?.user) return null;
-
   return (
-    <aside className={`hidden md:flex ${collapsed ? 'md:w-16 lg:w-20' : 'md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
+    <aside className={`flex ${collapsed ? 'w-16 md:w-16 lg:w-20' : 'w-20 md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
       <div className="w-full p-3">
         <div className="card sidebar-card pt-3 pb-8 px-3">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-start">
             <button
               type="button"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -144,7 +141,7 @@ export default function StudioSidebar() {
                   <div
                     className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 border border-dashed border-white/10 bg-white/0`}
                   >
-                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <div className="flex items-center gap-2">
                       <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
                       {!collapsed && (
                         <div className="flex flex-col">
@@ -176,7 +173,7 @@ export default function StudioSidebar() {
                         : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
-                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <div className="flex items-center gap-2">
                       <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
                       {!collapsed && (
                         <div className="flex flex-col">
@@ -194,7 +191,7 @@ export default function StudioSidebar() {
                 <div
                   className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10`}
                 >
-                  <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                  <div className="flex items-center gap-2">
                     <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
                     {!collapsed && (
                       <div className="flex flex-col">
@@ -232,7 +229,7 @@ export default function StudioSidebar() {
                             : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                       >
-                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <div className="flex items-center gap-2">
                           <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
                           {!collapsed && <span className="text-sm">{l.label}</span>}
                         </div>

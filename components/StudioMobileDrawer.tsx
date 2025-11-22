@@ -65,21 +65,15 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
         </div>
         <div className="mt-3">
           <div className="px-2 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Creators</div>
-          <ul className="mt-1 space-y-1">
+          <ul className="mt-1 grid grid-cols-4 gap-2">
             {creators.map((l) => {
               const comingSoon = l.status === 'coming_soon';
               if (comingSoon) {
                 return (
                   <li key={l.href}>
-                    <div className="block rounded-md px-3 py-2 border border-dashed border-white/10 dark:text-white/70 text-black/70">
-                      <div className="flex items-start gap-2">
-                        <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
-                        <div>
-                          <div className="text-sm">{(l as any).label}</div>
-                          {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
-                          <div className="text-[10px] uppercase tracking-wide text-brand-muted mt-1">Coming soon</div>
-                        </div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center rounded-md px-3 py-3 border border-dashed border-white/10 dark:text-white/70 text-black/70">
+                      <Icon name={(l as any).icon} className="w-6 h-6 dark:text-brand-gold text-[#14B8A6]" />
+                      <span className="sr-only">{(l as any).label}</span>
                     </div>
                   </li>
                 );
@@ -94,29 +88,27 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
               if (hasAccess) {
                 return (
                   <li key={l.href}>
-                    <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                      <div className="flex items-start gap-2">
-                        <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
-                        <div>
-                          <div className="text-sm">{(l as any).label}</div>
-                          {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
-                        </div>
-                      </div>
+                    <Link
+                      href={l.href}
+                      onClick={onClose}
+                      className={`flex flex-col items-center justify-center rounded-md px-3 py-3 ${
+                        active
+                          ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                          : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon name={(l as any).icon} className="w-6 h-6 dark:text-brand-gold text-[#14B8A6]" />
+                      <span className="sr-only">{(l as any).label}</span>
                     </Link>
                   </li>
                 );
               }
               return (
                 <li key={l.href}>
-                  <div className="block rounded-md px-3 py-2 dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10">
-                    <div className="flex items-start gap-2">
-                      <Icon name={(l as any).icon} className="w-4 h-4 mt-0.5 dark:text-brand-gold text-[#14B8A6]" />
-                      <div className="flex flex-col">
-                        <span className="text-sm">{(l as any).label}</span>
-                        {(l as any).desc && <div className="text-xs opacity-70">{(l as any).desc}</div>}
-                        <Link href="/billing" onClick={onClose} className="text-xs underline mt-1">Upgrade plan</Link>
-                      </div>
-                    </div>
+                  <div className="flex flex-col items-center justify-center rounded-md px-3 py-3 dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10">
+                    <Icon name={(l as any).icon} className="w-6 h-6 dark:text-brand-gold text-[#14B8A6]" />
+                    <Link href="/billing" onClick={onClose} className="text-[10px] underline mt-1">Upgrade</Link>
+                    <span className="sr-only">{(l as any).label}</span>
                   </div>
                 </li>
               );
@@ -124,16 +116,22 @@ export default function StudioMobileDrawer({ open, onClose }: { open: boolean; o
           </ul>
 
           <div className="mt-4 px-2 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
-          <ul className="mt-1 space-y-1">
+          <ul className="mt-1 grid grid-cols-4 gap-2">
             {tools.map((l) => {
               const active = isActive(pathname, l.href);
               return (
                 <li key={l.href}>
-                  <Link href={l.href} onClick={onClose} className={`block rounded-md px-3 py-2 ${active ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]' : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                    <div className="flex items-center gap-2">
-                      <Icon name={(l as any).icon} className="w-4 h-4 dark:text-brand-gold text-[#14B8A6]" />
-                      <span className="text-sm">{(l as any).label}</span>
-                    </div>
+                  <Link
+                    href={l.href}
+                    onClick={onClose}
+                    className={`flex flex-col items-center justify-center rounded-md px-3 py-3 ${
+                      active
+                        ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                        : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon name={(l as any).icon} className="w-6 h-6 dark:text-brand-gold text-[#14B8A6]" />
+                    <span className="sr-only">{(l as any).label}</span>
                   </Link>
                 </li>
               );

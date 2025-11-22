@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'LeadPilot — Lead Gen Chatbot',
-  description: 'Capture and qualify leads with an embeddable AI chatbot using LeadPilot.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function LeadPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="leadpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

@@ -7,16 +7,21 @@ export default function SettingsPage() {
   const [org, setOrg] = useState<Org | null>(null)
   const [name, setName] = useState('')
   const [overage, setOverage] = useState(false)
+  const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown')
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
 
   async function load() {
+    setLoading(true)
     const r = await fetch('/api/org/settings', { cache: 'no-store' })
-    if (!r.ok) return
+    if (!r.ok) { setLoading(false); return }
     const j = await r.json()
     setOrg(j)
     setName(j.name || '')
     setOverage(!!j.overageEnabled)
+    setMyRole((j.myRole as any) || 'member')
+    setLoading(false)
     // plan is display-only; upgrading handled via billing page
   }
   useEffect(()=>{ load() },[])
@@ -49,13 +54,20 @@ export default function SettingsPage() {
             <div className="text-sm text-brand-muted mb-1">Organization name</div>
             <input
               className="w-full rounded-xl border border-[color:var(--card-stroke,rgba(255,255,255,0.08))] bg-transparent px-3 py-2 outline-none"
+              disabled={loading || (myRole !== 'owner' && myRole !== 'admin')}
               value={name}
               onChange={e=>setName(e.target.value)}
               placeholder="Your Company"
             />
           </label>
           <div className="flex items-center gap-2">
-            <input id="ovg" type="checkbox" checked={overage} onChange={e=>setOverage(e.target.checked)} />
+            <input
+              id="ovg"
+              type="checkbox"
+              checked={overage}
+              onChange={e=>setOverage(e.target.checked)}
+              disabled={loading || (myRole !== 'owner' && myRole !== 'admin')}
+            />
             <label htmlFor="ovg" className="text-sm">Enable overage billing when usage exceeds plan limits</label>
           </div>
           <div className="text-sm text-brand-muted">
@@ -65,9 +77,14 @@ export default function SettingsPage() {
           <div className="mt-2">
             <a className="btn-ghost" href="/billing">Upgrade Plan</a>
           </div>
+          {(myRole !== 'owner' && myRole !== 'admin') && (
+            <div className="text-xs text-brand-muted mt-2">Only owners/admins can change org settings.</div>
+          )}
         </div>
         <div className="mt-5 flex items-center gap-3">
-          <button className="btn-gold" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Settings'}</button>
+          <button className="btn-gold" onClick={save} disabled={saving || (myRole !== 'owner' && myRole !== 'admin')}>
+            {saving ? 'Saving…' : 'Save Settings'}
+          </button>
           {savedAt && <div className="text-xs text-brand-muted">Saved</div>}
         </div>
       </div>

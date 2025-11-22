@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'AdPilot — Ads Optimizer',
-  description: 'Create and iterate on high-performing ad variants with AdPilot.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function AdPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="adpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

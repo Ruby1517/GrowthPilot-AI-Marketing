@@ -38,6 +38,7 @@ export default function UserMenu() {
 
   const email = session.user?.email || 'Account'
   const avatar = session.user?.image
+  const role = (session.user as any)?.role
 
   return (
     <div ref={ref} className="relative">
@@ -70,14 +71,26 @@ export default function UserMenu() {
           <div className="px-3 py-2 text-xs text-brand-muted truncate">
             {session.user?.name || email}
           </div>
-          <Link href="/dashboard" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
-            Dashboard
+          <Link href="/" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            Home
           </Link>
-          <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
-            Profile
+          <Link href="/about" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            About
           </Link>
           <Link href="/billing" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
             Plans & Pricing
+          </Link>
+          <Link href="/dashboard" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            Dashboard
+          </Link>
+          <Link href="/dashboard/team" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            Team
+          </Link>
+          <Link href="/dashboard/analytics" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            Analytics
+          </Link>
+          <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
+            Profile
           </Link>
           <Link href="/settings" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
             Settings

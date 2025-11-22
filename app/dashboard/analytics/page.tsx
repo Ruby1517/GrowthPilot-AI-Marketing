@@ -7,8 +7,12 @@ import AnalyticsCards from './AnalyticsCards';
 import LeadIntent from './LeadIntent';
 import LeadDaily from './LeadDaily';
 import SeedPricingButton from './seed-pricing-button';
+import UserAnalytics from './UserAnalytics';
+import type { Plan } from '@/lib/modules';
 
-export default async function AnalyticsPage() {
+type Search = { searchParams?: Record<string, string | string[] | undefined> };
+
+export default async function AnalyticsPage({ searchParams }: Search) {
   const session = await auth();
   if (!session?.user?.email) return <div className="p-6">Please sign in.</div>;
 
@@ -16,12 +20,25 @@ export default async function AnalyticsPage() {
   const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
   if (!me) return <div className="p-6">User not found.</div>;
 
-  const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
-  if (!org) return <div className="p-6">Org not found.</div>;
+  const role = String((me as any).role || 'member');
+  const isAdmin = ['admin','owner'].includes(role);
 
-  const data = await getOrgAnalytics(String(org._id));
-  const isAdmin = ['admin','owner'].includes(String((me as any).role || ''));
-  const plan = String((org as any).plan || 'Trial');
+  const requestedOrgIdRaw = searchParams?.orgId;
+  const requestedOrgId = typeof requestedOrgIdRaw === 'string' ? requestedOrgIdRaw : Array.isArray(requestedOrgIdRaw) ? requestedOrgIdRaw[0] : undefined;
+
+  const myOrg = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  if (!myOrg) return <div className="p-6">Org not found.</div>;
+
+  let targetOrg = myOrg;
+  if (requestedOrgId && isAdmin && String(requestedOrgId) !== String(myOrg._id)) {
+    const other = await Org.findById(requestedOrgId).lean();
+    if (other) targetOrg = other;
+  } else if (requestedOrgId && !isAdmin && String(requestedOrgId) !== String(myOrg._id)) {
+    return <div className="p-6">Unauthorized for this org.</div>;
+  }
+
+  const data = await getOrgAnalytics(String(targetOrg._id));
+  const plan = String((targetOrg as any).plan || 'Trial') as Plan;
   const periodStart = (data as any)?.period?.start ? new Date((data as any).period.start) : null;
   const periodEnd = (data as any)?.period?.end ? new Date((data as any).period.end) : null;
   const fmt = (d: Date | null) => d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
@@ -38,28 +55,40 @@ export default async function AnalyticsPage() {
             </div>
             <div className="mt-1 text-sm dark:text-brand-muted text-black/70">
               Period: <b>{fmt(periodStart)}</b> – <b>{fmt(periodEnd)}</b>
+              {isAdmin && targetOrg?._id && (
+                <span className="ml-3 text-xs text-brand-muted">
+                  Org: <b>{targetOrg.name}</b>
+                </span>
+              )}
             </div>
           </div>
           {isAdmin && <SeedPricingButton visible />}
         </div>
       </div>
 
-      {/* All analytics cards stacked under header */}
-      <div className="space-y-6">
-        <AnalyticsCards initial={data} />
-        {plan !== 'Trial' ? (
-          <>
-            <LeadIntent data={(data as any).leadpilotIntents?.map((x:any)=>({ _id: x._id, count: x.count }))} />
-            <LeadDaily data={(data as any).leadpilotDaily?.map((x:any)=>({ _id: x._id, count: x.count }))} />
-          </>
-        ) : (
-          <div className="card p-4 text-sm dark:text-brand-muted text-black/70">
-            Unlock LeadPilot insights with <b>Pro</b> or <b>Business</b>.
-            <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
-          </div>
-        )}
-        <Recent recent={data.recent} />
-      </div>
+      {/* Admins see org-wide analytics; members see personal usage view */}
+      {isAdmin ? (
+        <div className="space-y-6">
+          <AnalyticsCards initial={data} />
+          {plan !== 'Trial' ? (
+            <>
+              <LeadIntent data={(data as any).leadpilotIntents?.map((x:any)=>({ _id: x._id, count: x.count }))} />
+              <LeadDaily data={(data as any).leadpilotDaily?.map((x:any)=>({ _id: x._id, count: x.count }))} />
+            </>
+          ) : (
+            <div className="card p-4 text-sm dark:text-brand-muted text-black/70">
+              Unlock LeadPilot insights with <b>Pro</b> or <b>Business</b>.
+              <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
+            </div>
+          )}
+          <Recent recent={data.recent} />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <UserAnalytics initial={data} plan={plan} role={role} />
+          <Recent recent={data.recent} />
+        </div>
+      )}
     </section>
   );
 }

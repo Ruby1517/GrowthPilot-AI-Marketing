@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import StudioSidebar from '@/components/StudioSidebar';
 import AuthSessionProvider from '@/components/AuthSessionProvider';
 import SupportChat from '@/components/SupportChat';
+import DemoModeBanner from '@/components/DemoModeBanner';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
@@ -85,6 +86,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* ThemeProvider toggles the .dark class and persists the choice */}
         <ThemeProvider>
           <AuthSessionProvider>
+            <DemoModeBanner />
             <Navbar />
             <div className="flex">
               <StudioSidebar />

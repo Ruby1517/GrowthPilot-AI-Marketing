@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'BrandPilot — Brand & Design Kit',
-  description: 'Manage brand assets, palettes and typography to keep content on-brand.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function BrandPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="brandpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

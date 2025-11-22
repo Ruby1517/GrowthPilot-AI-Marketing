@@ -1,12 +1,8 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'BlogPilot — AI SEO Writer',
-  description: 'Research and draft SEO-friendly articles with outlines, keywords and facts using BlogPilot.',
+import type { ReactNode } from 'react';
+import ModuleGuard from '@/components/ModuleGuard';
+
+export default function BlogPilotLayout({ children }: { children: ReactNode }) {
+  return <ModuleGuard module="blogpilot">{children}</ModuleGuard>;
 }
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return children as any
-}
-

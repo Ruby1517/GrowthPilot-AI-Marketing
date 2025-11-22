@@ -154,9 +154,14 @@ export async function POST(req: Request) {
   });
   if (!gate.ok) return NextResponse.json({ ok:false, error: 'Plan limit reached', details: gate }, { status: 402 });
 
-  const routingPlan = toRoutingPlan(org?.plan);
+  const orgPlan: OrgPlan = (org?.plan as any) || 'Trial';
+  const routingPlan = toRoutingPlan(orgPlan);
   const textModel = resolveModelSpec({ module: 'postpilot', task: 'text.generate', plan: routingPlan }).model;
-  const imageModel = includeImages === false ? null : resolveModelSpec({ module: 'postpilot', task: 'image.generate', plan: routingPlan }).model;
+  // Trial cannot generate images; force-disable visuals
+  const allowImages = orgPlan !== 'Trial' && includeImages !== false;
+  const imageModel = allowImages && routingPlan
+    ? resolveModelSpec({ module: 'postpilot', task: 'image.generate', plan: routingPlan }).model
+    : null;
 
   let effectiveTopic = topic?.trim() || '';
   let siteContext: { title: string | null; description: string | null; snippet: string | null } | null = null;

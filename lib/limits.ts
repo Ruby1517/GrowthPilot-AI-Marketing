@@ -1,7 +1,8 @@
 export const PLAN_LIMITS = {
   Trial: {
-    postpilot_generated: 20,
-    blogpilot_words: 5000,
+    // Trial: PostPilot + BlogPilot, no images
+    postpilot_generated: 5,
+    blogpilot_words: 3000,
     mailpilot_emails: 0,
     adpilot_variants: 0,
     // clippilot_minutes: 0,
