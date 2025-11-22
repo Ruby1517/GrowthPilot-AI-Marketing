@@ -13,6 +13,7 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
+    "@typescript-eslint/no-explicit-any": "off"
     // optional: if you *need* require() in a TS file, you can turn this off
     // "@typescript-eslint/no-var-requires": "off"
   }
