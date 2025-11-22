@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
-import { createBullBoard } from '@bull-board/api'
+import { createBullBoard, type BaseAdapter } from '@bull-board/api'
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { FastifyAdapter } from '@bull-board/fastify'
 import fastify from 'fastify'
@@ -34,7 +34,7 @@ export async function GET() {
         new Queue('viralp-assemble', { connection }),
       ]
 
-      const adapters = queues.map((q) => new BullMQAdapter(q))
+      const adapters = queues.map((q) => new BullMQAdapter(q)) as unknown as BaseAdapter[]
       const serverAdapter = new FastifyAdapter()
       serverAdapter.setBasePath('/admin/queues')
 
