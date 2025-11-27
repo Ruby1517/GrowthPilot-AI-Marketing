@@ -6,7 +6,7 @@ export const SPAM_WORDS = [
 ];
 
 export function spamScore(text: string) {
-  let hits: string[] = [];
+  const hits: string[] = [];
   const hay = (text || '').toLowerCase();
   for (const w of SPAM_WORDS) if (hay.includes(w)) hits.push(w);
   const score = Math.min(100, hits.length * 8); // very naive

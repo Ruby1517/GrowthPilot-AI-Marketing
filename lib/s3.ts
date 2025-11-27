@@ -76,7 +76,6 @@ export function buildObjectKey(opts: {
   filename: string;
   kind?: 'image' | 'video' | 'audio' | 'doc' | 'brand';
 }) {
-  const ext = (opts.filename.split('.').pop() || '').toLowerCase();
   const safeName = opts.filename.replace(/[^\w.\-]+/g, '_').slice(0, 80);
   const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const id = cryptoRandomUUID();
@@ -86,9 +85,9 @@ export function buildObjectKey(opts: {
 
 // tiny polyfill for Node < 19
 function cryptoRandomUUID() {
-  // @ts-ignore
+  // @ts-expect-error
   return globalThis.crypto?.randomUUID
-    ? // @ts-ignore
+    ? // @ts-expect-error
       globalThis.crypto.randomUUID()
     : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = (Math.random() * 16) | 0,

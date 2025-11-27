@@ -33,7 +33,7 @@ export async function generateContent({ orgId, userId, module, templateId, promp
   const provider:Provider = (process.env.AI_PROVIDER as Provider) || 'openai'
   const { text, tokens } = await callProvider(provider, rendered)
 
-  const outSafety = safetyCheck(text); let status:'done'|'failed' = outSafety.ok ? 'done' : 'failed'
+  const outSafety = safetyCheck(text); const status:'done'|'failed' = outSafety.ok ? 'done' : 'failed'
   let parsed:any = text
   if(usedSchema) { 
     try { 

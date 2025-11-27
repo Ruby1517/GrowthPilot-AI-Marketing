@@ -1,6 +1,5 @@
 import { execa } from "execa";
 import fs from "node:fs/promises";
-import fss from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import crypto from "node:crypto";

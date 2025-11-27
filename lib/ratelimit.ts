@@ -7,12 +7,15 @@ function buildLimiter() {
   if (!url || !token) {
     // No-op limiter for local/dev or when not configured.
     return {
-      limit: async (_key: string) => ({
-        success: true,
-        remaining: 9999,
-        reset: Date.now() + 60_000,
-        pending: 0,
-      }),
+      limit: async (key: string) => {
+        void key;
+        return {
+          success: true,
+          remaining: 9999,
+          reset: Date.now() + 60_000,
+          pending: 0,
+        };
+      },
     } as unknown as Ratelimit
   }
   const redis = new Redis({ url, token })

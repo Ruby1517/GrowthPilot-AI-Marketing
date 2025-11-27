@@ -1,8 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-try {
-  require('server-only');
-} catch {}
 import { createRequire } from 'module';
 
 function sanitizeEnvPath(p?: string | null): string | null {
@@ -53,6 +50,8 @@ function optionalRequire<T = unknown>(id: string): T | null {
     return null;
   }
 }
+// No-op load for server-only in environments where it exists
+optionalRequire('server-only');
 
 function resolveFfmpeg(envName: string): string | null {
   const envPath = sanitizeEnvPath(process.env[envName]);
