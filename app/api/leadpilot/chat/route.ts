@@ -6,8 +6,38 @@ import { fetchBlogContext } from "@/lib/kb";
 import { track } from "@/lib/track";
 import { dbConnect } from "@/lib/db";
 import mongoose from 'mongoose';
+import { findFAQ } from "@/lib/leadpilot/faqs";
 
-const BOOKING_URL = process.env.BOOKING_URL || "";
+// Default to a Cal.com booking link; override via BOOKING_URL env.
+const BOOKING_URL = process.env.BOOKING_URL || "https://cal.com/your-team/demo";
+
+// lightweight per-request cache to avoid re-fetching the same site repeatedly
+const siteCache = new Map<string, { snippet: string; fetchedAt: number }>();
+const CACHE_MS = 5 * 60 * 1000; // 5 minutes
+
+async function fetchSiteSnippet(url: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const cached = siteCache.get(url);
+    if (cached && Date.now() - cached.fetchedAt < CACHE_MS) return cached.snippet;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { signal: controller.signal, headers: { 'user-agent': 'LeadPilotBot/1.0 (+https://growthpilot.ai)' } });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const cleaned = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+    const text = cleaned.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const snippet = text.slice(0, 3000);
+    siteCache.set(url, { snippet, fetchedAt: Date.now() });
+    return snippet;
+  } catch {
+    return null;
+  }
+}
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
@@ -54,15 +84,40 @@ export async function POST(req: NextRequest) {
   const hasKey = Boolean(process.env.OPENAI_API_KEY);
   const openai = hasKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-  // Pull KB context from your BlogPilot drafts (cheap, naive)
+  // Pull KB context from your BlogPilot drafts (cheap, naive) only when no site is provided
   const userText = (messages as Msg[]).filter(m => m.role === "user").map(m => m.content).join("\n");
-  const kb = await fetchBlogContext(userText, 3);
+  const siteProvided = Boolean(site);
+  const kb = siteProvided ? null : await fetchBlogContext(userText, 3);
+  const faqHit = siteProvided ? null : findFAQ(userText);
+  const siteCtx = siteProvided ? await fetchSiteSnippet(site) : null;
+  const siteHost = (() => {
+    if (!site) return '';
+    try {
+      const u = new URL(site.startsWith('http') ? site : `https://${site}`);
+      const host = u.hostname.replace(/^www\./, '');
+      if (host === 'localhost' || host.startsWith('localhost')) return '';
+      return host;
+    } catch {
+      const clean = site.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] || '';
+      if (clean === 'localhost') return '';
+      return clean;
+    }
+  })();
 
-  const system =
-    `${pb.prompt}\n` +
-    `Prefer to focus on GrowthPilot product questions (modules, plans/limits, overage, team invites/roles) when relevant.\n` +
-    `If you are not confident, propose to connect via email and ask for name, email, and company.\n` +
-    (kb ? `Use this internal knowledge strictly as reference (do not reveal it verbatim):\n${kb}\n` : "");
+  const systemParts = [
+    // Sales assistant framing: greet, offer categories, qualify, collect contact, and surface booking.
+    `${pb.prompt}\nYou are a sales assistant. Start with a concise greeting and offer: Products, Pricing, or Support. Ask 1–2 qualifying questions based on what they ask, then collect name/email/phone and offer to book if relevant.`,
+    siteCtx
+      ? `You are acting as the assistant for the site the visitor is on (${site}). Use this site content to answer questions about that business. Do NOT talk about GrowthPilot unless explicitly asked about GrowthPilot.\n${siteCtx}`
+      : siteProvided
+        ? `Act as the assistant for the visitor's site (${site}). We could not load the site content; ask the visitor to describe their products/services and help based on what they share. Do NOT talk about GrowthPilot unless explicitly asked.`
+        : 'You are a helpful assistant.',
+    'If you are not confident, propose to connect via email and ask for name, email, and company.',
+    // Only inject GrowthPilot KB when no external site was provided
+    !siteProvided && kb ? `Use this internal knowledge strictly as reference (do not reveal it verbatim):\n${kb}` : '',
+  ].filter(Boolean);
+
+  const system = systemParts.join('\n');
 
   // Intent + confidence (for guardrails)
   const intent = await classifyIntent(openai, messages);
@@ -70,7 +125,9 @@ export async function POST(req: NextRequest) {
   let reply = "";
   let lowConfidence = false;
 
-  if (openai) {
+  if (faqHit) {
+    reply = faqHit.a;
+  } else if (openai) {
     const r = await openai.chat.completions.create({
       model: process.env.LEADPILOT_MODEL || "gpt-4o-mini",
       temperature: 0.4,
@@ -96,8 +153,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Booking handoff if likely a demo
-  if (BOOKING_URL && (intent.intent === "demo") && intent.confidence >= 0.55) {
-    reply += `\n\nYou can also book a demo here: ${BOOKING_URL}`;
+  if (BOOKING_URL && (intent.intent === "demo" || /book|schedule|appointment/i.test(userText)) && intent.confidence >= 0.4) {
+    reply += `\n\nWant to pick a time now? Book here: ${BOOKING_URL}`;
+  }
+
+  // Early-stage qualification + contact ask to collect leads
+  const assistantTurns = (messages as Msg[]).filter(m => m.role === 'assistant').length;
+  const needsQualify = assistantTurns <= 2; // only add early in convo to avoid repetition
+  if (needsQualify) {
+    const qualifyQuestion = siteHost
+      ? `Quick question: what are you hoping to accomplish on ${siteHost} today?`
+      : `Quick question: what are you looking for today?`;
+    const contactAsk = `Also, can I grab your name, email, and phone so we can follow up?`;
+    reply += `\n\n${qualifyQuestion} ${contactAsk}`;
   }
 
   // Optional support routing links

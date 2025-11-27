@@ -9,6 +9,8 @@ const LeadSchema = new Schema({
   name: String,
   email: String,
   company: String,
+  phone: String,
+  preferredTime: String,
   message: String,
   transcript: [{ role: String, content: String }], // optional chat transcript
   confidence: Number,               // last assistant confidence about intent/answer

@@ -42,7 +42,12 @@ export default function PostPilotPage() {
   const [scheduledAt, setScheduledAt] = useState<string>(''); // ISO string from datetime-local
   const [automationCadence, setAutomationCadence] = useState<typeof cadences[number]>('none');
   const [automationSlots, setAutomationSlots] = useState<number>(3);
-  const [automationStart, setAutomationStart] = useState<string>('');
+  const [automationStart, setAutomationStart] = useState<string>(() => {
+    // default to today's local date (avoid UTC offset issues)
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return localMidnight.toISOString().slice(0, 10);
+  });
   const [includeImages, setIncludeImages] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -63,6 +68,13 @@ export default function PostPilotPage() {
     setLoading(true); setError(null); setItems([]); setPostId(null); setUsage(null); setAutomationPlan([]);
 
     try {
+      const automationStartIso = (() => {
+        if (automationCadence === 'none' || !automationStart) return undefined;
+        const parsed = new Date(automationStart);
+        if (isNaN(parsed.getTime())) throw new Error('Pick a valid start date.');
+        return parsed.toISOString();
+      })();
+
       if (!topic.trim() && !sourceUrl.trim()) throw new Error('Enter a topic/brief or paste a website URL.');
       if (!industry.trim()) throw new Error('Please provide your industry.');
       if (!platforms.length) throw new Error('Pick at least one platform.');
@@ -79,7 +91,7 @@ export default function PostPilotPage() {
         variants,
         automationCadence,
         automationSlots,
-        automationStart: automationStart || undefined,
+        automationStart: automationStartIso,
         includeImages,
       };
       if (projectId) body.projectId = projectId.trim();
@@ -330,7 +342,6 @@ export default function PostPilotPage() {
                 value={automationSlots}
                 onChange={(e) => setAutomationSlots(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
                 className="w-28 rounded-md border px-3 py-2 text-sm"
-                disabled={automationCadence === 'none'}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -340,7 +351,6 @@ export default function PostPilotPage() {
                 value={automationStart}
                 onChange={(e) => setAutomationStart(e.target.value)}
                 className="flex-1 rounded-md border px-3 py-2 text-sm"
-                disabled={automationCadence === 'none'}
               />
             </div>
             <label className="flex items-center gap-2 text-sm">

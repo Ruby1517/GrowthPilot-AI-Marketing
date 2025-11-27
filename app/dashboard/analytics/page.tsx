@@ -42,6 +42,7 @@ export default async function AnalyticsPage({ searchParams }: Search) {
   const periodStart = (data as any)?.period?.start ? new Date((data as any).period.start) : null;
   const periodEnd = (data as any)?.period?.end ? new Date((data as any).period.end) : null;
   const fmt = (d: Date | null) => d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
+  const postpilotInferred = Boolean((data as any)?.postpilotInferred);
 
   return (
     <section className="p-6 space-y-6">
@@ -65,6 +66,12 @@ export default async function AnalyticsPage({ searchParams }: Search) {
           {isAdmin && <SeedPricingButton visible />}
         </div>
       </div>
+
+      {isAdmin && postpilotInferred && (
+        <div className="card p-4 text-sm bg-amber-50/20 border border-amber-200/60 text-amber-900 dark:text-amber-100 dark:border-amber-500/60">
+          PostPilot usage was inferred from saved posts because no meter data was found for this org. The counts shown below reflect stored posts, not Stripe metering.
+        </div>
+      )}
 
       {/* Admins see org-wide analytics; members see personal usage view */}
       {isAdmin ? (

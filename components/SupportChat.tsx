@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -9,12 +10,26 @@ const initialMessage: Msg = {
   content: 'Hi! I can answer questions about GrowthPilot plans, modules, billing, and setup. Ask me anything.',
 };
 
+const PREVIEW_CLASS = 'leadpilot-preview-open';
+
 export default function SupportChat() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([initialMessage]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [hide, setHide] = useState(false);
+
+  // Hide when LeadPilot preview is active (body class controlled from that page)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const check = () => setHide(document.body.classList.contains(PREVIEW_CLASS));
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    check();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -22,6 +37,10 @@ export default function SupportChat() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open]);
+
+  const onEmbedPage = pathname?.startsWith('/leadpilot/embed');
+  const shouldHide = onEmbedPage || hide || (typeof document !== 'undefined' && document.body.classList.contains(PREVIEW_CLASS));
+  if (shouldHide) return null;
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {

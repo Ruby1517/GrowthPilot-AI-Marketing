@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Lead = {
   _id: string; createdAt: string; site?: string; playbook?: string;
@@ -9,6 +9,7 @@ type Lead = {
 export default function LeadPilotPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [embedPb, setEmbedPb] = useState('homepage');
+  const [targetSite, setTargetSite] = useState('');
 
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const script = `<script src="${origin}/api/leadpilot/widget.js" data-playbook="${embedPb}"></script>`;
@@ -21,38 +22,21 @@ export default function LeadPilotPage() {
   }
   useEffect(()=>{ load(); },[]);
 
-  // floating preview state
-  const [widgetOpen, setWidgetOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // close when clicking outside the panel
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (!widgetOpen) return;
-      const t = e.target as Node;
-      if (panelRef.current && !panelRef.current.contains(t)) {
-        setWidgetOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [widgetOpen]);
-
   return (
     <section className="relative overflow-hidden">
       <div className="card p-8 md:p-12">
         <span className="badge mb-4">LeadPilot</span>
         <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-          AI chatbot for <span className="text-[color:var(--gold,theme(colors.brand.gold))]">lead capture</span>
+          AI concierge for <span className="text-[color:var(--gold,theme(colors.brand.gold))]">lead capture</span>
         </h1>
         <p className="mt-3 max-w-2xl text-brand-muted">
-          Copy-paste the snippet on your site, choose a playbook, and leads will appear here.
+          Engage visitors, qualify their intent, and collect contact details in minutes. Drop the snippet on your site, pick a playbook, and watch leads route into this dashboard with transcripts you can export or forward.
         </p>
 
         <div className="mt-6 grid md:grid-cols-2 gap-4">
           {/* Embed panel */}
           <div className="card p-4">
-            <div className="text-sm text-brand-muted mb-1">Choose playbook</div>
+            <div className="text-sm text-brand-muted mb-1">Choose playbook (tone + intent)</div>
             <select
               className="w-full rounded-md border p-2.5"
               value={embedPb}
@@ -70,24 +54,39 @@ export default function LeadPilotPage() {
               <a className="btn-ghost" href={`/leadpilot/embed?pb=${embedPb}&site=localhost`} target="_blank" rel="noreferrer">
                 Open in new tab
               </a>
-              <button
-                className="btn-gold"
-                onClick={()=>setWidgetOpen(v=>!v)}
-                aria-pressed={widgetOpen}
-                aria-controls="leadpilot-preview"
-              >
-                {widgetOpen ? 'Hide Preview' : 'Preview on page'}
-              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <label className="text-sm text-brand-muted" htmlFor="target-site">Business URL or name (for testing)</label>
+              <div className="flex gap-2">
+                <input
+                  id="target-site"
+                  value={targetSite}
+                  onChange={(e) => setTargetSite(e.target.value)}
+                  className="flex-1 rounded-md border px-3 py-2 text-sm"
+                  placeholder="https://example.com or Acme Inc"
+                />
+                <a
+                  className="btn-gold whitespace-nowrap"
+                  href={`/leadpilot/embed?pb=${embedPb}&site=${encodeURIComponent(targetSite || 'localhost')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open with site
+                </a>
+              </div>
+              <p className="text-xs text-brand-muted">
+                Paste a business URL or name to open the chatbot in a new tab with that context.
+              </p>
             </div>
             <p className="mt-2 text-xs text-brand-muted">
-              Preview renders the same floating widget at the bottom-right of this page.
+              Preview in a new tab, then drop the snippet onto your site to go live.
             </p>
           </div>
 
           {/* Leads panel */}
           <div className="card p-4">
             <div className="flex items-center justify-between">
-              <div className="font-medium">Leads</div>
+              <div className="font-medium">Latest leads</div>
               <div className="flex gap-2">
                 <a className="btn-ghost" href="/api/leadpilot/leads?format=csv">Export CSV</a>
                 <button className="btn-ghost" onClick={load}>Refresh</button>
@@ -112,24 +111,6 @@ export default function LeadPilotPage() {
         </div>
       </div>
 
-      {/* Floating iframe panel + invisible backdrop (outside click closes) */}
-      {widgetOpen && (
-        <>
-          <div className="fixed inset-0 z-[2147483645]" aria-hidden="true" />
-          <div
-            ref={panelRef}
-            id="leadpilot-preview"
-            className="fixed bottom-[70px] right-5 z-[2147483646] w-[360px] h-[560px] rounded-xl overflow-hidden"
-            style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
-          >
-            <iframe
-              title="LeadPilot Preview"
-              src={`/leadpilot/embed?pb=${encodeURIComponent(embedPb)}&site=localhost`}
-              className="w-full h-full border-0"
-            />
-          </div>
-        </>
-      )}
     </section>
   );
 }

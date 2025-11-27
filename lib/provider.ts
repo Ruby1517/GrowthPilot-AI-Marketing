@@ -72,7 +72,8 @@ export async function callText(opts: TextOptions): Promise<TextResult> {
 
   const completion = await openai.chat.completions.create({
     model: opts.model,
-    temperature: typeof opts.temperature === "number" ? opts.temperature : 0.3,
+    // Some OpenAI routing models only allow default temperature; omit when unset
+    ...(typeof opts.temperature === "number" ? { temperature: opts.temperature } : {}),
     response_format,
     messages: toMessages(opts.messages) as any,
   });

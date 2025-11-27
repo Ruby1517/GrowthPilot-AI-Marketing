@@ -761,7 +761,6 @@ export async function POST(req: Request) {
     const { text, tokens, raw: providerRaw } = await callText({
       messages,
       model: spec.model,
-      temperature: 0.3,
       json: true, // enforce JSON from provider layer
     });
 

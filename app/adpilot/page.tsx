@@ -102,6 +102,15 @@ export default function AdPilotPage() {
     a.click();
   }
 
+  function downloadJSON() {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "adpilot-result.json";
+    a.click();
+  }
+
   return (
     <section className="relative overflow-hidden">
       <div className="card p-8 md:p-12">
@@ -222,9 +231,14 @@ export default function AdPilotPage() {
               <pre className="whitespace-pre-wrap text-sm mt-2">{result.testPlan}</pre>
             </div>
 
-            <button className="btn-ghost" onClick={downloadCSV} disabled={!haveRows()}>
-              Export CSV
-            </button>
+            <div className="flex gap-2">
+              <button className="btn-ghost" onClick={downloadCSV} disabled={!haveRows()}>
+                Export CSV
+              </button>
+              <button className="btn-ghost" onClick={downloadJSON} disabled={!haveRows()}>
+                Save JSON
+              </button>
+            </div>
           </div>
         )}
       </div>

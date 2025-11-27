@@ -11,11 +11,13 @@ export default function LeadEmbedPage() {
   const [pb, setPb] = useState('homepage');
   const [site, setSite] = useState('');
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [isPreview, setIsPreview] = useState(false);
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     setPb(sp.get('pb') || 'homepage');
     setSite(sp.get('site') || window.location.hostname || '');
     setOrgId(sp.get('org') || sp.get('orgId'));
+    setIsPreview((sp.get('site') || '').toLowerCase() === 'localhost');
   }, []);
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -29,7 +31,7 @@ export default function LeadEmbedPage() {
   }, []);
 
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: 'Hi! How can I help today?' },
+    { role: 'assistant', content: 'Hi! I can help with Products, Pricing, or Support. What brings you here today?' },
   ]);
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(false);
@@ -39,6 +41,8 @@ export default function LeadEmbedPage() {
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadCompany, setLeadCompany] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadTime, setLeadTime] = useState('');
 
   const boxRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = () => {
@@ -51,6 +55,32 @@ export default function LeadEmbedPage() {
     setMessages((prev) => [...prev, m]);
     scrollToBottom();
   }
+
+  // Update greeting when playbook or site changes
+  useEffect(() => {
+    const siteName = (() => {
+      if (!site) return '';
+      try {
+        const u = new URL(site.startsWith('http') ? site : `https://${site}`);
+        const host = u.hostname.replace(/^www\./, '');
+        if (host && host !== 'localhost') return host.split('.')[0] || host;
+      } catch {
+        const clean = site.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+        if (clean && clean !== 'localhost') return clean.split('.')[0] || clean;
+      }
+      return '';
+    })();
+
+    const base = siteName ? `Hi from ${siteName}!` : 'Hi!';
+    let prompt = `${base} I can help with Products, Pricing, or Support. What brings you here today?`;
+    if (pb === 'pricing') {
+      prompt = `${base} I can help pick the right plan and share pricing. What brings you here today?`;
+    } else if (pb === 'demo') {
+      prompt = `${base} I can help schedule a demo and answer quick questions. What brings you here today?`;
+    }
+    setMessages([{ role: 'assistant', content: prompt }]);
+  }, [pb, site]);
+
 
   async function send() {
     if (!input.trim()) return;
@@ -96,6 +126,8 @@ export default function LeadEmbedPage() {
           name: leadName,
           email: leadEmail,
           company: leadCompany,
+          phone: leadPhone || undefined,
+          preferredTime: leadTime || undefined,
           transcript: messages,
         }),
       });
@@ -103,6 +135,8 @@ export default function LeadEmbedPage() {
       setLeadName('');
       setLeadEmail('');
       setLeadCompany('');
+      setLeadPhone('');
+      setLeadTime('');
       push({ role: 'assistant', content: 'Thanks! Our team will reach out shortly.' });
     } catch {
       alert('Failed to submit lead. Please try again.');
@@ -110,7 +144,13 @@ export default function LeadEmbedPage() {
   }
 
   return (
-    <div className="h-screen w-screen bg-[rgba(18,18,18,0.96)] text-white rounded-xl overflow-hidden flex flex-col relative">
+    <div className="fixed inset-0 z-[2147483646] pointer-events-none flex items-end justify-end p-4">
+      <div className="pointer-events-auto w-[360px] max-w-[90vw] h-[560px] bg-[rgba(18,18,18,0.96)] text-white rounded-xl overflow-hidden flex flex-col relative shadow-[0_16px_50px_rgba(0,0,0,0.35)] border border-white/10">
+        {isPreview && (
+          <div className="absolute top-2 right-3 text-xs text-brand-muted">
+            Preview
+          </div>
+        )}
       {/* Messages */}
       <div ref={boxRef} className="flex-1 overflow-auto px-3 pb-24 space-y-2">
         {messages.map((m, i) => (
@@ -163,6 +203,18 @@ export default function LeadEmbedPage() {
               placeholder="Company"
               className="w-full rounded-md border border-[rgba(255,255,255,0.15)] bg-transparent px-3 py-2 text-sm"
             />
+            <input
+              value={leadPhone}
+              onChange={(e) => setLeadPhone(e.target.value)}
+              placeholder="Phone (optional)"
+              className="w-full rounded-md border border-[rgba(255,255,255,0.15)] bg-transparent px-3 py-2 text-sm"
+            />
+            <input
+              value={leadTime}
+              onChange={(e) => setLeadTime(e.target.value)}
+              placeholder="Preferred time (optional, e.g., Tomorrow 2pm PT)"
+              className="w-full rounded-md border border-[rgba(255,255,255,0.15)] bg-transparent px-3 py-2 text-sm"
+            />
             <div className="flex gap-2">
               <button type="submit" className="btn-gold text-sm">Submit</button>
               <button
@@ -191,6 +243,7 @@ export default function LeadEmbedPage() {
             {pending ? '…' : 'Send'}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

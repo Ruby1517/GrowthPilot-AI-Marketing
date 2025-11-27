@@ -12,7 +12,8 @@ export async function reportUsageForOrg(orgId: string, {
 }: ReportArgs) {
   await dbConnect();
   const org = await Org.findById(orgId).lean();
-  if (!org?.subscription?.id) throw new Error('No active subscription');
+  // If there's no active subscription, quietly skip reporting.
+  if (!org?.subscription?.id) return [];
 
   const tokensItemId  = (org as any).stripeTokensItemId;
   const minutesItemId = (org as any).stripeMinutesItemId;

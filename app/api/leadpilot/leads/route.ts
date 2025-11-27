@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const items = await Lead.find({ userId: u }).sort({ createdAt: -1 }).lean();
 
   if (format === "csv") {
-    const header = ["createdAt","playbook","site","name","email","company","message","confidence"];
+    const header = ["createdAt","playbook","site","name","email","company","phone","preferredTime","message","confidence"];
     const rows = items.map((x:any)=>[
       x.createdAt?.toISOString?.() || x.createdAt,
       x.playbook || "",
@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
       (x.name||"").replace(/"/g,'""'),
       (x.email||"").replace(/"/g,'""'),
       (x.company||"").replace(/"/g,'""'),
+      (x.phone||"").replace(/"/g,'""'),
+      (x.preferredTime||"").replace(/"/g,'""'),
       (x.message||"").replace(/"/g,'""'),
       x.confidence ?? ""
     ]);

@@ -70,7 +70,6 @@ Return JSON matching exactly:
 
   const resp = await client.chat.completions.create({
     model,
-    temperature: 0.7,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM },

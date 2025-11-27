@@ -39,6 +39,9 @@ export default function UserMenu() {
   const email = session.user?.email || 'Account'
   const avatar = session.user?.image
   const role = (session.user as any)?.role
+  const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+  const displayEmail = demo ? 'demo@growthpilot.ai' : email
+  const displayName = demo ? 'Demo user' : (session.user?.name || email)
 
   return (
     <div ref={ref} className="relative">
@@ -53,7 +56,7 @@ export default function UserMenu() {
         ) : (
           <div className="h-6 w-6 rounded-full bg-white/10" />
         )}
-        <span className="text-sm">{email}</span>
+        <span className="text-sm">{displayEmail}</span>
         <svg
           viewBox="0 0 20 20"
           className={`h-4 w-4 transition ${open ? 'rotate-180' : ''}`}
@@ -69,7 +72,7 @@ export default function UserMenu() {
           className="absolute right-0 mt-2 z-50 w-56 rounded-2xl border border-white/10 bg-[color:var(--card-bg,rgba(255,255,255,0.04))] backdrop-blur-md shadow-glow p-1"
         >
           <div className="px-3 py-2 text-xs text-brand-muted truncate">
-            {session.user?.name || email}
+            {displayName}
           </div>
           <Link href="/" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
             Home

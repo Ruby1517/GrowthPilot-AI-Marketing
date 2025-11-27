@@ -12,7 +12,7 @@ import { track } from "@/lib/track";
 export async function POST(req: NextRequest) {
   const session = await auth(); // allow anonymous: org can be passed in body
   const body = await req.json();
-  const { playbook, site, name, email, company, message, confidence, transcript } = body || {};
+  const { playbook, site, name, email, company, message, confidence, transcript, phone, preferredTime } = body || {};
   await dbConnect();
 
   // Resolve orgId for analytics/limits: prefer session user’s org, else explicit body.orgId
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const lead = await Lead.create({
     userId: session?.user?.id ? new mongoose.Types.ObjectId((session.user as any).id) : new mongoose.Types.ObjectId(),
     orgId: orgId ? new mongoose.Types.ObjectId(orgId) : undefined,
-    site, playbook, name, email, company, message, confidence, transcript,
+    site, playbook, name, email, company, message, confidence, transcript, phone, preferredTime,
   });
 
   // Track analytics (KPI: leadsCaptured)

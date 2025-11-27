@@ -116,8 +116,24 @@ export async function getOrgAnalytics(orgId: string) {
   const contentDaily = toSeries(contentAgg as any);
   const trafficDaily = toSeries(trafficAgg as any);
 
+  // Fallback: if usage for PostPilot is missing, derive it from stored posts
+  const usage = { ...(org.usage || {}) };
+  let postpilotInferred = false;
+  if ((usage as any).postpilot_generated == null || Number((usage as any).postpilot_generated) === 0) {
+    const Posts = (await import('mongoose')).default.connection.collection('posts');
+    const [{ total: postCount } = { total: 0 }] = await Posts.aggregate([
+      { $match: { orgId: org._id } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$counts.total', 0] } } } },
+    ]).toArray();
+    if (postCount > 0) {
+      (usage as any).postpilot_generated = postCount;
+      postpilotInferred = true;
+    }
+  }
+
   return {
-    usage: org.usage || {},
+    usage,
+    postpilotInferred,
     kpi: org.kpi || {},
     recent,
     leadpilotIntents,

@@ -133,8 +133,8 @@ export default function BlogPilotPage() {
   useEffect(() => { loadHistory(); }, []);
 
   return (
-    <section className="relative">
-      <div className="card p-8 md:p-12">
+    <section className="relative w-full max-w-6xl mx-auto px-4 pb-12 overflow-x-hidden">
+      <div className="card p-8 md:p-12 min-w-0">
         <span className="badge mb-4">BlogPilot</span>
         <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
           Generate SEO-optimized blogs <span className="text-[color:var(--gold,theme(colors.brand.gold))]">from keywords or a URL</span>
@@ -213,7 +213,7 @@ export default function BlogPilotPage() {
       {data && (
         <div className="mt-8 grid gap-6">
           {/* Brief */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Brief</h2>
               <button className="btn-ghost" onClick={() => copy(data.brief)}>Copy</button>
@@ -222,7 +222,7 @@ export default function BlogPilotPage() {
           </div>
 
           {/* Outline */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Outline</h2>
               <button className="btn-ghost" onClick={() => copy(data.outline.join('\n'))}>Copy</button>
@@ -233,7 +233,7 @@ export default function BlogPilotPage() {
           </div>
 
           {/* Draft */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Draft (Markdown)</h2>
               <div className="flex gap-2">
@@ -263,7 +263,7 @@ export default function BlogPilotPage() {
           </div>
 
           {/* Meta */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Meta</h2>
               <div className="flex gap-2">
@@ -278,7 +278,7 @@ export default function BlogPilotPage() {
           </div>
 
           {/* FAQ */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">FAQ</h2>
               <button className="btn-ghost" onClick={() => copy(JSON.stringify(data.faq, null, 2))}>Copy</button>
@@ -294,7 +294,7 @@ export default function BlogPilotPage() {
           </div>
 
           {/* Alt text */}
-          <div className="card p-6">
+          <div className="card p-6 min-w-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Image Alt-text suggestions</h2>
               <button className="btn-ghost" onClick={() => copy(data.altText.join('\n'))}>Copy</button>
@@ -314,7 +314,7 @@ export default function BlogPilotPage() {
 
           {/* JSON-LD */}
           {(data?.schema?.article || data?.schema?.faq) && (
-            <div className="card p-6">
+            <div className="card p-6 min-w-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">JSON-LD (Article + FAQPage)</h2>
                 <div className="flex gap-2">
@@ -360,7 +360,7 @@ export default function BlogPilotPage() {
       )}
 
       {/* History Grid */}
-      <div className="mt-8 card p-6">
+      <div className="mt-8 card p-6 min-w-0">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Recent Drafts</h2>
           <div className="flex gap-2">

@@ -4,8 +4,11 @@ import { useTheme } from '@/components/theme-provider';
 
 export default function ThemeToggle() {
   const { theme, setTheme, isDark } = useTheme();
+  const targetTheme = isDark ? 'light' : 'dark';
+  const nextLabel = `Switch to ${targetTheme} mode`;
+  const nextIcon = targetTheme === 'dark' ? '🌙' : '☀️';
 
-  function nextTheme() {
+  function handleToggle() {
     // cycle: light <-> dark
     setTheme(theme === 'light' ? 'dark' : 'light');
   }
@@ -13,12 +16,12 @@ export default function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={nextTheme}
+      onClick={handleToggle}
       className="p-2 rounded-xl border border-white/10 text-sm hover:border-white/20 flex items-center justify-center"
-      title={isDark ? 'Switch to light' : 'Switch to dark'}
+      title={nextLabel}
     >
-      <span aria-hidden>{isDark ? '🌙' : '☀️'}</span>
-      <span className="sr-only">{isDark ? 'Dark mode' : 'Light mode'}</span>
+      <span aria-hidden>{nextIcon}</span>
+      <span className="sr-only">{nextLabel}</span>
     </button>
   );
 }
