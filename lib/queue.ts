@@ -1,12 +1,17 @@
 import { Queue, Worker, QueueEvents } from 'bullmq'
 import IORedis from 'ioredis'
 
-const connection = new IORedis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
+const redisUrl = process.env.REDIS_URL
+const connection = redisUrl ? new IORedis(redisUrl, { maxRetriesPerRequest: null, lazyConnect: true }) : null
 
-export const postpilotQueue = new Queue('postpilot-schedule', { connection })
-export const postpilotEvents = new QueueEvents('postpilot-schedule', { connection })
+export const postpilotQueue = connection ? new Queue('postpilot-schedule', { connection }) : null
+export const postpilotEvents = connection ? new QueueEvents('postpilot-schedule', { connection }) : null
 
 export function startPostpilotWorker() {
+  if (!connection || !postpilotQueue || !postpilotEvents) {
+    console.warn('[postpilot] REDIS_URL missing; worker not started');
+    return;
+  }
   const worker = new Worker('postpilot-schedule', async job => {
     console.log('[postpilot] running job', job.id, job.data)
     // TODO: call your webhook or posting logic here

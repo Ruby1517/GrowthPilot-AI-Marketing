@@ -8,7 +8,6 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - LeadPilot — Lead Gen Chatbot
 - MailPilot — AI Email Writer
 - BrandPilot — Brand & Design Kit
-- ViralPilot — YouTube Content Creation
 - ClipPilot — Video/Shorts Creator
 
 
@@ -33,7 +32,6 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - Queues and workers
   - BullMQ connection + sample queue: `lib/queue.ts`
   - Admin UI (Bull Board): `app/admin/queues/route.ts`
-  - ViralPilot worker: `scripts/viralp-worker.ts`
   - Clip pipeline example: `workers/clip-pipeline.ts`
 - AI providers and routing
   - OpenAI client wrapper: `lib/ai.ts`, `lib/provider.ts`
@@ -64,8 +62,6 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
   - ![MailPilot](public/images/modules/mailpilot.svg)
 - BrandPilot — Brand kit
   - ![BrandPilot](public/images/modules/brandpilot.svg)
-- ViralPilot — YouTube content
-  - ![ViralPilot](public/images/modules/viralpilot.svg)
 - ClipPilot — Shorts creator
   - ![ClipPilot](public/images/modules/clippilot.svg)
 
@@ -89,9 +85,6 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - BrandPilot
   - Manage brand assets and generate on‑brand visuals.
   - Entry: `app/brandpilot/page.tsx`
-- ViralPilot
-  - Go from idea → script → TTS → assembled MP4 with a worker.
-  - Worker: `scripts/viralp-worker.ts`
 - ClipPilot
   - Auto‑clip long videos into shorts with captions and aspect variants.
   - Pipeline example: `workers/clip-pipeline.ts` -->
@@ -119,8 +112,8 @@ pnpm dev
 ```
 4) Start background workers as needed (in separate terminals):
 ```
-# ViralPilot assembly worker
-pnpm dlx tsx -r tsconfig-paths/register scripts/viralp-worker.ts
+# Clip pipeline worker (shorts assembly)
+pnpm dlx tsx -r tsconfig-paths/register scripts/clip-worker.ts
 
 # (Example) Clip pipeline: import and integrate with your queue
 # See workers/clip-pipeline.ts for an end‑to‑end example function.
@@ -167,7 +160,7 @@ Optional/advanced:
 ## Queues and Workers
 - BullMQ queues (Redis) are used for scheduling and background processing.
 - Admin dashboard is served at `/admin/queues` when the app is running.
-- Example ViralPilot worker script: `scripts/viralp-worker.ts`
+- Example ClipPilot worker script: `scripts/clip-worker.ts`
 - Example video clip pipeline: `workers/clip-pipeline.ts` (ffmpeg/whisper, captions, S3 upload).
 
 

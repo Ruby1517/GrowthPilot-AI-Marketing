@@ -4,16 +4,19 @@ import { randomBytes } from 'crypto';
 import { dbConnect } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import Org from '@/models/Org';
+import mongoose from 'mongoose';
 
 export async function POST(req: Request, { params }: { params: { orgId: string } }) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await dbConnect();
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+  const me = await (await import('@/models/User')).default
+    .findOne({ email: session.user.email })
+    .lean<{ _id: mongoose.Types.ObjectId }>();
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const org = await Org.findById(params.orgId).lean();
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
-  const myRole = org.members?.find(m => String(m.userId) === String(me._id))?.role || 'member';
+  const myRole = org.members?.find((m: { userId: unknown; role?: string }) => String(m.userId) === String(me._id))?.role || 'member';
   if (!['owner','admin'].includes(myRole)) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }

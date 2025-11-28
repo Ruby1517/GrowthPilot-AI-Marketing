@@ -12,12 +12,13 @@ export async function POST(req: Request) {
   await dbConnect();
   const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  const orgId = (me as any)?.orgId;
+  const org = orgId ? await Org.findById(orgId).lean() : null;
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
   if (String((org as any).plan || 'Trial') !== 'Business') {
     return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
   }
-  const myRole = org.members?.find(m => String(m.userId) === String(me._id))?.role || 'member'
+  const myRole = org.members?.find((m: any) => String(m.userId) === String((me as any)._id))?.role || 'member'
 
   const { email, role } = await req.json().catch(() => ({}));
   if (!email) return NextResponse.json({ ok: false, error: 'Email required' }, { status: 400 });

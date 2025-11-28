@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import UserMenu from '@/components/UserMenu'
 import ThemeToggle from './ThemeToggle';

@@ -394,7 +394,7 @@ export default function PostPilotPage() {
             {items.map((v, i) => (
               <div
                 key={`${v.platform}-${i}`}
-                ref={(el) => (cardRefs.current[i] = el)}
+                ref={(el) => { cardRefs.current[i] = el; }}
                 className="card p-4 space-y-3 w-full"
               >
                 <div className="flex items-center justify-between text-xs uppercase tracking-wide text-brand-muted">

@@ -73,7 +73,11 @@ async function resolveBasePriceId(body: any) {
   const match = scan.data.find(p =>
     p.recurring?.interval === 'month' &&
     p.recurring?.usage_type === 'licensed' &&
-    (typeof p.product === 'string' ? false : (p.product.name || '').toLowerCase().includes(frag))
+    (() => {
+      if (typeof p.product === 'string') return false;
+      const name = (p.product as any)?.name || '';
+      return name.toLowerCase().includes(frag);
+    })()
   );
   if (match && await ensurePriceExists(match.id)) {
     return { priceId: match.id, canonicalPlan };
@@ -94,9 +98,10 @@ async function resolveMeteredPrices() {
     minutesPriceId = '';
     for (const p of list.data) {
       if (p.recurring?.usage_type !== 'metered') continue;
+      const productName = typeof p.product === 'string' ? '' : ((p.product as any)?.name || '');
       const label =
         p.nickname?.toLowerCase() ||
-        (typeof p.product === 'string' ? '' : (p.product.name || '').toLowerCase());
+        productName.toLowerCase();
       const divideBy = p.transform_quantity?.divide_by;
 
       // Heuristic: tokens often have divide_by=1000 or say "token"

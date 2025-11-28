@@ -28,6 +28,10 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // Skip ESLint during builds (Vercel) to avoid legacy option issues; run locally instead.
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     serverActions: {
       // Tighten in production to your app host if provided
@@ -47,6 +51,8 @@ const nextConfig = {
       { protocol: 'https', hostname: `*.s3.${process.env.AWS_REGION}.amazonaws.com` },
       // or CloudFront
       ...(process.env.CDN_URL ? [{ protocol: 'https', hostname: process.env.CDN_URL.replace(/^https?:\/\//,'') }] : []),
+      // OAuth avatars (e.g., Google)
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
   },
   async headers() {

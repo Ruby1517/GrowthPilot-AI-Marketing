@@ -13,7 +13,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const userId = new mongoose.Types.ObjectId((session.user as any).id);
 
   // Ensure the job belongs to the requester
-  const job = await ClipJob.findOne({ _id: params.id, userId }).lean();
+  const job = await (ClipJob as any).findOne({ _id: params.id, userId }).lean().exec();
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await ClipOutput.deleteMany({ jobId: job._id });
@@ -21,4 +21,3 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   return NextResponse.json({ ok: true });
 }
-

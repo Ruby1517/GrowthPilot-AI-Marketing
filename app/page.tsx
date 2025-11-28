@@ -24,8 +24,8 @@ type ModuleInfo = {
 const moduleConfigs: ModuleInfo[] = [
   { key: 'postpilot', t: 'PostPilot', d: 'AI Social Content Generator', icon: 'post', href: '/postpilot', img: '/images/modules/postpilot.svg',
     points: ['Generate posts across platforms', 'On-brand tone controls', 'Schedule + track performance'], status: moduleStatus.postpilot, response: '2.4s avg output' },
-  { key: 'clippilot', t: 'ClipPilot', d: 'AI Video/Shorts Creator', icon: 'clip', href: '/clippilot', img: '/images/modules/clippilot.svg',
-    points: ['Trim to shorts fast', 'Auto captions + resize', 'Templates for Reels/TikTok'], status: moduleStatus.clippilot, response: 'Queued for relaunch' },
+  { key: 'clippilot', t: 'ClipPilot', d: 'Viral-ready Shorts from Long Videos', icon: 'clip', href: '/clippilot', img: '/images/modules/clippilot.svg',
+    points: ['Smart scene detection + hooks', 'Auto captions, zoom/punch, music', 'Exports for TikTok, Reels, Shorts'], status: moduleStatus.clippilot, response: 'Live for shorts' },
   { key: 'blogpilot', t: 'BlogPilot', d: 'AI SEO Writer', icon: 'blog', href: '/blogpilot', img: '/images/modules/blogpilot.svg',
     points: ['SEO briefs to drafts', 'Optimizes for keywords', 'Images and headings ready'], status: moduleStatus.blogpilot, response: '3.1s outline + draft' },
   { key: 'adpilot', t: 'AdPilot', d: 'AI Ads Optimizer', icon: 'ad', href: '/adpilot', img: '/images/modules/adpilot.svg',
@@ -36,8 +36,6 @@ const moduleConfigs: ModuleInfo[] = [
     points: ['Subject + body + sequences', 'Personalize at scale', 'ESP-ready output'], status: moduleStatus.mailpilot, response: '3.6s per sequence' },
   { key: 'brandpilot', t: 'BrandPilot', d: 'AI Design/Branding Assistant', icon: 'brand', href: '/brandpilot', img: '/images/modules/brandpilot.svg',
     points: ['Logos, colors, fonts kit', 'Guidelines and templates', 'On-brand assets quickly'], status: moduleStatus.brandpilot, response: 'Live style system' },
-  { key: 'viralpilot', t: 'ViralPilot', d: 'YouTube Content Creation', icon: 'youtube', href: '/viralpilot', img: '/images/modules/viralpilot.svg',
-    points: ['Ideas → script → TTS', 'Auto B-roll + captions', 'Render shorts quickly'], status: moduleStatus.viralpilot, response: 'In QA' },
 ];
 
 const statHighlights = [
@@ -526,7 +524,7 @@ function ModulesShowcase({
     <section className="space-y-6" id="modules">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-semibold">Your entire marketing team, inside one login</h2>
-        <p className="text-brand-muted">Six modules are production-ready today; ClipPilot and ViralPilot are polishing for relaunch.</p>
+        <p className="text-brand-muted">Most modules are production-ready today; ClipPilot is now live with scene detection, captions, zooms, music, and social-native exports.</p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
         {ordered.map((module) => {
@@ -683,7 +681,7 @@ function CallToAction({ isAuthed }: { isAuthed: boolean }) {
       <span className="badge">Launch</span>
       <h2 className="text-3xl font-semibold">Ready to ship your next campaign?</h2>
       <p className="text-brand-muted text-sm md:text-base max-w-2xl mx-auto">
-        Spin up social content, SEO blogs, ads, lifecycle email, lead chatbots, and brand assets without switching tabs. ClipPilot and ViralPilot return soon—everything else is production ready today.
+        Spin up social content, SEO blogs, ads, lifecycle email, lead chatbots, and brand assets without switching tabs. ClipPilot now turns long videos into viral-ready shorts—everything else is production ready today.
       </p>
       <div className="flex items-center justify-center gap-3">
         <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold">

@@ -6,7 +6,7 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 const SUPPORT_PROMPT = `
 You are GrowthPilot's in-app support assistant.
-Explain pricing plans (Starter, Pro, Business), module capabilities (PostPilot, BlogPilot, AdPilot, LeadPilot, MailPilot, BrandPilot, ViralPilot, ClipPilot),
+Explain pricing plans (Starter, Pro, Business), module capabilities (PostPilot, BlogPilot, AdPilot, LeadPilot, MailPilot, BrandPilot, ClipPilot),
 usage limits, billing/overage, and onboarding steps. Keep answers concise.
 If you don't know something, say so and offer to connect support@growthpilot.ai.
 `;
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (/price|plan|cost/.test(lower)) {
       reply = 'We offer Starter (10 seats, $49/mo), Pro (unlocks ClipPilot, 50 seats, $149/mo), and Business (custom seats, SLA, usage pooling). Need help choosing? Email support@growthpilot.ai.';
     } else if (/module|feature|can.*do/.test(lower)) {
-      reply = 'GrowthPilot bundles PostPilot (social), BlogPilot (SEO), AdPilot, LeadPilot, MailPilot, BrandPilot, ViralPilot, and ClipPilot. Let me know which workflow you want and I can outline steps.';
+      reply = 'GrowthPilot bundles PostPilot (social), BlogPilot (SEO), AdPilot, LeadPilot, MailPilot, BrandPilot, and ClipPilot for viral-ready shorts. Let me know which workflow you want and I can outline steps.';
     } else {
       reply = 'I can help with plans, modules, and onboarding. Could you share more detail? Or email support@growthpilot.ai for a human follow-up.';
     }

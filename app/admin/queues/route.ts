@@ -1,4 +1,5 @@
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createBullBoard } from '@bull-board/api'
@@ -8,17 +9,10 @@ import fastify from 'fastify'
 import { Queue } from 'bullmq'
 
 function buildConnection() {
+  if (process.env.NEXT_PHASE === 'phase-production-build') return null
   const REDIS_URL = process.env.REDIS_URL
-  if (REDIS_URL) return { connection: { url: REDIS_URL, maxRetriesPerRequest: null as any } }
-  return {
-    connection: {
-      host: process.env.REDIS_HOST || '127.0.0.1',
-      port: Number(process.env.REDIS_PORT || 6379),
-      password: process.env.REDIS_PASSWORD || undefined,
-      maxRetriesPerRequest: null as any,
-      enableReadyCheck: false,
-    },
-  }
+  if (!REDIS_URL) return null
+  return { connection: { url: REDIS_URL, maxRetriesPerRequest: null as any, lazyConnect: true } }
 }
 
 let appInstance: ReturnType<typeof fastify> | null = null
@@ -26,9 +20,11 @@ let initialized = false
 
 export async function GET() {
   try {
+    const built = buildConnection()
+    if (!built) return new Response('Redis not configured', { status: 503 })
     // Lazy-init a Fastify instance in-process and mount Bull Board onto it.
     if (!initialized) {
-      const { connection } = buildConnection()
+      const { connection } = built
       const queues = [
         new Queue('postpilot-schedule', { connection }),
         new Queue('viralp-assemble', { connection }),
@@ -40,7 +36,7 @@ export async function GET() {
 
       // Create a fastify app and register Bull Board's plugin on it.
       appInstance = fastify({ logger: false })
-      createBullBoard({ queues: adapters, serverAdapter })
+      createBullBoard({ queues: adapters as any, serverAdapter })
       // Mount Bull Board under the desired base path
       appInstance.register(serverAdapter.registerPlugin(), { prefix: '/admin/queues' })
       await appInstance.ready()

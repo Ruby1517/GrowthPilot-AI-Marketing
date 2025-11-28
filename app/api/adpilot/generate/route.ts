@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     await dbConnect();
     const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
     if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    const orgId = String(me.orgId ?? me._id);
+    const orgId = String((me as any)?.orgId ?? (me as any)?._id);
     const org = await Org.findById(orgId).lean();
     if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
 
@@ -263,12 +263,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Generated JSON invalid", issues: finalCheck.error.issues, output: parsed }, { status: 502 });
       }
       try {
-        await track(orgId, (session.user as any).id ?? String(me._id), {
+        const actorId = (session.user as any)?.id ?? String((me as any)?._id);
+        await track(orgId, actorId, {
           module: 'adpilot',
           type: 'generation.completed',
           meta: { variants: intendedVariants },
         });
-        await track(orgId, (session.user as any).id ?? String(me._id), {
+        await track(orgId, actorId, {
           module: 'adpilot',
           type: 'ad.variant_created',
           meta: { count: intendedVariants },
@@ -283,12 +284,13 @@ export async function POST(req: NextRequest) {
 
     // Track analytics: generation + ad variants count
     try {
-      await track(orgId, (session.user as any).id ?? String(me._id), {
+      const actorId = (session.user as any)?.id ?? String((me as any)?._id);
+      await track(orgId, actorId, {
         module: 'adpilot',
         type: 'generation.completed',
         meta: { variants: intendedVariants },
       });
-      await track(orgId, (session.user as any).id ?? String(me._id), {
+      await track(orgId, actorId, {
         module: 'adpilot',
         type: 'ad.variant_created',
         meta: { count: intendedVariants },

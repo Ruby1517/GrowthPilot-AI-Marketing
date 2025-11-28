@@ -20,17 +20,17 @@ export async function POST(req: Request) {
   // Create Org + Team + User (same structure used in OAuth first login)
   const displayName = email.split('@')[0]
   const org = await Org.create({ name: `${displayName}'s Org` })
-  const team = await Team.create({ name: `${displayName}'s Team`, ownerId: org.ownerId })
   const user = await User.create({
     name: displayName,
     email,
     passwordHash,
-    teamId: team._id,
     role: 'owner',
     orgId: org._id,
   })
-  org.ownerId = user._id
-  org.members = [{ userId: user._id, role: 'owner' }]
+  const team = await Team.create({ name: `${displayName}'s Team`, ownerId: user._id })
+  user.teamId = team._id
+  await user.save()
+  org.members = [{ userId: user._id, role: 'owner', joinedAt: new Date() }]
   await org.save()
 
   return new Response(JSON.stringify({ ok: true }), {

@@ -4,6 +4,7 @@ import { dbConnect } from '@/lib/db';
 import ClipJob from '@/models/ClipJob';
 import ClipOutput from '@/models/ClipOutput';
 import DashboardClient from './DashboardClient';
+import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,14 +16,15 @@ export default async function ClipDashboardPage() {
 
   await dbConnect();
   const userId = (session!.user as any).id;
-  const jobs = await ClipJob.find({ userId }).select('_id').lean();
+  const jobs = await (ClipJob as any).find({ userId }).select('_id').lean().exec() as { _id: mongoose.Types.ObjectId }[];
   const jobIds = jobs.map((doc) => doc._id);
 
   const outputs = jobIds.length
-    ? await ClipOutput.find({ jobId: { $in: jobIds } })
+    ? await (ClipOutput as any).find({ jobId: { $in: jobIds } })
         .sort({ createdAt: -1 })
         .limit(100)
         .lean()
+        .exec() as { _id: mongoose.Types.ObjectId; jobId: mongoose.Types.ObjectId | string; createdAt?: Date }[]
     : [];
 
   const payload = outputs.map((o: any) => ({

@@ -78,3 +78,23 @@ export async function sendSendGrid(to: string, subject: string, html: string, te
 
   return true;
 }
+
+// Minimal lead email notifier (optional)
+export async function sendLeadEmail(lead: { email?: string; name?: string; company?: string; message?: string }) {
+  const to = process.env.LEAD_NOTIFY_EMAIL;
+  if (!to) return;
+  const subj = `New lead: ${lead.name || lead.email || 'unknown'}`;
+  const body = `
+    <p><b>Name:</b> ${lead.name || 'N/A'}</p>
+    <p><b>Email:</b> ${lead.email || 'N/A'}</p>
+    <p><b>Company:</b> ${lead.company || 'N/A'}</p>
+    <p><b>Message:</b> ${lead.message || 'N/A'}</p>
+  `;
+  try {
+    const { smtp, any } = mailerConfigured();
+    if (smtp) return sendSMTP(to, subj, body, body.replace(/<[^>]+>/g, ''));
+    if (any) return sendSendGrid(to, subj, body, body.replace(/<[^>]+>/g, ''));
+  } catch {
+    /* noop */
+  }
+}

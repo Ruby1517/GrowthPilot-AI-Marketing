@@ -1,9 +1,9 @@
 // app/auth/reset/page.tsx
 'use client'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const sp = useSearchParams()
   const router = useRouter()
   const token = useMemo(() => sp.get('token') || '', [sp])
@@ -67,5 +67,13 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordInner />
+    </Suspense>
   )
 }

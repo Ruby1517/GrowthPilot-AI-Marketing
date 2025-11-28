@@ -31,16 +31,17 @@ export async function GET() {
   await dbConnect();
   const me = await User.findOne({ email: session.user.email }).lean();
   if (!me) return new Response('Unauthorized', { status: 401 });
-  const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  const orgId = (me as any)?.orgId;
+  const org = orgId ? await Org.findById(orgId).lean() : null;
   if (!org) return new Response('Org not found', { status: 404 });
 
-  const jobs = await ClipJob.find({ orgId: org._id })
+  const jobs = await (ClipJob as any).find({ orgId: org._id })
     .sort({ createdAt: -1 })
     .limit(50)
     .lean();
 
   return NextResponse.json({
-    items: jobs.map(j => ({
+    items: jobs.map((j: any) => ({
       id: String(j._id),
       status: j.status,
       durationSec: j.durationSec,

@@ -213,7 +213,7 @@ new BullWorker(
     await connectDb();
 
     const { jobId } = job.data as { jobId: string };
-    const j = await ClipJob.findById(jobId);
+    const j = await (ClipJob as any).findById(jobId);
     if (!j) return;
 
     try {

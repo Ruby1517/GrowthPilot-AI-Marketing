@@ -9,7 +9,9 @@ export async function POST(req: Request) {
   if (!session?.user?.email) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await dbConnect();
 
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+  const me = await (await import('@/models/User')).default
+    .findOne({ email: session.user.email })
+    .lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId | string }>();
   if (!me?.orgId) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
   const org = await Org.findById(me.orgId).lean();
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
@@ -26,8 +28,8 @@ export async function POST(req: Request) {
   }
 
   const toId = (v: any) => (v && typeof (v as any).toString === 'function') ? (v as any).toString() : String(v);
-  const meRole = org.members?.find(m => toId(m.userId) === toId(me._id))?.role || 'member';
-  const target = org.members?.find(m => toId(m.userId) === toId(memberId));
+  const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'member';
+  const target = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(memberId));
   if (!target) return NextResponse.json({ ok: false, error: 'Member not found' }, { status: 404 });
 
   // Authorization: owners can change any; admins can only change member/viewer and cannot assign admin

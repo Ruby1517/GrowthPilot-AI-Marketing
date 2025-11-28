@@ -8,7 +8,7 @@ if (!sk || !sk.startsWith('sk_')) {
   throw new Error('STRIPE_SECRET_KEY must be set and start with sk_')
 }
 
-export const stripe = new Stripe(sk, { apiVersion: '2024-06-20' })
+ export const stripe = new Stripe(sk, { apiVersion: '2024-06-20' as any })
 
 export async function getOrCreateStripeCustomer(orgId: string, email?: string | null) {
   await dbConnect()

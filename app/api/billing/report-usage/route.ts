@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { dbConnect } from '@/lib/db'
 import Org from '@/models/Org'
 import { stripe } from '@/lib/stripe' // ✅ reuse configured Stripe client
+import mongoose from 'mongoose'
 
 type Body = {
   tokens?: number
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   if (!session?.user) return new Response('Unauthorized', { status: 401 })
 
   await dbConnect()
-  const org = await Org.findById((session.user as any).orgId)
+  const org = await Org.findById((session.user as any).orgId).lean<{ _id: mongoose.Types.ObjectId; subscription?: { id?: string } | null; stripeTokensItemId?: string | null; stripeMinutesItemId?: string | null }>()
   if (!org?.subscription?.id) {
     return new Response('No active subscription', { status: 400 })
   }
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     // Report tokens (raw count; your price uses transform /1000 to bill per 1k)
     if (tokens > 0 && tokensItemId) {
       const idempotencyKey = makeKey('tokens')
-      await stripe.subscriptionItems.createUsageRecord(
+      await (stripe.subscriptionItems as any).createUsageRecord(
         tokensItemId,
         { quantity: Math.floor(tokens), timestamp: at, action: 'increment' },
         idempotencyKey ? { idempotencyKey } : undefined
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     // Report minutes (1 unit = 1 minute)
     if (minutes > 0 && minutesItemId) {
       const idempotencyKey = makeKey('minutes')
-      await stripe.subscriptionItems.createUsageRecord(
+      await (stripe.subscriptionItems as any).createUsageRecord(
         minutesItemId,
         { quantity: Math.floor(minutes), timestamp: at, action: 'increment' },
         idempotencyKey ? { idempotencyKey } : undefined

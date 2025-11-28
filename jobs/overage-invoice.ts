@@ -9,7 +9,7 @@ export async function invoiceOveragesForOrg(orgId: string) {
   const org = await Org.findById(orgId).lean();
   if (!org?.billingCustomerId) return { ok: false, reason: 'no_customer' };
 
-  const rows = await Overage.find({ orgId: org._id, invoiced: false }).lean();
+  const rows = await Overage.pendingForOrg(org._id as any);
   if (!rows.length) return { ok: true, created: false };
 
   const total = rows.reduce((s, r) => s + (r.amount || 0), 0);
@@ -29,13 +29,10 @@ export async function invoiceOveragesForOrg(orgId: string) {
     collection_method: 'charge_automatically',
   });
 
-  const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
+  const finalized = await stripe.invoices.finalizeInvoice(invoice.id!);
 
   // mark rows invoiced
-  await Overage.updateMany(
-    { _id: { $in: rows.map(r => r._id) } },
-    { $set: { invoiced: true, invoiceId: finalized.id } }
-  );
+  await Overage.markInvoiced(rows.map(r => r._id) as any[], finalized.id!);
 
   return { ok: true, created: true, invoiceId: finalized.id, total };
 }

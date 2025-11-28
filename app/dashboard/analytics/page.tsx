@@ -9,6 +9,7 @@ import LeadDaily from './LeadDaily';
 import SeedPricingButton from './seed-pricing-button';
 import UserAnalytics from './UserAnalytics';
 import type { Plan } from '@/lib/modules';
+import mongoose from 'mongoose';
 
 type Search = { searchParams?: Record<string, string | string[] | undefined> };
 
@@ -17,7 +18,7 @@ export default async function AnalyticsPage({ searchParams }: Search) {
   if (!session?.user?.email) return <div className="p-6">Please sign in.</div>;
 
   await dbConnect();
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId; role?: string }>();
   if (!me) return <div className="p-6">User not found.</div>;
 
   const role = String((me as any).role || 'member');
@@ -26,12 +27,12 @@ export default async function AnalyticsPage({ searchParams }: Search) {
   const requestedOrgIdRaw = searchParams?.orgId;
   const requestedOrgId = typeof requestedOrgIdRaw === 'string' ? requestedOrgIdRaw : Array.isArray(requestedOrgIdRaw) ? requestedOrgIdRaw[0] : undefined;
 
-  const myOrg = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  const myOrg = me.orgId ? await Org.findById(me.orgId).lean<{ _id: mongoose.Types.ObjectId; name?: string; plan?: string; members?: any[] }>() : null;
   if (!myOrg) return <div className="p-6">Org not found.</div>;
 
   let targetOrg = myOrg;
   if (requestedOrgId && isAdmin && String(requestedOrgId) !== String(myOrg._id)) {
-    const other = await Org.findById(requestedOrgId).lean();
+    const other = await Org.findById(requestedOrgId).lean<{ _id: mongoose.Types.ObjectId; name?: string; plan?: string; members?: any[] }>();
     if (other) targetOrg = other;
   } else if (requestedOrgId && !isAdmin && String(requestedOrgId) !== String(myOrg._id)) {
     return <div className="p-6">Unauthorized for this org.</div>;
@@ -88,12 +89,12 @@ export default async function AnalyticsPage({ searchParams }: Search) {
               <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
             </div>
           )}
-          <Recent recent={data.recent} />
+          <Recent recent={data.recent || []} />
         </div>
       ) : (
         <div className="space-y-6">
           <UserAnalytics initial={data} plan={plan} role={role} />
-          <Recent recent={data.recent} />
+          <Recent recent={data.recent || []} />
         </div>
       )}
     </section>

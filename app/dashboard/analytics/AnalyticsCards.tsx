@@ -67,7 +67,6 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     { key: 'mailpilot_emails', label: 'MailPilot Emails' },
     { key: 'adpilot_variants', label: 'AdPilot Variants' },
     { key: 'clippilot_minutes', label: 'ClipPilot Render Minutes' },
-    { key: 'viralpilot_minutes', label: 'ViralPilot Render/Watch Minutes' },
     { key: 'leadpilot_convos', label: 'LeadPilot Conversations' },
     { key: 'brandpilot_assets', label: 'BrandPilot Assets' },
   ];

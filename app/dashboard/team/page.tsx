@@ -7,14 +7,15 @@ import PendingInvites from './pending-invites';
 import MemberRow from './member-row';
 import { hasFeature } from '@/lib/features';
 import Invite from '@/models/Invite';
+import mongoose from 'mongoose';
 
 export default async function TeamPage() {
   const session = await auth();
   if (!session?.user?.email) return <div className="p-6">Please sign in.</div>;
   await dbConnect();
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId }>();
   if (!me) return <div className="p-6">User not found.</div>;
-  const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  const org = me.orgId ? await Org.findById(me.orgId).lean<{ _id: mongoose.Types.ObjectId; members?: any[]; overageEnabled?: boolean; plan?: string }>() : null;
   if (!org) return <div className="p-6">Org not found.</div>;
 
   const pendingInvites = await Invite.countDocuments({ orgId: org._id, status: 'pending' }).catch(() => 0);

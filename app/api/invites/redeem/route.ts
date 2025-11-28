@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     { $push: { members: { userId: uid, role: inv.role, joinedAt: new Date() } } }
   );
   // Optional: set as primary org only if user has none yet. Do not mutate global user.role.
-  const userDoc = await User.findById(uid).lean();
+  const userDoc = await User.findById(uid).lean<{ orgId?: mongoose.Types.ObjectId | string }>();
   if (!userDoc?.orgId) {
     await User.updateOne({ _id: uid }, { $set: { orgId: inv.orgId } });
   }

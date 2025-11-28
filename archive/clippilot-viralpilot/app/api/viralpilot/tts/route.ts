@@ -12,6 +12,7 @@ import { durationFromMp3Buffer } from '@/lib/clipPilot/duration';
 import User from '@/models/User';
 import { limiterPerOrg } from '@/lib/ratelimit';
 import { retryFetch } from '@/lib/http';
+import mongoose from 'mongoose';
 
 const REGION = process.env.AWS_REGION || 'us-west-1';
 const BUCKET = process.env.S3_BUCKET!;
@@ -67,6 +68,7 @@ async function ttsWithEleven(text: string, voiceId?: string) {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = String((session.user as any).id || '');
 
   const { id, voiceId, voice, length }: { id?: string; voiceId?: string; voice?: string; length?: LengthPreset } = await req.json().catch(() => ({} as any));
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -82,7 +84,7 @@ export async function POST(req: Request) {
 
     // Optional rate limit per org (if Upstash configured)
     try {
-      const me = await User.findOne({ email: (session.user as any).email }).lean().catch(()=>null);
+      const me = await User.findOne({ email: (session.user as any).email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId }>().catch(()=>null);
       const orgId = me?.orgId ? String(me.orgId) : null;
       if (orgId && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
         const { success } = await limiterPerOrg.limit(orgId);
@@ -98,14 +100,14 @@ export async function POST(req: Request) {
     const durSec = await durationFromMp3Buffer(mp3).catch(()=>0);
 
     // Upload to S3
-    const key = `assets/user_${(session.user as any).id}/viralp/${doc._id}/voiceover.mp3`;
+    const key = `assets/user_${userId}/viralp/${doc._id}/voiceover.mp3`;
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET, Key: key, Body: mp3, ContentType: 'audio/mpeg',
     }));
     const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 3600 });
 
     await Asset.create({
-      userId: (session.user as any).id,
+      userId,
       key, bucket: BUCKET, region: REGION,
       contentType: 'audio/mpeg', size: mp3.length, status: 'ready', type: 'audio',
     });

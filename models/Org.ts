@@ -1,6 +1,7 @@
 // models/Org.ts
 import mongoose from 'mongoose';
-const { Schema, Model, models, model } = mongoose as typeof mongoose & {
+import type { Model } from 'mongoose';
+const { Schema, models, model } = mongoose as typeof mongoose & {
   models: mongoose.Mongoose['models'];
   model: mongoose.Model<any>;
 };
@@ -72,7 +73,7 @@ const OrgSchema = new Schema<OrgDoc>(
 );
 
 // Important: apply setters on update queries too
-OrgSchema.set('runSettersOnQuery', true);
+(OrgSchema as any).set('runSettersOnQuery', true);
 
 // Secondary index
 OrgSchema.index({ usagePeriodEnd: 1 });

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-const { Schema, Model, models, model } = mongoose;
-import type { ObjectId } from 'mongoose';
+import type { ObjectId, Model } from 'mongoose';
+const { Schema, models, model } = mongoose;
 
 export interface OverageDoc extends mongoose.Document {
   orgId: ObjectId;

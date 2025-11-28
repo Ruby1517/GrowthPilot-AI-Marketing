@@ -208,7 +208,7 @@ Return JSON ONLY.
 
     // Resolve orgId for analytics
     const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
-    const orgObjectId = me?.orgId || null;
+    const orgObjectId = (me as any)?.orgId || null;
     const orgId = orgObjectId ? String(orgObjectId) : undefined;
 
     const doc = await BrandDoc.create({

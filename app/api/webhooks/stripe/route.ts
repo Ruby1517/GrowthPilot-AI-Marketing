@@ -64,13 +64,9 @@ export async function POST(req: Request) {
       const customerId = inv.customer;
       const org = await Org.findOne({ billingCustomerId: customerId }).lean();
       if (org) {
-        const ids = (await Overage.find({ orgId: org._id, invoiced: false }, { _id: 1 }).lean())
-          .map(x => x._id);
+        const ids = (await Overage.pendingForOrg(org._id as any)).map(x => x._id);
         if (ids.length) {
-          await Overage.updateMany(
-            { _id: { $in: ids } },
-            { $set: { invoiced: true, invoiceId: inv.id } }
-          );
+          await Overage.markInvoiced(ids as any, inv.id);
         }
       }
       break;

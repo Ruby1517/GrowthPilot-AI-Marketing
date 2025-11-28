@@ -111,7 +111,7 @@ const Body = z.object({
   totalDurationSec: z.number().int().min(1).optional(),
 });
 
-const METER_KEY = 'clippilot_minutes' as const;
+const METER_KEY = 'clippilot_minutes' as any;
 const SHARED_SECRET = process.env.CLIPS_WEBHOOK_SECRET; // protect this endpoint
 
 export async function POST(req: Request) {
@@ -126,16 +126,16 @@ export async function POST(req: Request) {
   }
 
   await dbConnect();
-  const job = await ClipJob.findById(parsed.data.jobId);
+  const job = await (ClipJob as any).findById(parsed.data.jobId);
   if (!job) return new Response('Job not found', { status: 404 });
 
   const org = await Org.findById(job.orgId);
   if (!org) return new Response('Org not found', { status: 404 });
 
   // idempotency: clear & insert outputs
-  await ClipOutput.deleteMany({ jobId: job._id });
+  await (ClipOutput as any).deleteMany({ jobId: job._id });
   const outs = parsed.data.outputs;
-  await ClipOutput.insertMany(outs.map((o, i) => ({ jobId: job._id, index: i, ...o })));
+  await (ClipOutput as any).insertMany(outs.map((o: any, i: number) => ({ jobId: job._id, index: i, ...o })));
 
   const totalSec = parsed.data.totalDurationSec ??
     outs.reduce((s, o) => s + (o.durationSec || 0), 0);

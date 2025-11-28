@@ -30,7 +30,7 @@ export const moduleLabels: Record<ModuleKey, string> = {
 
 export const moduleStatus: Record<ModuleKey, ModuleStatus> = {
   postpilot: 'live',
-  clippilot: 'coming_soon',
+  clippilot: 'live',
   blogpilot: 'live',
   adpilot: 'live',
   leadpilot: 'live',

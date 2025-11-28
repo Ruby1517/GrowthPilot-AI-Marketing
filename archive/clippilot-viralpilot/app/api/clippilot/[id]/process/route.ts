@@ -27,7 +27,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!session?.user?.email) return new Response('Unauthorized', { status: 401 });
 
   await dbConnect();
-  const job = await ClipJob.findById(params.id);
+  const job = await (ClipJob as any).findById(params.id);
   if (!job) return new Response('Not found', { status: 404 });
 
   // Derive a fetchable URL from job.src
@@ -57,7 +57,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   // Persist output
   await ClipOutput.deleteMany({ jobId: job._id });
-  await ClipOutput.create({
+  await (ClipOutput as any).create({
     jobId: job._id,
     index: 0,
     url: sourceUrl,

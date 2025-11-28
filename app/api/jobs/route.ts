@@ -32,21 +32,12 @@ function toQueueShape(doc: any): QueueJob {
 }
 
 async function getBullQueues() {
+  if (process.env.NEXT_PHASE === 'phase-production-build') return null
   const REDIS_URL = process.env.REDIS_URL
-  const REDIS_HOST = process.env.REDIS_HOST
-  const REDIS_PORT = process.env.REDIS_PORT
-  const REDIS_PASSWORD = process.env.REDIS_PASSWORD
-  if (!REDIS_URL && !REDIS_HOST) return null
+  if (!REDIS_URL) return null
   const { Queue } = await import('bullmq')
-  const connection = REDIS_URL
-    ? (await import('ioredis')).default?.prototype ? new (await import('ioredis')).default(REDIS_URL, { maxRetriesPerRequest: null }) : (REDIS_URL as any)
-    : {
-        host: REDIS_HOST,
-        port: Number(REDIS_PORT || 6379),
-        password: REDIS_PASSWORD || undefined,
-        maxRetriesPerRequest: null as any,
-        enableReadyCheck: false,
-      }
+  const Redis = (await import('ioredis')).default
+  const connection = new Redis(REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: true, enableReadyCheck: false, retryStrategy: () => null })
   const queues = [
     new Queue('postpilot-schedule', { connection }),
     new Queue('viralp-assemble', { connection }),

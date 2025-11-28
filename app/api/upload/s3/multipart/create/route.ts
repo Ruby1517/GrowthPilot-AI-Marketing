@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { filename, projectId, kind='video' } = await req.json()
   const key = buildObjectKey({ userId: (session.user as any).id, projectId, filename, kind })
   const bucket = process.env.S3_BUCKET!
-  const contentType = guessContentType(filename, 'application/octet-stream')
+  const contentType = guessContentType(filename)
   const cmd = new CreateMultipartUploadCommand({ Bucket: bucket, Key: key, ContentType: contentType })
   const out = await s3.send(cmd)
   return Response.json({ uploadId: out.UploadId, key, bucket })

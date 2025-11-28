@@ -422,12 +422,12 @@ export default function ClipPilotPage() {
     return (
       <ModuleComingSoon
         moduleName="ClipPilot"
-        tagline="clips your long-form videos automatically"
-        description="We are rebuilding ClipPilot to make uploads faster, subtitles cleaner, and outputs ready for Reels, Shorts, and TikTok without manual edits."
+        tagline="turns long videos into viral-ready shorts automatically"
+        description="ClipPilot takes any long video and returns social-ready shorts with sharp captions, zoom/punch-ins, hooks, and music in the right aspect ratios. Perfect for creators, businesses, coaches, agencies, influencers, or anyone producing short videos."
         highlights={[
-          'Auto-detect scenes, generate captions, and resize for every channel',
-          'On-brand templates for subtitles, progress bars, and watermarks',
-          'Batch upload and queue handling tied to your GrowthPilot org',
+          'Smart scene detection plus clean, auto-generated captions',
+          'Auto zoom/punch effects with AI soundtrack and B-roll suggestions',
+          'Exports sized for TikTok, Reels, and Shorts with hooks and titles baked in',
         ]}
         etaLabel="Back mid-release"
         ctaHref="/postpilot"
@@ -561,8 +561,27 @@ function ClipsHome() {
   return (
     <section className="p-6 space-y-6 max-w-5xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">ClipPilot — Create Shorts</h1>
+        <h1 className="text-2xl font-semibold">ClipPilot — Viral-ready Shorts</h1>
         <a href="/clippilot/dashboard" className="btn-ghost text-sm">Open Publishing Dashboard</a>
+      </div>
+
+      <div className="card p-6 space-y-3">
+        <h2 className="text-lg font-semibold">What ClipPilot Does</h2>
+        <p className="text-sm text-brand-muted">
+          ClipPilot turns any long video into viral-ready short-form videos with:
+        </p>
+        <ul className="list-disc pl-5 space-y-1 text-sm">
+          <li>Smart scene detection that pulls the best moments automatically</li>
+          <li>Auto captions with clean styling for every platform</li>
+          <li>Auto zoom/punch effects that keep pacing snappy</li>
+          <li>AI soundtrack/music and on-beat transitions</li>
+          <li>B-roll suggestions to cover jump cuts</li>
+          <li>Hooks and titles for thumb-stopping intros</li>
+          <li>Social-optimized formats for TikTok, Reels, and Shorts</li>
+        </ul>
+        <div className="text-sm text-brand-muted">
+          Perfect for creators, businesses, coaches, agencies, influencers, or anyone producing short videos.
+        </div>
       </div>
 
       {/* From Video only */}

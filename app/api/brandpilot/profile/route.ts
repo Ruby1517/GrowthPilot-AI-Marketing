@@ -20,8 +20,9 @@ export async function GET() {
     .lean()
     .catch(() => null);
 
-  if (me?.orgId) {
-    doc = await BrandDoc.findOne({ orgId: me.orgId }).sort({ updatedAt: -1 }).lean();
+  const orgId = (me as any)?.orgId;
+  if (orgId) {
+    doc = await BrandDoc.findOne({ orgId }).sort({ updatedAt: -1 }).lean();
   }
 
   if (!doc) {

@@ -49,7 +49,7 @@ async function handle(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
   const userId = new mongoose.Types.ObjectId((session.user as any).id);
-  const doc = await MailCampaign.findOne({ _id: id, userId }).lean();
+  const doc = await MailCampaign.findOne({ _id: id, userId }).lean<{ emails?: Array<{ subjectA?: string; subjectB?: string; html?: string; text?: string }> }>();
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const e = (doc.emails && doc.emails[0]) || {};

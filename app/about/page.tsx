@@ -24,8 +24,7 @@ export default function AboutPage() {
           <li><b>LeadPilot</b> — Lead Gen Chatbot</li>
           <li><b>MailPilot</b> — AI Email Writer</li>
           <li><b>BrandPilot</b> — Brand & Design Kit</li>
-          <li><b>ViralPilot</b> — YouTube Content Creation</li>
-          <li><b>ClipPilot</b> — Video/Shorts Creator</li>
+          <li><b>ClipPilot</b> — Viral-ready shorts from long videos (scene detection, captions, zooms, music)</li>
         </ul>
       </div>
 
@@ -59,4 +58,3 @@ export default function AboutPage() {
     </section>
   );
 }
-

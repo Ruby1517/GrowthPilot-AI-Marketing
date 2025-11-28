@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const userId = (session?.user as any)?.id ? new mongoose.Types.ObjectId((session!.user as any).id) : new mongoose.Types.ObjectId();
-    const job = await ClipJob.create({
+    const job = await (ClipJob as any).create({
       orgId: new mongoose.Types.ObjectId(orgId),
       userId,
       src: storageKey || srcUrl,

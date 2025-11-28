@@ -12,7 +12,7 @@ async function connectDb() {
 
 new BullWorker("clip-queue", async (job) => {
   await connectDb();
-  const j = await ClipJob.findById(job.data.jobId);
+  const j = await (ClipJob as any).findById(job.data.jobId);
   if (!j) return;
   j.status = "processing"; j.stage = "probe"; j.progress = 10; await j.save();
   await new Promise(r => setTimeout(r, 800));

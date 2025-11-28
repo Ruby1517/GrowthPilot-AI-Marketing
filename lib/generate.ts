@@ -28,7 +28,7 @@ export async function generateContent({ orgId, userId, module, templateId, promp
   if(!inSafety.ok){ return { ok:false, error:'safety_failed', reasons: inSafety.reasons } }
 
   const gen = await Generation.create({ orgId, userId, module, templateId: templateId||null, input: { vars, prompt: usedPrompt }, status: 'running', events:[{type:'requested', at:new Date(), meta:{}}], safety:{ok:true, reasons:[]} })
-  await trackEvent(orgId, 'generation.requested', { module, generationId: gen._id })
+  await trackEvent({ orgId, userId, module, type: 'generation.requested', meta: { generationId: gen._id } })
 
   const provider:Provider = (process.env.AI_PROVIDER as Provider) || 'openai'
   const { text, tokens } = await callProvider(provider, rendered)
@@ -52,7 +52,7 @@ export async function generateContent({ orgId, userId, module, templateId, promp
     }
   )
   await addUsage(orgId, { tokens }); 
-  await trackEvent(orgId, 'generation.completed', { module, generationId: gen._id, tokens })
+  await trackEvent({ orgId, userId, module, type: 'generation.completed', meta: { generationId: gen._id, tokens } })
   return { 
     ok:true, 
     generationId: 

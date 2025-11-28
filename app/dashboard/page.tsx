@@ -7,7 +7,7 @@ import Uploader from '@/components/Uploader'
 import { canAccess } from '@/lib/access'
 
 type Plan = 'Trial'|'Starter'|'Pro'|'Business'
-type ModuleKey = keyof typeof modulePlan
+type ModuleKey = Exclude<keyof typeof modulePlan, 'viralpilot'>
 
 const moduleRoute: Record<ModuleKey, string> = {
   postpilot: '/postpilot',
@@ -17,7 +17,6 @@ const moduleRoute: Record<ModuleKey, string> = {
   leadpilot: '/leadpilot',
   mailpilot: '/mailpilot',
   brandpilot: '/brandpilot',
-  viralpilot: '/viralpilot',
 }
 
 export default function Dashboard() {
@@ -62,7 +61,8 @@ export default function Dashboard() {
     const userRole = ignoreAdmin ? undefined : rawRole
     const isAuthed = Boolean(session?.user)
     const p: Plan | null = isAuthed ? plan : null
-    const keys = Object.keys(modulePlan) as ModuleKey[]
+    const keys = (Object.keys(modulePlan) as Array<keyof typeof modulePlan>)
+      .filter(k => k !== 'viralpilot') as ModuleKey[]
     return keys.map(k => {
       const access = canAccess({ userPlan: p as any, module: k, userRole })
       return {

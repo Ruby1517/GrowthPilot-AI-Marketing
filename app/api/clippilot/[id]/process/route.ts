@@ -27,7 +27,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!session?.user?.email) return new Response('Unauthorized', { status: 401 });
 
   await dbConnect();
-  const job = await ClipJob.findById(params.id);
+  const job = await (ClipJob as any).findById(params.id);
   if (!job) return new Response('Not found', { status: 404 });
 
   // Derive a fetchable URL from job.src
@@ -44,7 +44,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   // Enforce usage and record overage if needed
   const gate = await assertWithinLimit({
     orgId: String(job.orgId),
-    key: 'clippilot_minutes',
+    key: 'clippilot_minutes' as any,
     incBy: actualMinutes,
     allowOverage: true,
   });
@@ -52,12 +52,12 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: 'usage_limit', details: gate }, { status: 402 });
   }
   if (gate.overage && gate.overUnits) {
-    try { await recordOverageRow({ orgId: String(job.orgId), key: 'clippilot_minutes', overUnits: gate.overUnits }); } catch {}
+    try { await recordOverageRow({ orgId: String(job.orgId), key: 'clippilot_minutes' as any, overUnits: gate.overUnits }); } catch {}
   }
 
   // Persist output
-  await ClipOutput.deleteMany({ jobId: job._id });
-  await ClipOutput.create({
+  await (ClipOutput as any).deleteMany({ jobId: job._id });
+  await (ClipOutput as any).create({
     jobId: job._id,
     index: 0,
     url: sourceUrl,

@@ -67,10 +67,10 @@ export async function GET(req: Request) {
   const helvBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   // Colors
-  const bg = rgb(0.06, 0.06, 0.09);
-  const fg = rgb(1, 1, 1);
-  const sub = rgb(0.75, 0.75, 0.8);
-  const gold = rgb(0.83, 0.77, 0.45);
+  const bg = rgb(0.06, 0.06, 0.09) as any;
+  const fg = rgb(1, 1, 1) as any;
+  const sub = rgb(0.75, 0.75, 0.8) as any;
+  const gold = rgb(0.83, 0.77, 0.45) as any;
 
   // PAGE 1: Title + Palette
   {

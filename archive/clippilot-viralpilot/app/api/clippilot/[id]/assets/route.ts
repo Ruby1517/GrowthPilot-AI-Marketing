@@ -67,7 +67,7 @@ export async function GET(
 ) {
   await dbConnect();
 
-  const job = await ClipJob.findById(params.id).lean();
+  const job = await (ClipJob as any).findById(params.id).lean().exec();
   if (!job) return new Response('Not found', { status: 404 });
 
   const url = new URL(req.url);
@@ -77,13 +77,14 @@ export async function GET(
     Math.min(3600, Number(url.searchParams.get('expires') || 300))
   );
 
-  const outputs = await ClipOutput.find({ jobId: job._id })
+  const outputs = await (ClipOutput as any).find({ jobId: job._id })
     .sort({ index: 1 })
-    .lean();
+    .lean()
+    .exec();
 
   // If you store S3 keys in a separate field, replace `o.url` with your `o.storageKey` and sign that.
   const assets = await Promise.all(
-    outputs.map(async (o) => {
+    outputs.map(async (o: any) => {
       const assetUrl = wantSigned ? await maybeSign(o.url, expires) : o.url;
       const thumbUrl = o.thumb && wantSigned ? await maybeSign(o.thumb, expires) : o.thumb;
       return {

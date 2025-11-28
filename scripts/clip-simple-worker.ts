@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import fs from 'node:fs/promises';
 import fss from 'node:fs';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import ffmpegBin from '@ffmpeg-installer/ffmpeg';
 import OpenAI from 'openai';
 import crypto from 'node:crypto';
@@ -71,9 +72,10 @@ async function downloadFile(url: string, outPath: string) {
   if (!res.ok || !res.body) throw new Error(`download_failed: ${res.status}`);
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   const stream = fss.createWriteStream(outPath);
+  const body = Readable.fromWeb(res.body as any);
   await new Promise((resolve, reject) => {
-    res.body!.pipe(stream);
-    res.body!.on('error', reject);
+    body.pipe(stream);
+    body.on('error', reject);
     stream.on('finish', resolve);
     stream.on('error', reject);
   });
@@ -248,7 +250,7 @@ new BullWorker(
   async (job) => {
     await connectDb();
     const { jobId } = job.data as { jobId: string };
-    const j = await ClipJob.findById(jobId);
+    const j = await (ClipJob as any).findById(jobId);
     if (!j) return;
 
     try {

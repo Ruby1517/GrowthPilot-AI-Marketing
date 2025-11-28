@@ -12,7 +12,7 @@ export async function recordOverageRow(opts: {
   await dbConnect();
   const unitPrice = OVERAGE_PRICING[opts.key];
   const amount = unitPrice * opts.overUnits;
-  await Overage.create({
+  await (Overage as any).create({
     orgId: opts.orgId,
     at: new Date(),
     key: opts.key,

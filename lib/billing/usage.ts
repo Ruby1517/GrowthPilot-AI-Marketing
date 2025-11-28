@@ -22,7 +22,7 @@ export async function reportUsageForOrg(orgId: string, {
   const out: Array<{ kind: 'tokens' | 'minutes'; qty: number }> = [];
 
   if (tokens > 0 && tokensItemId) {
-    await stripe.subscriptionItems.createUsageRecord(
+    await (stripe.subscriptionItems as any).createUsageRecord(
       tokensItemId,
       { quantity: Math.floor(tokens), timestamp: at, action: 'increment' },
       key('tokens') ? { idempotencyKey: key('tokens') } : undefined
@@ -30,7 +30,7 @@ export async function reportUsageForOrg(orgId: string, {
     out.push({ kind: 'tokens', qty: tokens });
   }
   if (minutes > 0 && minutesItemId) {
-    await stripe.subscriptionItems.createUsageRecord(
+    await (stripe.subscriptionItems as any).createUsageRecord(
       minutesItemId,
       { quantity: Math.floor(minutes), timestamp: at, action: 'increment' },
       key('minutes') ? { idempotencyKey: key('minutes') } : undefined

@@ -5,8 +5,8 @@ export async function track(
   orgId: string,
   userId: string,
   payload: {
-    module: Event['module'];
-    type: Event['type'];
+    module: string;
+    type: string;
     meta?: Record<string, any>;
   }
 ) {

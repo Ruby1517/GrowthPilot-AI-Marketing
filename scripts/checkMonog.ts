@@ -10,9 +10,9 @@ async function main() {
   await mongoose.connect(uri)
 
   const conn = mongoose.connection
-  const admin = conn.db.admin()
+  const admin = conn.db!.admin()
   const ping = await admin.command({ ping: 1 })
-  const collections = await conn.db.listCollections().toArray()
+  const collections = await conn.db!.listCollections().toArray()
 
   console.log('✅ Connected')
   console.log('Host:', (conn as any).host, 'DB:', conn.name)

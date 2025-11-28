@@ -6,6 +6,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3'
 import fs from 'node:fs'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import mongoose from 'mongoose'
 import Asset from '@/models/Asset'
 import { dbConnect } from '@/lib/db'
@@ -24,7 +25,9 @@ new Worker('video-processor', async job => {
   fs.mkdirSync(TMP, { recursive: true })
   const input = path.join(TMP, `${asset._id}.source`)
   const obj = await s3.send(new GetObjectCommand({ Bucket: asset.bucket, Key: asset.key }))
-  await new Promise<void>((resolve,reject)=>obj.Body!.pipe(fs.createWriteStream(input)).on('finish',resolve).on('error',reject))
+  const bodyStream = (obj.Body as any)
+  const nodeStream = typeof bodyStream?.pipe === 'function' ? bodyStream : Readable.fromWeb(bodyStream as any)
+  await new Promise<void>((resolve,reject)=>nodeStream.pipe(fs.createWriteStream(input)).on('finish',resolve).on('error',reject))
 
   // 2) Run ffmpeg (example: normalize to mp4 1080p)
   const output = path.join(TMP, `${asset._id}.mp4`)

@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       const res = await client.images.generate({
         model: "gpt-image-1",
         prompt,
-        size: p.size, // valid sizes only
+        size: (p.size as any) || "1024x1024", // cast to supported size literals
       });
 
       const item = res.data?.[0];
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
 
     // Enforce plan usage for generated assets (count = presets.length)
     const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
-    const orgId = me?.orgId ? String(me.orgId) : null;
+    const orgId = (me as any)?.orgId ? String((me as any).orgId) : null;
     const count = out.length;
     if (orgId && count > 0) {
       const gate = await assertWithinLimit({ orgId, key: 'brandpilot_assets', incBy: count, allowOverage: true });

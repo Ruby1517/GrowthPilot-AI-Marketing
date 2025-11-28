@@ -85,10 +85,8 @@ export function buildObjectKey(opts: {
 
 // tiny polyfill for Node < 19
 function cryptoRandomUUID() {
-  // @ts-expect-error
   return globalThis.crypto?.randomUUID
-    ? // @ts-expect-error
-      globalThis.crypto.randomUUID()
+    ? globalThis.crypto.randomUUID()
     : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = (Math.random() * 16) | 0,
           v = c === 'x' ? r : (r & 0x3) | 0x8;

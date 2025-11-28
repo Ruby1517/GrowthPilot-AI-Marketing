@@ -18,18 +18,18 @@ export async function GET() {
     return NextResponse.json({ outputs: [] });
   }
 
-  const jobs = await ClipJob.find({ userId }).select('_id').lean();
+  const jobs = await (ClipJob as any).find({ userId }).select('_id').lean();
   if (!jobs.length) {
     return NextResponse.json({ outputs: [] });
   }
-  const jobIds = jobs.map((j) => j._id);
+  const jobIds = jobs.map((j: any) => j._id);
 
-  const outputs = await ClipOutput.find({ jobId: { $in: jobIds } })
+  const outputs = await (ClipOutput as any).find({ jobId: { $in: jobIds } })
     .sort({ createdAt: -1 })
     .limit(100)
     .lean();
 
-  const payload = outputs.map((o) => ({
+  const payload = outputs.map((o: any) => ({
     _id: String(o._id),
     jobId: String(o.jobId),
     index: o.index ?? 0,

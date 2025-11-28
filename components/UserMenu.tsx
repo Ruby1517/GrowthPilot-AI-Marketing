@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function UserMenu() {
   const { data: session, status } = useSession()
@@ -38,7 +39,6 @@ export default function UserMenu() {
 
   const email = session.user?.email || 'Account'
   const avatar = session.user?.image
-  const role = (session.user as any)?.role
   const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
   const displayEmail = demo ? 'demo@growthpilot.ai' : email
   const displayName = demo ? 'Demo user' : (session.user?.name || email)
@@ -52,7 +52,7 @@ export default function UserMenu() {
         aria-haspopup="menu"
       >
         {avatar ? (
-          <img src={avatar} alt="avatar" className="h-6 w-6 rounded-full" />
+          <Image src={avatar} alt="avatar" width={24} height={24} className="h-6 w-6 rounded-full" />
         ) : (
           <div className="h-6 w-6 rounded-full bg-white/10" />
         )}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { canAccess } from '@/lib/access';
 import type { ModuleKey, ModuleStatus } from '@/lib/modules';
@@ -44,13 +44,12 @@ export const creators: Array<{
   status: ModuleStatus;
 }> = [
   { href: '/postpilot',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot',  status: moduleStatus.postpilot },
-  { href: '/clippilot',      label: moduleLabels.clippilot,  desc: 'Video/Shorts Creator',        icon: 'clip',   module: 'clippilot',  status: moduleStatus.clippilot },
+  { href: '/clippilot',      label: moduleLabels.clippilot,  desc: 'Viral-ready Shorts',          icon: 'clip',   module: 'clippilot',  status: moduleStatus.clippilot },
   { href: '/blogpilot',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot',  status: moduleStatus.blogpilot },
   { href: '/adpilot',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot',    status: moduleStatus.adpilot },
   { href: '/leadpilot',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot',  status: moduleStatus.leadpilot },
   { href: '/mailpilot',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot',  status: moduleStatus.mailpilot },
   { href: '/brandpilot', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot', status: moduleStatus.brandpilot }, 
-  { href: '/viralpilot', label: moduleLabels.viralpilot, desc: 'YouTube Content Creation',    icon: 'youtube',module: 'viralpilot', status: moduleStatus.viralpilot },
 ];
 
 // Tools menu toggle (client env): set NEXT_PUBLIC_SHOW_TOOLS=false to hide
@@ -65,21 +64,18 @@ export default function StudioSidebar() {
   const { data: session } = useSession();
   const [plan, setPlan] = useState<('Trial'|'Starter'|'Pro'|'Business') | null>(null);
   const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown');
-  const [loadingPlan, setLoadingPlan] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     async function loadPlan() {
       try {
-        setLoadingPlan(true);
         const r = await fetch('/api/org/settings', { cache: 'no-store' });
         if (!r.ok) return;
         const j = await r.json();
         const eff = (j.effectivePlan as any) || (j.plan as any);
         if (!cancelled) { setPlan(eff as any); setMyRole((j.myRole as any) || 'member'); }
       } finally {
-        if (!cancelled) setLoadingPlan(false);
       }
     }
     loadPlan();

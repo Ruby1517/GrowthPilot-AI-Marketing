@@ -1,7 +1,7 @@
 import Stripe from 'stripe'
 
 // Node tip: run with `pnpm tsx scripts/seedStripe.ts`
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' as any })
 
 async function main() {
   // 3 plan prices (monthly)
@@ -31,7 +31,7 @@ async function main() {
   // Tokens billed per 1,000 (example: $0.002 per token => $2 per 1k)
   const tokens = await stripe.prices.create({
     currency: 'usd',
-    recurring: { interval: 'month', usage_type: 'metered', aggregate_usage: 'sum' },
+    recurring: { interval: 'month', usage_type: 'metered', aggregate_usage: 'sum' } as any,
     unit_amount: 200, // $2 per unit
     product_data: { name: 'AI Tokens (per 1,000)' },
     nickname: 'Tokens',
@@ -41,7 +41,7 @@ async function main() {
   // Minutes billed per minute ($0.03/min)
   const minutes = await stripe.prices.create({
     currency: 'usd',
-    recurring: { interval: 'month', usage_type: 'metered', aggregate_usage: 'sum' },
+    recurring: { interval: 'month', usage_type: 'metered', aggregate_usage: 'sum' } as any,
     unit_amount: 3, // $0.03 per unit (Stripe amounts are cents)
     product_data: { name: 'Video Minutes (per minute)' },
     nickname: 'Minutes',

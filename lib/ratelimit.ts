@@ -1,6 +1,19 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
+// Legacy helper used by some modules; falls back to allow if not configured.
+export async function checkRateLimit(orgId: string, module: string, limit: number, windowSeconds: number) {
+  void module;
+  void windowSeconds;
+  if (!orgId) return { ok: true, remaining: limit };
+  try {
+    const { success, remaining } = await limiterPerOrg.limit(`org:${orgId}`);
+    return { ok: success, remaining };
+  } catch {
+    return { ok: true, remaining: limit };
+  }
+}
+
 function buildLimiter() {
   const url = process.env.UPSTASH_REDIS_REST_URL
   const token = process.env.UPSTASH_REDIS_REST_TOKEN

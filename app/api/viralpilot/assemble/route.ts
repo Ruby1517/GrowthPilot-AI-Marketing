@@ -14,10 +14,12 @@ import { assertWithinLimit } from '@/lib/usage';
 import { recordOverageRow } from '@/lib/overage';
 import { track } from '@/lib/track';
 import { limiterPerOrg } from '@/lib/ratelimit';
+import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = String((session.user as any).id);
 
   const { id } = await req.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
@@ -27,7 +29,9 @@ export async function POST(req: Request) {
   if (!doc?.tts?.key) return NextResponse.json({ error: 'Generate TTS first' }, { status: 400 });
 
   // Resolve org for usage/analytics
-  const me = await User.findOne({ email: (session.user as any).email }).lean().catch(()=>null);
+  const me = (await User.findOne({ email: (session.user as any).email })
+    .lean()
+    .catch(() => null)) as { orgId?: mongoose.Types.ObjectId | string } | null;
   const orgId = me?.orgId ? String(me.orgId) : null;
 
   // Optional per-org rate limit (if Upstash configured)
@@ -66,14 +70,14 @@ export async function POST(req: Request) {
     }
 
     // 3) Upload and get URL
-    const videoKey = `assets/user_${(session.user as any).id}/viralp/${id}/video.mp4`;
+    const videoKey = `assets/user_${userId}/viralp/${id}/video.mp4`;
     await putBuffer(videoKey, mp4, 'video/mp4');
     const signed = await presignGet(videoKey, 3600);
     const url = publicUrlOrSigned(videoKey, signed);
 
     // 4) Save asset + update project
     await Asset.create({
-      userId: (session.user as any).id,
+      userId,
       key: videoKey,
       bucket: S3_BUCKET,
       region: process.env.AWS_REGION || 'us-west-1',
@@ -88,7 +92,7 @@ export async function POST(req: Request) {
     await doc!.save();
 
     if (orgId) {
-      try { await track(orgId, String((session.user as any).id), { module: 'viralpilot', type: 'watchtime.added', meta: { minutes } }); } catch {}
+      try { await track(orgId, userId, { module: 'viralpilot', type: 'watchtime.added', meta: { minutes } }); } catch {}
     }
 
     return NextResponse.json({ ok: true, inline: true, url });
@@ -108,7 +112,7 @@ export async function POST(req: Request) {
   try {
     const job = await viralpQueue.add('assemble', {
       projectId: id,
-      userId: (session.user as any).id,
+      userId,
     });
 
     doc.video = { ...doc.video, status: 'queued' } as any;

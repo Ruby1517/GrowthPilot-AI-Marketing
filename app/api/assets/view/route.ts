@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
   const doc = await Asset.findOne({ key, userId }).lean();
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const client = new S3Client({ region: doc.region });
+  const client = new S3Client({ region: (doc as any).region });
   const signed = await getSignedUrl(
     client,
-    new GetObjectCommand({ Bucket: doc.bucket, Key: doc.key }),
+    new GetObjectCommand({ Bucket: (doc as any).bucket, Key: (doc as any).key }),
     { expiresIn: 600 }
   );
   return NextResponse.redirect(signed, 302);

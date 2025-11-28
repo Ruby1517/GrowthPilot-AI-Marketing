@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
   let orgId: string | null = null;
   try {
     if (session?.user?.email) {
-      const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+      const me = (await (await import('@/models/User')).default
+        .findOne({ email: session.user.email })
+        .lean()) as { orgId?: mongoose.Types.ObjectId | string } | null;
       if (me?.orgId) orgId = String(me.orgId);
     }
     if (!orgId && body?.orgId) orgId = String(body.orgId);

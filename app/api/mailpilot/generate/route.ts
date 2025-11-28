@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
   const session = await auth().catch(()=>null);
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const userId = (session.user as any).id;
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean().catch(()=>null);
+  const me = (await (await import('@/models/User')).default
+    .findOne({ email: session.user.email })
+    .lean()
+    .catch(() => null)) as { orgId?: string | import('mongoose').Types.ObjectId } | null;
   const orgId = me?.orgId ? String(me.orgId) : null;
 
   const body = await req.json();
@@ -62,7 +65,7 @@ Sender: ${JSON.stringify(sender || {})}`;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const model = process.env.MAILPILOT_MODEL || 'gpt-4o-mini';
 
-  let r;
+  let r: Awaited<ReturnType<typeof openai.chat.completions.create>> | null = null;
   for (let i=0;i<3;i++) {
     try {
       r = await openai.chat.completions.create({
@@ -80,7 +83,9 @@ Sender: ${JSON.stringify(sender || {})}`;
     }
   }
 
-  const raw = r!.choices?.[0]?.message?.content?.trim() || '';
+  if (!r) return NextResponse.json({ error: 'Model failed after retries' }, { status: 502 });
+
+  const raw = r.choices?.[0]?.message?.content?.trim() || '';
   const cleaned = raw.replace(/^```json\s*/i,'').replace(/```$/,'');
   let out: any;
   try { out = JSON.parse(cleaned); } catch {

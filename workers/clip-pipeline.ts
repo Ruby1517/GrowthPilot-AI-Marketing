@@ -131,7 +131,8 @@ async function detectSilences(inFile:string) {
 // Whisper transcription (choose one):
 async function transcribeWhisper(inFile:string) {
   // Option A: OpenAI Whisper-1 via file upload
-  const file = await (await import("node:fs")).promises.readFile(inFile);
+  const fs = await import("node:fs");
+  const file = fs.createReadStream(inFile);
   const resp = await openai.audio.transcriptions.create({ file, model: "whisper-1", response_format: "verbose_json", timestamp_granularities: ["word"] });
   // Map to [{t0,t1,text}]
   const words = (resp as any).words?.map((w:any)=>({ t0: w.start, t1: w.end, text: w.word })) || [];
@@ -148,11 +149,11 @@ function chunkTranscript(words: {t0:number,t1:number,text:string}[], silences:{s
     const curLen = w.t1 - cur.startSec;
     const nearSilence = silences.find(s => Math.abs(s.start - w.t1) < 0.5);
     if ((curLen >= min && nearSilence) || curLen >= max) {
-      out.push({ ...cur, endSec: w.t1, text: cur.words.map(x=>x.text).join("").trim() });
+      out.push({ ...cur, endSec: w.t1, text: cur.words.map((x:any)=>x.text).join("").trim() });
       cur = { startSec: w.t1, words: [] };
     }
   }
-  if (cur.words.length) out.push({ ...cur, endSec: cur.words.at(-1).t1, text: cur.words.map(x=>x.text).join("").trim() });
+  if (cur.words.length) out.push({ ...cur, endSec: cur.words.at(-1).t1, text: cur.words.map((x:any)=>x.text).join("").trim() });
   return out.filter(c => c.endSec - c.startSec >= min);
 }
 

@@ -1,4 +1,4 @@
-export async function synthesizeTTS(text: string, voiceStyle: string) {
+export async function synthesizeTTS(text: string) {
   const apiKey = process.env.ELEVENLABS_API_KEY!;
   const voiceId = process.env.ELEVENLABS_VOICE_ID!;
   if (!apiKey || !voiceId) throw new Error("TTS not configured");

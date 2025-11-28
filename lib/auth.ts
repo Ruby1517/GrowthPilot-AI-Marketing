@@ -40,13 +40,14 @@ export const { handlers, auth } = NextAuth({
       let dbUser = await User.findOne({ email })
       if (!dbUser) {
         const org = await Org.create({ name: `${user?.name || 'My'} Org` })
-        const team = await Team.create({ name: `${user.name || 'My'} Team`, ownerId: org.ownerId })
         dbUser = await User.create({
-          name: user?.name, email, image: (user as any).image, teamId: team._id,
+          name: user?.name, email, image: (user as any).image,
           role: 'member', orgId: org._id
         })
-        org.ownerId = dbUser._id
-        // Trial users default to member; ownerId is set for internal reference
+        const team = await Team.create({ name: `${user.name || 'My'} Team`, ownerId: dbUser._id })
+        dbUser.teamId = team._id
+        await dbUser.save()
+        // Trial users default to member
         org.members = [{ userId: dbUser._id, role: 'member', joinedAt: new Date() as any } as any]
         await org.save()
       }

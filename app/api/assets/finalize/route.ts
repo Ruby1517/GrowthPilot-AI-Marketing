@@ -18,7 +18,12 @@ export async function POST(req: Request) {
   await dbConnect()
   const bucket = process.env.AWS_S3_BUCKET!
   // HEAD the object to get size, type, etag
-  const head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }).catch(()=>null))
+  let head: any = null;
+  try {
+    head = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+  } catch {
+    head = null;
+  }
   if (!head) {
     await Asset.updateOne({ key, userId: (session.user as any).id }, { $set: { status: 'failed' } })
     return NextResponse.json({ error: 'S3 object not found' }, { status: 404 })

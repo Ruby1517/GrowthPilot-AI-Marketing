@@ -5,18 +5,19 @@ import User from '@/models/User';
 import Org from '@/models/Org';
 import ClipJob from '@/models/ClipJob';
 import Link from 'next/link';
+import mongoose from 'mongoose';
 
 export default async function HistoryPage() {
   const session = await auth();
   if (!session?.user?.email) return <div className="p-6">Please sign in.</div>;
 
   await dbConnect();
-  const me = await User.findOne({ email: session.user.email }).lean();
+  const me = await User.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId }>();
   if (!me) return <div className="p-6">User not found.</div>;
-  const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
+  const org = me.orgId ? await Org.findById(me.orgId).lean<{ _id: mongoose.Types.ObjectId }>() : null;
   if (!org) return <div className="p-6">Org not found.</div>;
 
-  const jobs = await ClipJob.find({ orgId: org._id }).sort({ createdAt: -1 }).limit(100).lean();
+  const jobs = await (ClipJob as any).find({ orgId: org._id }).sort({ createdAt: -1 }).limit(100).lean().exec() as any[];
 
   return (
     <section className="p-6 space-y-4">

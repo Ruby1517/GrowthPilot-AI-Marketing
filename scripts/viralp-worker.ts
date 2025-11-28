@@ -41,7 +41,7 @@ async function downloadToTmp(key: string) {
 
 function ffprobeDuration(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, data) => {
+    ffmpeg.ffprobe(filePath, (err: any, data: any) => {
       if (err) return reject(err);
       const sec = data.format.duration || 60;
       resolve(sec);
@@ -59,7 +59,7 @@ async function assembleSimpleVideo(audioPath: string, outPath: string, duration:
       .outputOptions(['-shortest', '-pix_fmt yuv420p', '-c:v libx264', '-preset veryfast', '-movflags +faststart'])
       .save(outPath)
       .on('end', () => resolve())
-      .on('error', (e) => reject(e));
+      .on('error', (e: any) => reject(e));
   });
 }
 
@@ -80,7 +80,7 @@ async function run() {
       const { projectId, userId } = job.data as { projectId: string; userId: string };
       const doc = await ViralProject.findById(projectId);
       if (!doc?.tts?.key) throw new Error('No TTS asset');
-      const me = await User.findById(userId).lean().catch(()=>null);
+      const me = await User.findById(userId).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId }>().catch(()=>null);
       const orgId = me?.orgId ? String(me.orgId) : null;
 
       // Download MP3

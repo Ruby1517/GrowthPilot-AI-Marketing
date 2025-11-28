@@ -4,6 +4,7 @@ import { dbConnect } from '@/lib/db'
 import User from '@/models/User'
 import Org from '@/models/Org'
 import ModuleDemo from '@/models/ModuleDemo'
+import mongoose from 'mongoose'
 
 export async function GET(req: Request) {
   await dbConnect()
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.email) return new Response('Unauthorized', { status: 401 })
   await dbConnect()
-  const me = await User.findOne({ email: session.user.email }).lean()
+  const me = await User.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId | string }>()
   if (!me?.orgId) return new Response('Forbidden', { status: 403 })
   const org = await Org.findById(me.orgId).lean()
   const myRole = org?.members?.find((m: any) => String(m.userId) === String(me._id))?.role || 'member'
@@ -39,4 +40,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true })
 }
-

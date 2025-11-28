@@ -3,12 +3,20 @@ import { dbConnect } from '@/lib/db'
 import User from '@/models/User'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import mongoose from 'mongoose'
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.email) return new Response('Unauthorized', { status: 401 })
   await dbConnect()
-  const me = await User.findOne({ email: session.user.email }).lean()
+  const me = await User.findOne({ email: session.user.email }).lean<{
+    _id: mongoose.Types.ObjectId
+    name?: string
+    email?: string
+    image?: string
+    role?: string
+    orgId?: mongoose.Types.ObjectId | string
+  }>()
   if (!me) return new Response('Not found', { status: 404 })
   return NextResponse.json({
     id: String(me._id),
@@ -40,4 +48,3 @@ export async function PATCH(req: Request) {
   await User.updateOne({ email: session.user.email }, { $set: updates })
   return NextResponse.json({ ok: true })
 }
-

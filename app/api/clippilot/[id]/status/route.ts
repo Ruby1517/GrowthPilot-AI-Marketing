@@ -33,10 +33,10 @@ export async function GET(
 ) {
   await dbConnect();
 
-  const job = await ClipJob.findById(params.id).lean();
+  const job = await (ClipJob as any).findById(params.id).lean();
   if (!job) return new Response('Not found', { status: 404 });
 
-  const outputs = await ClipOutput.find({ jobId: job._id })
+  const outputs = await (ClipOutput as any).find({ jobId: job._id })
     .sort({ index: 1 })
     .lean();
 
@@ -48,7 +48,7 @@ export async function GET(
     durationSec: job.durationSec || 0,
     variants: job.variants || 1,
     error: job.error || null,
-    outputs: outputs.map(o => {
+    outputs: outputs.map((o: any) => {
       const storageKey = typeof o.storageKey === 'string' && o.storageKey.length ? o.storageKey : null;
       const fallbackKey =
         !storageKey && typeof job.src === 'string' && job.src.length && !/^https?:\/\//i.test(job.src)

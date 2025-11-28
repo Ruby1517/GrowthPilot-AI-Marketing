@@ -9,7 +9,9 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.email) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await dbConnect();
-  const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean();
+  const me = await (await import('@/models/User')).default
+    .findOne({ email: session.user.email })
+    .lean<{ orgId?: mongoose.Types.ObjectId | string }>();
   if (!me) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const org = me.orgId ? await Org.findById(me.orgId).lean() : null;
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
