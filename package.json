@@ -12,7 +12,6 @@
     "test:watch": "vitest watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "worker": "tsx workers/clip-worker.ts",
-    "worker:viralp": "tsx workers/viralp-worker.ts",
     "queues:ui": "node -e \"require('open')('http://localhost:3000/admin/queues')\" && next dev",
     "queue:watch": "tsx workers/queueWatcher.ts"
   },

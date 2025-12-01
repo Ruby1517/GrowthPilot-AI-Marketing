@@ -40,7 +40,6 @@ async function getBullQueues() {
   const connection = new Redis(REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: true, enableReadyCheck: false, retryStrategy: () => null })
   const queues = [
     new Queue('postpilot-schedule', { connection }),
-    new Queue('viralp-assemble', { connection }),
   ]
   return queues
 }

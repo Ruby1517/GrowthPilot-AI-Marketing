@@ -5,7 +5,7 @@ const { Schema, models, model } = mongoose;
 
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'viralpilot';
+  | 'leadpilot' | 'mailpilot' | 'brandpilot';
 
 export type EventType =
   | 'generation.requested' | 'generation.completed'

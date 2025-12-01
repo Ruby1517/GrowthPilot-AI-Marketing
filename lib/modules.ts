@@ -1,7 +1,7 @@
 export type Plan = 'Trial' | 'Starter' | 'Pro' | 'Business';
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'viralpilot';
+  | 'leadpilot' | 'mailpilot' | 'brandpilot';
 
 export type ModuleStatus = 'live' | 'coming_soon';
 
@@ -13,7 +13,6 @@ export const modulePlan: Record<ModuleKey, Plan> = {
   leadpilot: 'Business',
   mailpilot: 'Pro',
   brandpilot: 'Business',
-  viralpilot: 'Pro',
 };
 
 // Human-friendly labels for modules
@@ -25,7 +24,6 @@ export const moduleLabels: Record<ModuleKey, string> = {
   leadpilot: 'LeadPilot',
   mailpilot: 'MailPilot',
   brandpilot: 'BrandPilot',
-  viralpilot: 'ViralPilot',
 };
 
 export const moduleStatus: Record<ModuleKey, ModuleStatus> = {
@@ -36,7 +34,6 @@ export const moduleStatus: Record<ModuleKey, ModuleStatus> = {
   leadpilot: 'live',
   mailpilot: 'live',
   brandpilot: 'live',
-  viralpilot: 'coming_soon',
 };
 
 // Dev switch: unlock all modules locally or in preview if you want

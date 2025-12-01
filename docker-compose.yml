@@ -22,26 +22,6 @@ services:
     ports:
       - '3000:3000'
 
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: pnpm dlx tsx -r tsconfig-paths/register scripts/viralp-worker.ts
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/growthpilot}
-      MONGODB_DB: ${MONGODB_DB:-growthpilot}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   mongo:
     image: mongo:7
     restart: unless-stopped

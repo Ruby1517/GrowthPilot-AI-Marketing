@@ -27,7 +27,6 @@ export async function GET() {
       const { connection } = built
       const queues = [
         new Queue('postpilot-schedule', { connection }),
-        new Queue('viralp-assemble', { connection }),
       ]
 
       const adapters = queues.map((q) => new BullMQAdapter(q))

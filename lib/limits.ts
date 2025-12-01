@@ -6,7 +6,6 @@ export const PLAN_LIMITS = {
     mailpilot_emails: 0,
     adpilot_variants: 0,
     clippilot_minutes: 0,
-    viralpilot_minutes: 0,
     leadpilot_convos: 0,
     brandpilot_assets: 0,
   },
@@ -17,7 +16,6 @@ export const PLAN_LIMITS = {
     mailpilot_emails: 0,
     adpilot_variants: 0,
     clippilot_minutes: 0,
-    viralpilot_minutes: 0,
     leadpilot_convos: 0,
     brandpilot_assets: 0,
   },
@@ -27,7 +25,6 @@ export const PLAN_LIMITS = {
     mailpilot_emails: 5000,
     adpilot_variants: 500,
     clippilot_minutes: 120,
-    viralpilot_minutes: 120,
     leadpilot_convos: 500,
     brandpilot_assets: 500,
   },
@@ -37,7 +34,6 @@ export const PLAN_LIMITS = {
     mailpilot_emails: 50000,
     adpilot_variants: 5000,
     clippilot_minutes: 1000,
-    viralpilot_minutes: 1000,
     leadpilot_convos: 5000,
     brandpilot_assets: 5000,
   },
@@ -47,7 +43,6 @@ export const OVERAGE_PRICING = {
   blogpilot_words: 0.00001,      // $/word
   mailpilot_emails: 0.001,       // $/email
   clippilot_minutes: 0.05,       // 0.05 per extra render minute
-  viralpilot_minutes: 0.05,
   postpilot_generated: 0.01,     // $/post
   adpilot_variants: 0.01,
   leadpilot_convos: 0.02,
@@ -62,7 +57,6 @@ export type MeterKey = keyof typeof PLAN_LIMITS['Starter'];
 // Canonical meter keys
 export const USAGE_KEYS = {
   CLIPPILOT_MINUTES: 'clippilot_minutes' as MeterKey,
-  VIRALPILOT_MINUTES: 'viralpilot_minutes' as MeterKey,
   POSTPILOT_GENERATED: 'postpilot_generated' as MeterKey,
   BLOGPILOT_WORDS: 'blogpilot_words' as MeterKey,
   MAILPILOT_EMAILS: 'mailpilot_emails' as MeterKey,

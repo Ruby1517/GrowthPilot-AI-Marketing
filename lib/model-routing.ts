@@ -1,6 +1,6 @@
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'viralpilot';
+  | 'leadpilot' | 'mailpilot' | 'brandpilot';
 
 export type TaskKind =
   | 'text.generate'       // structured writing (BlogPilot, PostPilot captions, Ad copy)
@@ -41,10 +41,6 @@ export const ROUTING: Record<ModuleKey, Partial<Record<TaskKind, ModelSpec>>> = 
   clippilot: {
     'speech.synthesize': { provider: 'elevenlabs:tts',   model: process.env.ELEVENLABS_MODEL     || 'eleven_multilingual_v2' },
     'text.generate':     { provider: 'openai:text',      model: process.env.CLIPPILOT_SCRIPT_MODEL|| 'gpt-4o-mini' },
-  },
-  viralpilot: {
-    'speech.synthesize': { provider: 'elevenlabs:tts',   model: process.env.ELEVENLABS_MODEL     || 'eleven_multilingual_v2' },
-    'text.generate':     { provider: 'openai:text',      model: process.env.VIRALPILOT_SCRIPT_MODEL|| 'gpt-4o-mini' },
   },
   leadpilot: {
     'text.generate':     { provider: 'openai:text',      model: process.env.LEADPILOT_MODEL      || 'gpt-4o-mini' },

@@ -9,8 +9,7 @@ function PlanCard({ name }: { name: keyof typeof PLAN_LIMITS }) {
     <div className="card p-6 border-white/20">
       <h3 className="text-xl font-semibold">{name}</h3>
       <ul className="mt-3 text-sm space-y-1">
-        {/* <li>ViralPilot minutes: <b>{p.viralpilot_minutes}</b></li>
-        <li>ClipPilot minutes: <b>{p.clippilot_minutes}</b></li> */}
+        {/* <li>ClipPilot minutes: <b>{p.clippilot_minutes}</b></li> */}
         <li>BlogPilot words: <b>{p.blogpilot_words.toLocaleString()}</b></li>
         <li>MailPilot emails: <b>{p.mailpilot_emails.toLocaleString()}</b></li>
         <li>AdPilot variants: <b>{p.adpilot_variants}</b></li>
@@ -37,4 +36,3 @@ export default function PricingPage() {
     </section>
   );
 }
-
