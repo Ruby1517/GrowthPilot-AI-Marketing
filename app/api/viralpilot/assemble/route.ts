@@ -119,6 +119,7 @@ export async function POST(req: Request) {
     await doc.save();
     return NextResponse.json({ jobId: job.id });
   } catch (e) {
+    console.error('[viralpilot] queue enqueue failed, falling back to inline', e);
     try {
       return await assembleInline();
     } catch (e2: any) {

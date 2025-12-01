@@ -328,9 +328,11 @@ export default function PostPilotPage() {
                 onChange={(e) => setAutomationCadence(e.target.value as typeof cadences[number])}
                 className="flex-1 rounded-md border px-3 py-2 text-sm"
               >
-                <option value="none">Manual / single run</option>
-                <option value="daily">Daily (auto)</option>
-                <option value="weekly">Weekly (auto)</option>
+                {cadences.map((c) => (
+                  <option key={c} value={c}>
+                    {c === 'none' ? 'Manual / single run' : c === 'daily' ? 'Daily (auto)' : 'Weekly (auto)'}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-2">

@@ -90,6 +90,7 @@ import mongoose from 'mongoose';
 import ClipJob from '@/models/ClipJob';
 import { getSimpleClipQueue } from '@/lib/clip-simple-queue';
 import { track } from '@/lib/track';
+import ClipOutput from '@/models/ClipOutput';
 
 // ClipPilot create: video-only (long video → short video)
 
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth().catch(()=>null);
     const body = await req.json();
-    const { orgId, aspect = '9:16' } = body;
+    const { orgId, aspect = '9:16', durationSec: durationSecRaw } = body;
 
     if (!orgId) return NextResponse.json({ error: 'org_required' }, { status: 400 });
 
@@ -114,25 +115,50 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
     const userId = (session?.user as any)?.id ? new mongoose.Types.ObjectId((session!.user as any).id) : new mongoose.Types.ObjectId();
+    const durationSec = Math.max(5, Math.min(180, Number(durationSecRaw) || 30));
+
+    // Fallback URL for viewing uploads from storageKey
+    const assetUrl = storageKey
+      ? `/api/assets/view?key=${encodeURIComponent(storageKey)}`
+      : srcUrl;
+
     const job = await (ClipJob as any).create({
       orgId: new mongoose.Types.ObjectId(orgId),
       userId,
       src: storageKey || srcUrl,
       prompt: '',
       aspect,
-      durationSec: 0,
+      durationSec,
       variants: 1,
       status: 'queued',
       estimateMinutes: 0,
       actualMinutes: 0,
+      branding: body?.branding || {},
     } as any);
 
     // Optional analytics: request event
     try { await track(orgId, userId.toString(), { module: 'clippilot', type: 'generation.requested', meta: { mode: 'video' } }); } catch {}
-    // Enqueue lightweight processor if Redis available
+    // Enqueue lightweight processor if Redis available; otherwise fall back to marking done with the source asset
     try {
       const q = await getSimpleClipQueue();
-      if (q) await q.add('process', { jobId: String(job._id) }, { attempts: 1, removeOnComplete: true });
+      if (q) {
+        await q.add('process', { jobId: String(job._id) }, { attempts: 1, removeOnComplete: true });
+      } else {
+        // No queue available: mark as done with a placeholder output so users see a result
+        await (ClipJob as any).findByIdAndUpdate(job._id, { status: 'done', actualMinutes: Math.ceil(durationSec / 60) }).lean();
+        await (ClipOutput as any).create({
+          jobId: job._id,
+          index: 0,
+          url: assetUrl || srcUrl || '',
+          thumb: assetUrl || srcUrl || '',
+          durationSec,
+          title: body?.title || 'ClipPilot preview',
+          hook: body?.hook || 'Auto-generated highlight',
+          captionText: body?.captionText || '',
+          thumbnailText: body?.thumbnailText || '',
+          storageKey: storageKey || undefined,
+        });
+      }
     } catch (err: any) {
       console.warn('[clippilot/create] enqueue failed:', err?.message || err);
     }

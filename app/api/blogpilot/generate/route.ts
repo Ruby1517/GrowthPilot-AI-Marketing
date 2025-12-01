@@ -758,7 +758,7 @@ export async function POST(req: Request) {
       meta: { predictedWords }
     });
 
-    const { text, tokens, raw: providerRaw } = await callText({
+    const { text, raw: providerRaw } = await callText({
       messages,
       model: spec.model,
       json: true, // enforce JSON from provider layer

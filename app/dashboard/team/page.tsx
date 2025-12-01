@@ -34,8 +34,6 @@ export default async function TeamPage() {
   const plan = (org as any).plan || 'Trial';
   const canManageTeam = hasFeature(plan as any, 'team_management') && ['owner','admin'].includes(String(myRole));
 
-  async function refresh() {}
-
   return (
     <section className="p-6 space-y-4 max-w-4xl">
       <h1 className="text-2xl font-semibold">Team</h1>

@@ -64,6 +64,10 @@ export async function GET(
         thumb: o.thumb,
         bytes: o.bytes ?? null,
         durationSec: o.durationSec ?? null,
+        title: o.title || null,
+        hook: o.hook || null,
+        captionText: o.captionText || null,
+        thumbnailText: o.thumbnailText || null,
       };
     }),
     createdAt: job.createdAt,

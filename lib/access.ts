@@ -4,8 +4,9 @@ const RANK: Record<Plan, number> = { Trial: 0, Starter: 1, Pro: 2, Business: 3 }
 const ADMIN_OVERRIDE_ENABLED = process.env.NEXT_PUBLIC_ALLOW_ADMIN_OVERRIDE === 'true';
 const TRIAL_UNLOCK_MODULES = new Set<ModuleKey>(['postpilot', 'blogpilot']);
 
-function normalizePlan(v: Plan | string | null | undefined): Plan {
-  const s = String(v ?? '').toLowerCase();
+function normalizePlan(v: Plan | string | null | undefined): Plan | null {
+  if (v == null) return null;
+  const s = String(v || '').toLowerCase();
   if (s === 'starter') return 'Starter';
   if (s === 'pro') return 'Pro';
   if (s === 'business') return 'Business';

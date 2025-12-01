@@ -43,7 +43,7 @@ async function resolveBasePriceId(body: any) {
   }
 
   // 2) From plan -> env
-  let canonicalPlan: 'Starter'|'Pro'|'Business' = toCanonicalPlan(body?.plan);
+  const canonicalPlan: 'Starter'|'Pro'|'Business' = toCanonicalPlan(body?.plan);
   const envPriceId =
     canonicalPlan === 'Pro'
       ? envOrNull('STRIPE_PRICE_PRO')

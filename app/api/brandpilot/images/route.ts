@@ -78,6 +78,7 @@ export async function POST(req: Request) {
       // Track in DB
       await Asset.create({
         userId: (session.user as any).id,
+        projectId: doc._id,
         key,
         bucket: S3_BUCKET,
         region: S3_REGION,

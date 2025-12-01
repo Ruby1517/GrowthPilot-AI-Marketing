@@ -279,7 +279,11 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     postId: String(insert.insertedId),
-    items: generated.map(({ usage, ...rest }) => rest), // omit usage per-item in payload
+    items: generated.map((g) => {
+      const rest = { ...g };
+      delete (rest as any).usage;
+      return rest;
+    }), // omit usage per-item in payload
     usage: { totalTokens },
     automationPlan: scheduleDates.map((d) => d.toISOString()),
   });

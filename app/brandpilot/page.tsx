@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useEffect } from 'react';
 
 type BrandDoc = {
   _id: string;
@@ -68,6 +69,8 @@ export default function BrandPilotPage() {
   const [loading, setLoading] = useState(false);
   const [doc, setDoc] = useState<BrandDoc | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
+  const [assets, setAssets] = useState<Array<{ _id: string; url?: string | null; key: string; createdAt: string }>>([]);
+  const [assetsMsg, setAssetsMsg] = useState<string | null>(null);
 
   async function handleGenerate() {
     if (!form.company.trim() || !form.vibe.trim()) {
@@ -111,6 +114,7 @@ export default function BrandPilotPage() {
       if (!res.ok) throw new Error(data?.error || 'Failed to generate');
       setDoc(data.doc);
       setStepIdx(0);
+      await loadAssets(data.doc._id);
     } catch (e: any) {
       alert(e.message || 'Error');
     } finally {
@@ -130,6 +134,7 @@ export default function BrandPilotPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to generate images');
       setDoc(data.doc);
+      await loadAssets(data.doc._id);
     } catch (e: any) {
       alert(e.message || 'Error');
     } finally {
@@ -209,6 +214,31 @@ export default function BrandPilotPage() {
       setLoading(false);
     }
   }
+
+  async function loadAssets(projectId: string) {
+    try {
+      setAssetsMsg(null);
+      const r = await fetch(`/api/assets?projectId=${projectId}`);
+      if (!r.ok) throw new Error(await r.text());
+      const j = await r.json();
+      setAssets(
+        (j.items || []).map((a: any) => ({
+          _id: a._id,
+          url: a.url,
+          key: a.key,
+          createdAt: a.createdAt,
+        }))
+      );
+    } catch (e: any) {
+      setAssetsMsg(e?.message || 'Failed to load assets');
+    }
+  }
+
+  useEffect(() => {
+    if (doc?._id) {
+      loadAssets(doc._id);
+    }
+  }, [doc?._id]);
 
   const steps = useMemo(() => [
     { key: 'brand', title: 'Brand Info', desc: 'Name, tagline, mission, values.' },
@@ -777,6 +807,36 @@ export default function BrandPilotPage() {
           </div>
         ) : null}
       </div>
+
+      {doc && (
+        <div className="card p-4 mt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-brand-muted">Assets</div>
+              <div className="text-sm text-brand-muted">Images created for this brand</div>
+            </div>
+            <button className="btn-ghost text-sm" onClick={() => loadAssets(doc._id)}>
+              Refresh
+            </button>
+          </div>
+          {assetsMsg && <div className="mt-2 text-sm text-rose-500">{assetsMsg}</div>}
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {assets.length === 0 && <div className="text-sm text-brand-muted">No assets yet. Generate images to see them here.</div>}
+            {assets.map((a) => (
+              <div key={a._id} className="border rounded-lg overflow-hidden">
+                {a.url ? (
+                  <img src={a.url} alt={a.key} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="h-48 flex items-center justify-center text-sm text-brand-muted bg-white/5">No preview</div>
+                )}
+                <div className="p-2 text-xs text-brand-muted break-all">
+                  {a.key}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

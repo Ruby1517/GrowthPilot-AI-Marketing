@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     }))
     return Response.json({ ok: true, location: out.Location })
   } catch (e) {
+    console.error('Multipart complete failed', e)
     await s3.send(new AbortMultipartUploadCommand({ Bucket: process.env.S3_BUCKET!, Key: key, UploadId: uploadId }))
     return new Response('Multipart complete failed', { status: 500 })
   }

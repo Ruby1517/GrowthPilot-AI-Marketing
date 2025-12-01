@@ -43,7 +43,9 @@ const nextConfig = {
             } catch { return ['*']; }
           })()
         : ['*']
-    }
+    },
+    // Keep ffmpeg binaries external so Next doesn't try to bundle them
+    serverComponentsExternalPackages: ['@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg', 'ffmpeg-static'],
   },
   images: {
     remotePatterns: [

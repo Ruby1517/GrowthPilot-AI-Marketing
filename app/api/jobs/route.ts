@@ -73,7 +73,7 @@ export async function GET() {
       all.sort((a,b)=> b.createdAt.localeCompare(a.createdAt))
       return NextResponse.json(all.slice(0, 100))
     }
-  } catch (e) {
+  } catch {
     // fall through to DB-based stub
   }
 

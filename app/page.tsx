@@ -107,7 +107,7 @@ export default function Home() {
           if (it.module && url) map[it.module] = url;
         }
         setDemoMap(map);
-      } catch (_) {
+      } catch {
         // ignore failures
       }
     }, 0);

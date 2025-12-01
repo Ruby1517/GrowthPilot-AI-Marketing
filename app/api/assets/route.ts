@@ -19,9 +19,13 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "24"), 100);
   const cursor = url.searchParams.get("cursor");
   const includePending = url.searchParams.get("includePending") === "1";
+  const projectId = url.searchParams.get("projectId");
 
   const userId = new mongoose.Types.ObjectId((session.user as any).id);
   const q: any = { userId };
+  if (projectId && mongoose.isValidObjectId(projectId)) {
+    q.projectId = new mongoose.Types.ObjectId(projectId);
+  }
 
   // by default exclude pending/processing/failed for a clean gallery
   if (!includePending) q.status = { $in: ["uploaded", "ready"] };
@@ -46,7 +50,8 @@ export async function GET(req: NextRequest) {
       let signed: string | null = null;
       if (a.status === "uploaded" || a.status === "ready") {
         try {
-          const client = new S3Client({ region: a.region || REGION });
+          const client =
+            a.region && a.region !== REGION ? new S3Client({ region: a.region }) : s3;
           signed = await getSignedUrl(
             client,
             new GetObjectCommand({ Bucket: a.bucket, Key: a.key }),

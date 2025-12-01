@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import UserMenu from '@/components/UserMenu'
-import ThemeToggle from './ThemeToggle';
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/';
@@ -70,7 +69,6 @@ export default function Navbar() {
         </div>
 
         {/* AI Studio moved to persistent left sidebar; no top entry */}
-        <ThemeToggle />
         <UserMenu />
       </nav>
     </header>

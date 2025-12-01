@@ -22,7 +22,7 @@ type AssetItem = {
 };
 
 export default function AssetsPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [items, setItems] = useState<AssetItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -59,7 +59,7 @@ export default function AssetsPage() {
       else setItems((p) => [...p, ...newItems]);
       setCursor(j.nextCursor);
       setHasMore(!!j.nextCursor);
-    } catch (e) {
+    } catch {
       showMsg("err", "Failed to load assets");
     } finally {
       setLoading(false);

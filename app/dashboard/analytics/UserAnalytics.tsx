@@ -88,7 +88,7 @@ export default function UserAnalytics({ initial, plan, role }: Props) {
             Plan: <b>{plan}</b>
           </div>
           <div className="text-brand-muted">
-            You can use the modules listed below based on your current plan. These limits are per organization; usage shown here reflects your team's totals.
+            You can use the modules listed below based on your current plan. These limits are per organization; usage shown here reflects your team&apos;s totals.
           </div>
         </CardContent>
       </Card>
