@@ -1,5 +1,5 @@
 // lib/clippilot/upload.ts
-import { IncomingForm } from "formidable";
+import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import { NextRequest } from "next/server";
@@ -12,11 +12,12 @@ export const config = {
 
 export async function parseVideoUpload(req: NextRequest): Promise<string> {
   return new Promise((resolve, reject) => {
-    const form = new IncomingForm({
+    const form = formidable({
       multiples: false,
       keepExtensions: true,
-      uploadDir: "/tmp",
     });
+    // formidable types don't surface uploadDir; set via cast
+    (form as any).uploadDir = "/tmp";
 
     // @ts-expect-error – formidable expects a Node request
     form.parse(req, (err, fields, files) => {
