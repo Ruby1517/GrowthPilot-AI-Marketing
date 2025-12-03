@@ -6,10 +6,10 @@ import path from 'path';
 import fs from 'fs';
 import { Readable } from 'stream';
 import formidable, { type Fields, type Files } from "formidable";
-import { extractAudio } from '@/lib/clippilot/ffmpeg';
-import { transcribeAudio, suggestClipsFromTranscript } from '@/lib/clippilot/ai';
-import type { AnalyzeResponse, ClipSuggestion } from '@/lib/clippilot/types';
-import { guessContentType, putBuffer, presignGet } from '@/lib/s3';
+import { extractAudio } from "../../../../lib/clippilot/ffmpeg";
+import { transcribeAudio, suggestClipsFromTranscript } from "../../../../lib/clippilot/ai";
+import type { AnalyzeResponse, ClipSuggestion } from "../../../../lib/clippilot/types";
+import { guessContentType, putBuffer, presignGet } from "../../../../lib/s3";
 
 // Note: Next.js App Router does not expose the raw Node request by default in edge/runtime handlers.
 // This route assumes the default Node.js runtime. If you switch to edge, adjust to stream parsing.

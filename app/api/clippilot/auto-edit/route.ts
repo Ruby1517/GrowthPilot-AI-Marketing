@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { generateClipPlan } from "@/lib/clippilot/ai";
-import { renderClip, AudioMode } from "@/lib/clippilot/render";
-import { putBuffer, presignGet, guessContentType } from "@/lib/s3";
+import { generateClipPlan } from "../../../../lib/clippilot/ai";
+import { renderClip, AudioMode } from "../../../../lib/clippilot/render";
+import { putBuffer, presignGet, guessContentType } from "../../../../lib/s3";
 import path from "path";
 import fs from "fs";
 
