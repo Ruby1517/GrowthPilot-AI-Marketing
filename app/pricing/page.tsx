@@ -1,38 +1,91 @@
-import Link from 'next/link';
-import { PLAN_LIMITS } from '@/lib/limits';
+import { PRICING_PLANS, type PlanId } from "../billing/pricingConfig";
 
-export const metadata = { title: 'Pricing — GrowthPilot' };
+export default function BillingPage() {
+  // TODO: Replace with real user plan from session/DB
+  const currentPlan: PlanId = "free";
 
-function PlanCard({ name }: { name: keyof typeof PLAN_LIMITS }) {
-  const p = PLAN_LIMITS[name];
   return (
-    <div className="card p-6 border-white/20">
-      <h3 className="text-xl font-semibold">{name}</h3>
-      <ul className="mt-3 text-sm space-y-1">
-        {/* <li>ClipPilot minutes: <b>{p.clippilot_minutes}</b></li> */}
-        <li>BlogPilot words: <b>{p.blogpilot_words.toLocaleString()}</b></li>
-        <li>MailPilot emails: <b>{p.mailpilot_emails.toLocaleString()}</b></li>
-        <li>AdPilot variants: <b>{p.adpilot_variants}</b></li>
-        <li>LeadPilot conversations: <b>{p.leadpilot_convos}</b></li>
-        <li>BrandPilot assets: <b>{p.brandpilot_assets}</b></li>
-      </ul>
-      <Link href="/billing" className="btn-gold mt-4 inline-block">Choose {name}</Link>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold">Plans &amp; Pricing</h1>
+        <p className="text-sm text-neutral-400">
+          All modules included. Start free with limited usage, then upgrade to lift caps and add team features.
+        </p>
+      </header>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        {PRICING_PLANS.map((plan) => {
+          const isCurrent = plan.id === currentPlan;
+
+          return (
+            <div
+              key={plan.id}
+              className={`relative flex flex-col rounded-3xl border border-white/5 bg-gradient-to-b from-neutral-900/80 to-neutral-950/80 p-5 shadow-lg ${
+                plan.highlight ? "ring-1 ring-emerald-400/60" : ""
+              }`}
+            >
+              {plan.badge && (
+                <span className="absolute right-4 top-4 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                  {plan.badge.toUpperCase()}
+                </span>
+              )}
+
+              <div className="mb-4 space-y-1">
+                <h2 className="text-lg font-semibold">{plan.label}</h2>
+                <p className="text-2xl font-bold">{plan.price}</p>
+                <p className="text-xs text-neutral-400">{plan.tagline}</p>
+              </div>
+
+              <button
+                className={`mb-4 w-full rounded-full px-4 py-2 text-sm font-semibold ${
+                  isCurrent
+                    ? "bg-neutral-700 text-neutral-100 cursor-default"
+                    : "bg-amber-400 text-black hover:bg-amber-300"
+                }`}
+                disabled={isCurrent}
+              >
+                {isCurrent ? "Current plan" : plan.buttonLabel}
+            </button>
+
+              <div className="mb-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  What you can do
+                </p>
+                <ul className="space-y-1 text-xs text-neutral-300">
+                  {plan.whatYouCanDo.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mt-auto">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Modules included
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {plan.modules.map((m) => (
+                    <span
+                      key={m}
+                      className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-100"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center pt-4">
+        <button className="rounded-full border border-neutral-600 px-4 py-2 text-xs text-neutral-200 hover:border-neutral-400">
+          Manage Subscription
+        </button>
+      </div>
     </div>
-  );
-}
-
-export default function PricingPage() {
-  return (
-    <section className="p-8 space-y-6 max-w-6xl mx-auto">
-      <div className="card p-8">
-        <h1 className="text-3xl font-semibold">Pricing</h1>
-        <p className="text-brand-muted mt-2 text-sm">Starter for getting going, Pro for teams, Business for scale. Overage is available on all plans.</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <PlanCard name="Starter" />
-        <PlanCard name="Pro" />
-        <PlanCard name="Business" />
-      </div>
-    </section>
   );
 }

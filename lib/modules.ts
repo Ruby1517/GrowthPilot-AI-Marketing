@@ -6,13 +6,14 @@ export type ModuleKey =
 export type ModuleStatus = 'live' | 'coming_soon';
 
 export const modulePlan: Record<ModuleKey, Plan> = {
-  postpilot: 'Starter',
-  clippilot: 'Pro',
-  blogpilot: 'Starter',
-  adpilot: 'Pro',
-  leadpilot: 'Business',
-  mailpilot: 'Pro',
-  brandpilot: 'Business',
+  // All modules accessible on Trial; usage is governed by PLAN_LIMITS caps.
+  postpilot: 'Trial',
+  clippilot: 'Trial',
+  blogpilot: 'Trial',
+  adpilot: 'Trial',
+  leadpilot: 'Trial',
+  mailpilot: 'Trial',
+  brandpilot: 'Trial',
 };
 
 // Human-friendly labels for modules

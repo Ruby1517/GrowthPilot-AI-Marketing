@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { canAccess } from '@/lib/access';
 import type { ModuleKey, ModuleStatus } from '@/lib/modules';
 import { moduleLabels, moduleStatus } from '@/lib/modules';
 import ThemeToggle from './ThemeToggle';
@@ -44,12 +42,12 @@ export const creators: Array<{
   module: ModuleKey;
   status: ModuleStatus;
 }> = [
-  { href: '/postpilot',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot',  status: moduleStatus.postpilot },
-  { href: '/blogpilot',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot',  status: moduleStatus.blogpilot },
-  { href: '/adpilot',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot',    status: moduleStatus.adpilot },
-  { href: '/leadpilot',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot',  status: moduleStatus.leadpilot },
-  { href: '/mailpilot',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot',  status: moduleStatus.mailpilot },
-  { href: '/brandpilot', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot', status: moduleStatus.brandpilot }, 
+  { href: '/postpilot/landing',  label: moduleLabels.postpilot,  desc: 'AI Social Content',           icon: 'post',   module: 'postpilot',  status: moduleStatus.postpilot },
+  { href: '/blogpilot/landing',  label: moduleLabels.blogpilot,  desc: 'SEO Blog Writer',             icon: 'blog',   module: 'blogpilot',  status: moduleStatus.blogpilot },
+  { href: '/adpilot/landing',    label: moduleLabels.adpilot,    desc: 'Ads Optimizer',               icon: 'ad',     module: 'adpilot',    status: moduleStatus.adpilot },
+  { href: '/leadpilot/landing',  label: moduleLabels.leadpilot,  desc: 'Lead Gen Chatbot',            icon: 'lead',   module: 'leadpilot',  status: moduleStatus.leadpilot },
+  { href: '/mailpilot/landing',  label: moduleLabels.mailpilot,  desc: 'Email Campaigns',             icon: 'mail',   module: 'mailpilot',  status: moduleStatus.mailpilot },
+  { href: '/brandpilot/landing', label: moduleLabels.brandpilot, desc: 'Brand & Design Kit',          icon: 'brand',  module: 'brandpilot', status: moduleStatus.brandpilot }, 
   { href: '/clippilot/landing', label: moduleLabels.clippilot,  desc: 'Viral-ready Shorts',          icon: 'clip',   module: 'clippilot',  status: moduleStatus.clippilot },
 ];
 
@@ -62,26 +60,7 @@ export const tools = [
 
 export default function StudioSidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const [plan, setPlan] = useState<('Trial'|'Starter'|'Pro'|'Business') | null>(null);
-  const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown');
   const [collapsed, setCollapsed] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadPlan() {
-      try {
-        const r = await fetch('/api/org/settings', { cache: 'no-store' });
-        if (!r.ok) return;
-        const j = await r.json();
-        const eff = (j.effectivePlan as any) || (j.plan as any);
-        if (!cancelled) { setPlan(eff as any); setMyRole((j.myRole as any) || 'member'); }
-      } finally {
-      }
-    }
-    loadPlan();
-    return () => { cancelled = true };
-  }, []);
 
   useEffect(() => {
     try {
@@ -153,40 +132,15 @@ export default function StudioSidebar() {
               );
             }
             const active = isActive(pathname, l.href);
-            const rawRole = myRole || ((session?.user as any)?.role as string | undefined);
-            const ignoreAdmin = process.env.NEXT_PUBLIC_DISABLE_ADMIN_GATE === 'true';
-            const userRole = ignoreAdmin ? undefined : rawRole;
-            const isAuthed = Boolean(session?.user);
-            const userPlanForGate = (isAuthed ? (plan ?? 'Trial') : null) as any;
-            const hasAccess = canAccess({ userPlan: userPlanForGate, module: l.module, userRole });
-            if (hasAccess) {
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
-                      active
-                        ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
-                        : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span className="text-sm">{l.label}</span>
-                          {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                </li>
-              );
-            }
             return (
               <li key={l.href}>
-                <div
-                  className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 bg-white/0 border border-transparent hover:border-black/10 dark:hover:border-white/10`}
+                <Link
+                  href={l.href}
+                  className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
+                    active
+                      ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                      : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
@@ -196,13 +150,8 @@ export default function StudioSidebar() {
                         {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
                       </div>
                     )}
-                    {!collapsed && (
-                      <div className="ml-auto">
-                        <Link href="/billing" className="btn-ghost text-xs py-1 px-2">Upgrade</Link>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </Link>
               </li>
             );
           })}

@@ -69,7 +69,7 @@ export default async function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
-          <div className="text-sm text-brand-muted">Org + user overview with usage vs limits.</div>
+          <div className="text-sm text-brand-muted">Org + user overview with usage vs limits across all modules.</div>
         </div>
         <Link href="/dashboard/analytics" className="btn-ghost">Org Analytics</Link>
       </div>
@@ -100,6 +100,9 @@ export default async function AdminDashboard() {
                 <th className="py-2 pr-4">BlogPilot</th>
                 <th className="py-2 pr-4">AdPilot</th>
                 <th className="py-2 pr-4">MailPilot</th>
+                <th className="py-2 pr-4">ClipPilot</th>
+                <th className="py-2 pr-4">LeadPilot</th>
+                <th className="py-2 pr-4">BrandPilot</th>
               </tr>
             </thead>
             <tbody>
@@ -108,6 +111,9 @@ export default async function AdminDashboard() {
                 const bp = usagePercent(o.plan, o.usage, 'blogpilot_words');
                 const ad = usagePercent(o.plan, o.usage, 'adpilot_variants');
                 const ml = usagePercent(o.plan, o.usage, 'mailpilot_emails');
+                const cp = usagePercent(o.plan, o.usage, 'clippilot_exports' as MeterKey);
+                const lp = usagePercent(o.plan, o.usage, 'leadpilot_convos');
+                const br = usagePercent(o.plan, o.usage, 'brandpilot_assets');
                 return (
                   <tr key={o.id} className="border-t border-white/10">
                     <td className="py-2 pr-4">{o.name}</td>
@@ -121,6 +127,9 @@ export default async function AdminDashboard() {
                     <td className="py-2 pr-4">{bp.used}/{bp.limit} ({bp.pct}%)</td>
                     <td className="py-2 pr-4">{ad.used}/{ad.limit} ({ad.pct}%)</td>
                     <td className="py-2 pr-4">{ml.used}/{ml.limit} ({ml.pct}%)</td>
+                    <td className="py-2 pr-4">{cp.used}/{cp.limit} ({cp.pct}%)</td>
+                    <td className="py-2 pr-4">{lp.used}/{lp.limit} ({lp.pct}%)</td>
+                    <td className="py-2 pr-4">{br.used}/{br.limit} ({br.pct}%)</td>
                   </tr>
                 );
               })}
@@ -153,6 +162,9 @@ export default async function AdminDashboard() {
               <UsageBar label="BlogPilot" {...usagePercent(o.plan, o.usage, 'blogpilot_words')} />
               <UsageBar label="AdPilot" {...usagePercent(o.plan, o.usage, 'adpilot_variants')} />
               <UsageBar label="MailPilot" {...usagePercent(o.plan, o.usage, 'mailpilot_emails')} />
+              <UsageBar label="ClipPilot" {...usagePercent(o.plan, o.usage, 'clippilot_exports' as MeterKey)} />
+              <UsageBar label="LeadPilot" {...usagePercent(o.plan, o.usage, 'leadpilot_convos')} />
+              <UsageBar label="BrandPilot" {...usagePercent(o.plan, o.usage, 'brandpilot_assets')} />
             </div>
           ))}
         </div>

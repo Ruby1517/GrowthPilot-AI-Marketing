@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from 'react'
 
 type Me = { id: string; name: string; email: string; image: string; role: string; orgId: string | null }

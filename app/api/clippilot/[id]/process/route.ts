@@ -39,20 +39,19 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   // Measure duration (best effort)
   const durationSec = await probeDurationSec(sourceUrl);
-  const actualMinutes = Math.max(1, Math.ceil(durationSec / 60));
 
-  // Enforce usage and record overage if needed
+  // Enforce usage per export (count-based)
   const gate = await assertWithinLimit({
     orgId: String(job.orgId),
-    key: 'clippilot_minutes' as any,
-    incBy: actualMinutes,
+    key: 'clippilot_exports' as any,
+    incBy: 1,
     allowOverage: true,
   });
   if (!gate.ok) {
     return NextResponse.json({ ok: false, error: 'usage_limit', details: gate }, { status: 402 });
   }
   if (gate.overage && gate.overUnits) {
-    try { await recordOverageRow({ orgId: String(job.orgId), key: 'clippilot_minutes' as any, overUnits: gate.overUnits }); } catch {}
+    try { await recordOverageRow({ orgId: String(job.orgId), key: 'clippilot_exports' as any, overUnits: gate.overUnits }); } catch {}
   }
 
   // Persist output
@@ -66,6 +65,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   });
 
   job.status = 'done';
+  const actualMinutes = Math.max(1, Math.ceil(durationSec / 60));
   job.actualMinutes = actualMinutes;
   job.estimateMinutes = Math.max(job.estimateMinutes || 0, actualMinutes);
   await job.save();

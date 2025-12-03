@@ -25,6 +25,7 @@ const MODULE_METERS: Array<{ module: ModuleKey; meter: MeterKey; label: string }
   { module: 'mailpilot', meter: 'mailpilot_emails', label: 'MailPilot Emails' },
   { module: 'adpilot', meter: 'adpilot_variants', label: 'AdPilot Variants' },
   { module: 'leadpilot', meter: 'leadpilot_convos', label: 'LeadPilot Conversations' },
+  { module: 'clippilot', meter: 'clippilot_exports', label: 'ClipPilot Exports' },
   { module: 'brandpilot', meter: 'brandpilot_assets', label: 'BrandPilot Assets' },
 ];
 

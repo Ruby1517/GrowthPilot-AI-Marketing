@@ -46,9 +46,28 @@ export async function putBuffer(
 /**
  * Create a presigned GET URL (seconds to expire).
  */
-export async function presignGet(key: string, expiresInSec = 3600): Promise<string> {
-  const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
-  return getSignedUrl(s3, command, { expiresIn: expiresInSec });
+export async function presignGet(
+  key: string,
+  expiresInSec = 3600,
+  opts?: { bucket?: string; region?: string }
+): Promise<string> {
+  const bucket = opts?.bucket || S3_BUCKET;
+  const region = opts?.region || S3_REGION;
+
+  // Re-use the default client when targeting the primary bucket/region.
+  const client =
+    bucket === S3_BUCKET && region === S3_REGION
+      ? s3
+      : new S3Client({
+          region,
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          },
+        });
+
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  return getSignedUrl(client, command, { expiresIn: expiresInSec });
 }
 
 /**

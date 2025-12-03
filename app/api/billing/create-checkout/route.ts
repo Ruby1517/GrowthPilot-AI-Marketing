@@ -138,7 +138,7 @@ export async function POST(req: Request) {
       name: (me as any).name || 'My Organization',
       // New orgs start on Trial; plan upgrades happen after successful checkout/webhook
       plan: 'Trial',
-      members: [{ userId: me._id, role: 'owner', joinedAt: new Date() }],
+      members: [{ userId: me._id, role: 'member', joinedAt: new Date() }],
       usage: {},
       kpi: {},
     });

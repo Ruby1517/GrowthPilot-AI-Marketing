@@ -58,7 +58,6 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     );
   };
 
-  // For Trial plan: show a lean set of meters and an upgrade CTA
   const isTrial = plan === 'Trial';
 
   const metersOrder: Array<{ key: UsageKey; label: string }> = [
@@ -66,13 +65,10 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     { key: 'postpilot_generated', label: 'PostPilot Posts' },
     { key: 'mailpilot_emails', label: 'MailPilot Emails' },
     { key: 'adpilot_variants', label: 'AdPilot Variants' },
-    { key: 'clippilot_minutes', label: 'ClipPilot Render Minutes' },
+    { key: 'clippilot_exports', label: 'ClipPilot Exports' },
     { key: 'leadpilot_convos', label: 'LeadPilot Conversations' },
     { key: 'brandpilot_assets', label: 'BrandPilot Assets' },
   ];
-  const visibleMeters = isTrial
-    ? metersOrder.slice(0, 2) // only BlogPilot + PostPilot on Trial
-    : metersOrder;
 
   return (
     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 max-w-none mx-auto">
@@ -83,11 +79,9 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
         <CardContent className="space-y-2 text-sm">
           {isTrial ? (
             <>
-              <div>Your plan: <b>Trial</b>. You can generate limited BlogPilot words and PostPilot posts.</div>
-              <div>
-                Upgrade to unlock more modules and higher limits.
-                <Link href="/billing" className="ml-2 underline text-brand-muted hover:text-white">View plans</Link>
-              </div>
+              <div>Your plan: <b>Trial</b>. All modules are available with limited usage caps.</div>
+              <div>Upgrade to lift limits, remove watermarks, and increase upload duration.</div>
+              <Link href="/billing" className="inline-block text-xs underline text-brand-muted hover:text-white">View plans</Link>
             </>
           ) : (
             <>
@@ -110,7 +104,7 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
           </CardContent>
         </Card>
       )}
-      {visibleMeters.map(m => meter(m.key, m.label))}
+      {metersOrder.map(m => meter(m.key, m.label))}
     </div>
   );
 }

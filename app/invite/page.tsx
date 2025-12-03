@@ -25,7 +25,7 @@ export default function InviteLanding() {
         .then(r => r.json()).then(j => { if (j?.ok) setOrgName(j.orgName || 'Organization'); })
         .catch(()=>{});
     }
-  }, []);
+  }, [token]);
 
   async function accept() {
     if (!token) return;

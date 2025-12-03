@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
     const videoUrl = await presignGet(key, 60 * 60 * 6); // 6h
 
     const audioPath = await extractAudio(videoPath);
-    const transcript = await transcribeAudio(audioPath);
-    const suggestions: ClipSuggestion[] = await suggestClipsFromTranscript(transcript);
+    const transcript = audioPath ? await transcribeAudio(audioPath) : "";
+    const suggestions: ClipSuggestion[] = transcript ? await suggestClipsFromTranscript(transcript) : [];
 
     const resp: AnalyzeResponse = { transcript, suggestions, videoPath, videoKey: key, videoUrl } as any;
     return NextResponse.json(resp);

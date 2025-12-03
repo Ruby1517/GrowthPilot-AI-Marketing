@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AnalyzeResponse, ClipSuggestion, ClipPlan } from "@/lib/clippilot/types";
+import { VOICE_OPTIONS, pickStyleFromCategory } from "@/lib/clippilot/voice-config";
 
 export default function ClipPilotPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -10,21 +11,34 @@ export default function ClipPilotPage() {
   const [audioMode, setAudioMode] = useState<"original" | "original_plus_music">("original");
   const [voiceMode, setVoiceMode] = useState<"none" | "auto" | "custom">("none");
   const [voiceScript, setVoiceScript] = useState<string>("");
+  const [voicePersona, setVoicePersona] = useState<"female" | "male" | "kid">("female");
+  const [voiceStyle, setVoiceStyle] = useState<"friendly" | "energetic" | "advertising" | "motivational">("friendly");
+  const [voiceId, setVoiceId] = useState<string>(VOICE_OPTIONS[0]?.id || "");
+  const [category, setCategory] = useState<string>("");
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [renderingId, setRenderingId] = useState<string | null>(null);
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResponse | null>(null);
   const [renderPath, setRenderPath] = useState<string | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
-  const [autoResult, setAutoResult] = useState<{ clipPath: string; plan: any } | null>(null);
-  const [shortResult, setShortResult] = useState<{ url: string; key: string; plan: ClipPlan; voiceScript?: string } | null>(null);
+  const [shortResult, setShortResult] = useState<{
+    url: string;
+    key: string;
+    plan: ClipPlan;
+    voiceScript?: string;
+    voicePersona?: string;
+    voiceStyle?: string;
+    voiceId?: string;
+    category?: string | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualTranscript, setManualTranscript] = useState<string>("");
 
-  const transcriptPreview = useMemo(() => {
-    if (!analyzeResult?.transcript) return "";
-    const trimmed = analyzeResult.transcript.trim();
-    return trimmed.length > 200 ? `${trimmed.slice(0, 200)}…` : trimmed;
-  }, [analyzeResult?.transcript]);
+  useEffect(() => {
+    if (voiceMode === "none") return;
+    if (!category) return;
+    const auto = pickStyleFromCategory(category);
+    if (auto) setVoiceStyle(auto);
+  }, [category, voiceMode]);
 
   async function handleAnalyze() {
     if (!file) {
@@ -43,7 +57,6 @@ export default function ClipPilotPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Analyze failed");
       setAnalyzeResult(data as AnalyzeResponse);
-      setAutoResult(null);
       setShortResult(null);
     } catch (e: any) {
       setError(e?.message || "Analyze failed");
@@ -119,7 +132,6 @@ export default function ClipPilotPage() {
     }
     setError(null);
     setRenderPath(null);
-    setAutoResult(null);
     setShortResult(null);
     setAutoLoading(true);
     try {
@@ -144,16 +156,28 @@ export default function ClipPilotPage() {
           audioMode: resolvedAudioMode,
           voiceScript: voiceScriptToSend,
           useAutoVoiceScript,
+          voicePersona,
+          voiceStyle,
+          voiceId,
+          category: category || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Auto edit failed");
       if (data?.url && data?.plan) {
-        setShortResult({ url: data.url, key: data.key, plan: data.plan as ClipPlan, voiceScript: data.voiceScript });
+        setShortResult({
+          url: data.url,
+          key: data.key,
+          plan: data.plan as ClipPlan,
+          voiceScript: data.voiceScript,
+          voicePersona: data.voicePersona,
+          voiceStyle: data.voiceStyle,
+          voiceId: data.voiceId,
+          category: data.category,
+        });
         setRenderPath(data.url);
       } else {
         const clipPath = data.clipPath || data.path || data.outputPath;
-        setAutoResult({ clipPath: clipPath || "Auto edit succeeded (no path returned)", plan: data.plan });
         setRenderPath(clipPath || "Auto edit succeeded (no path returned)");
       }
     } catch (e: any) {
@@ -241,6 +265,30 @@ export default function ClipPilotPage() {
       {/* Voice Over */}
       <div className="card p-6 space-y-3">
         <div className="text-sm font-semibold">Voice Over</div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <div className="text-xs text-brand-muted">Video category (auto-picks tone)</div>
+            <select
+              className="w-full rounded border p-2 text-sm"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">-- Select category --</option>
+              <option value="fitness">Fitness</option>
+              <option value="health">Health</option>
+              <option value="sports">Sports</option>
+              <option value="education">Education</option>
+              <option value="tutorial">Tutorial</option>
+              <option value="ecommerce">Ecommerce</option>
+              <option value="retail">Retail</option>
+              <option value="finance">Finance</option>
+              <option value="saas">SaaS</option>
+              <option value="lifestyle">Lifestyle</option>
+              <option value="other">Other</option>
+            </select>
+            <div className="text-[11px] text-brand-muted">Fitness auto-selects motivational tone, ecommerce picks advertising, education picks friendly, etc.</div>
+          </div>
+        </div>
         <div className="flex flex-col gap-2 text-sm">
           <label className="inline-flex items-center gap-2">
             <input
@@ -273,6 +321,50 @@ export default function ClipPilotPage() {
             Use my own script
           </label>
         </div>
+        {voiceMode !== "none" && (
+          <div className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <div className="text-xs text-brand-muted">Voice option (American accent)</div>
+                <div className="space-y-2">
+                  {VOICE_OPTIONS.map((opt) => (
+                    <label key={opt.id} className="border rounded-lg p-3 flex gap-3 items-start cursor-pointer">
+                      <input
+                        type="radio"
+                        name="voiceOption"
+                        value={opt.id}
+                        checked={voiceId === opt.id}
+                        onChange={() => {
+                          setVoiceId(opt.id);
+                          setVoicePersona(opt.persona);
+                          setVoiceStyle(opt.defaultStyle);
+                        }}
+                      />
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold">{opt.label}</div>
+                        <div className="text-xs text-brand-muted">Sample: {opt.sampleText}</div>
+                        <div className="text-[11px] text-brand-muted">Default tone: {opt.defaultStyle}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs text-brand-muted">Tone (gain/EQ preset applied)</div>
+                <select
+                  className="w-full rounded border p-2 text-sm"
+                  value={voiceStyle}
+                  onChange={(e) => setVoiceStyle(e.target.value as any)}
+                >
+                  <option value="friendly">Friendly</option>
+                  <option value="energetic">Energetic</option>
+                  <option value="motivational">Motivational</option>
+                  <option value="advertising">Advertising</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
         {voiceMode === "custom" && (
           <div className="space-y-1">
             <div className="text-xs text-brand-muted">Enter 1–2 sentences for the voice-over:</div>
@@ -300,7 +392,6 @@ export default function ClipPilotPage() {
               readOnly
               value={analyzeResult.transcript || ""}
             />
-            <p className="text-xs text-brand-muted mt-1">Preview: {transcriptPreview || "n/a"}</p>
             {!analyzeResult.transcript && (
               <div className="mt-3 space-y-2">
                 <div className="text-xs text-brand-muted">
@@ -378,6 +469,18 @@ export default function ClipPilotPage() {
                 <div className="mt-1">
                   <span className="text-brand-muted">Voice script: </span>
                   <span>{shortResult.voiceScript}</span>
+                </div>
+              )}
+              {shortResult.voicePersona && shortResult.voiceStyle && (
+                <div className="mt-1">
+                  <span className="text-brand-muted">Voice: </span>
+                  <span>{shortResult.voicePersona} • {shortResult.voiceStyle}{shortResult.voiceId ? ` • ${shortResult.voiceId}` : ""}</span>
+                </div>
+              )}
+              {shortResult.category && (
+                <div className="mt-1">
+                  <span className="text-brand-muted">Category: </span>
+                  <span>{shortResult.category}</span>
                 </div>
               )}
             </div>

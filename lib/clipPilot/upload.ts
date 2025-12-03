@@ -18,7 +18,7 @@ export async function parseVideoUpload(req: NextRequest): Promise<string> {
       uploadDir: "/tmp",
     });
 
-    // @ts-ignore – formidable expects a Node request
+    // @ts-expect-error – formidable expects a Node request
     form.parse(req, (err, fields, files) => {
       if (err) return reject(err);
 

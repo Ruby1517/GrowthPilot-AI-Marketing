@@ -9,6 +9,7 @@ import LeadDaily from './LeadDaily';
 import SeedPricingButton from './seed-pricing-button';
 import UserAnalytics from './UserAnalytics';
 import type { Plan } from '@/lib/modules';
+import { moduleLabels } from '@/lib/modules';
 import mongoose from 'mongoose';
 
 type Search = { searchParams?: Record<string, string | string[] | undefined> };
@@ -62,6 +63,13 @@ export default async function AnalyticsPage({ searchParams }: Search) {
                   Org: <b>{targetOrg.name}</b>
                 </span>
               )}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-brand-muted">
+              {Object.values(moduleLabels).map((label) => (
+                <span key={label} className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5">
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
           {isAdmin && <SeedPricingButton visible />}

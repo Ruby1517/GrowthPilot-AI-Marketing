@@ -268,13 +268,13 @@ new BullWorker(
       await downloadFile(sourceUrl, localSrc);
 
       const durationSec = await probeDurationSec(sourceUrl);
-      const actualMinutes = Math.max(1, Math.ceil(durationSec / 60));
+      const totalExports = Math.max(1, j.variants || 1);
 
-      // Enforce usage and record overage
-      const gate = await assertWithinLimit({ orgId: String(j.orgId), key: 'clippilot_minutes', incBy: actualMinutes, allowOverage: true });
+      // Enforce usage and record overage by export count
+      const gate = await assertWithinLimit({ orgId: String(j.orgId), key: 'clippilot_exports', incBy: totalExports, allowOverage: true });
       if (!gate.ok) throw new Error('usage_limit');
       if (gate.overage && gate.overUnits) {
-        try { await recordOverageRow({ orgId: String(j.orgId), key: 'clippilot_minutes', overUnits: gate.overUnits }); } catch {}
+        try { await recordOverageRow({ orgId: String(j.orgId), key: 'clippilot_exports', overUnits: gate.overUnits }); } catch {}
       }
 
       const scenes = await detectScenes(localSrc);
@@ -284,9 +284,11 @@ new BullWorker(
 
       await ClipOutput.deleteMany({ jobId: j._id });
       const outputs: any[] = [];
+      let actualMinutes = 0;
 
       for (let idx = 0; idx < segments.length; idx++) {
         const seg = segments[idx];
+        actualMinutes += Math.max(0, (seg.end - seg.start) / 60);
         const clipId = `${j._id}-${idx}`;
         const clipPath = path.join(TMP, `clip-${clipId}.mp4`);
         const srtPath = path.join(TMP, `clip-${clipId}.srt`);

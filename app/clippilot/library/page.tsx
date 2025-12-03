@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { dbConnect } from "@/lib/db";
 import ClipShort from "@/models/ClipShort";
 import { presignGet } from "@/lib/s3";
+import ClipDeleteButton from "@/components/ClipDeleteButton";
 
 type ShortItem = {
   _id: string;
@@ -11,6 +13,10 @@ type ShortItem = {
   plan?: any;
   createdAt?: string;
   voiceScript?: string;
+  voicePersona?: string;
+  voiceStyle?: string;
+  voiceId?: string;
+  category?: string;
 };
 
 async function fetchShorts(): Promise<Array<ShortItem & { signedUrl: string }>> {
@@ -23,6 +29,10 @@ async function fetchShorts(): Promise<Array<ShortItem & { signedUrl: string }>> 
     plan: d.plan,
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : undefined,
     voiceScript: d.voiceScript,
+    voicePersona: d.voicePersona,
+    voiceStyle: d.voiceStyle,
+    voiceId: d.voiceId,
+    category: d.category,
   }));
 
   const withUrls = await Promise.all(
@@ -50,10 +60,20 @@ export default async function ClipLibraryPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">ClipPilot Library</h1>
         <p className="text-brand-muted text-sm">Recently rendered shorts (private S3; signed for 15 minutes).</p>
+        <div className="pt-2">
+          <Link className="btn-gold inline-block" href="/clippilot">
+            Try ClipPilot
+          </Link>
+        </div>
       </div>
 
       {items.length === 0 && (
-        <div className="card p-6 text-sm text-brand-muted">No clips found yet. Render a short to see it here.</div>
+        <div className="card p-6 space-y-2 text-sm text-brand-muted">
+          <div>No clips found yet. Render a short to see it here.</div>
+          <Link className="btn-gold inline-block" href="/clippilot">
+            Try Create Clips
+          </Link>
+        </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -61,6 +81,9 @@ export default async function ClipLibraryPage() {
           <div key={it._id} className="card p-4 space-y-3">
             <div className="text-xs text-brand-muted">
               {it.createdAt ? new Date(it.createdAt).toLocaleString() : "—"}
+            </div>
+            <div className="flex justify-end">
+              <ClipDeleteButton id={it._id} />
             </div>
             {it.plan && (
               <div className="text-xs text-brand-muted space-y-1">
@@ -78,6 +101,14 @@ export default async function ClipLibraryPage() {
               <div className="text-xs text-brand-muted">
                 Voice script: <span className="text-foreground">{it.voiceScript}</span>
               </div>
+            )}
+            {(it as any).voicePersona && (
+              <div className="text-xs text-brand-muted">
+                Voice: {(it as any).voicePersona} • {(it as any).voiceStyle || "n/a"} {(it as any).voiceId ? `• ${(it as any).voiceId}` : ""}
+              </div>
+            )}
+            {(it as any).category && (
+              <div className="text-xs text-brand-muted">Category: {(it as any).category}</div>
             )}
             {it.signedUrl ? (
               <div className="space-y-2">

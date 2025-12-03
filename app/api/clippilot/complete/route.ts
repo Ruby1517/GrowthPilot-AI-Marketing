@@ -23,7 +23,7 @@
 //   totalDurationSec: z.number().min(1),
 // });
 
-// const METER_KEY = 'clippilot_minutes' as const;
+// const METER_KEY = 'clippilot_exports' as const;
 
 // export async function POST(req: Request) {
 //   // ⛑️ You probably want a signer/secret here to protect this endpoint
@@ -111,7 +111,7 @@ const Body = z.object({
   totalDurationSec: z.number().int().min(1).optional(),
 });
 
-const METER_KEY = 'clippilot_minutes' as any;
+const METER_KEY = 'clippilot_exports' as any;
 const SHARED_SECRET = process.env.CLIPS_WEBHOOK_SECRET; // protect this endpoint
 
 export async function POST(req: Request) {
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
   job.actualMinutes = actualMinutes;
   await job.save();
 
-  // precise metering to Stripe
+  // precise metering to Stripe (keep minutes for analytics, exports for gating)
   await reportUsageForOrg(String(org._id), {
     minutes: actualMinutes,
     sourceId: String(job._id), // idempotency for Stripe
@@ -158,11 +158,11 @@ export async function POST(req: Request) {
     meta: { jobId: String(job._id), actualMinutes, estimateMinutes: job.estimateMinutes },
   });
 
-  // If you prefer to enforce on ACTUALs (instead of estimate), call assertWithinLimit here with incBy: actualMinutes.
+  // Enforce/export meter (one export per output)
   const gate = await assertWithinLimit({
     orgId: String(org._id),
     key: METER_KEY,
-    incBy: 0,             // set to actualMinutes if you didn’t reserve earlier
+    incBy: outs.length,
     allowOverage: true,
   });
   if (gate.ok && gate.overage && gate.overUnits! > 0) {

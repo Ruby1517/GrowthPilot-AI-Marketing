@@ -24,6 +24,10 @@ export interface RenderOptions {
   audioMode?: AudioMode;      // default: "original_only"
   musicPath?: string | null;  // optional background music
   voicePath?: string | null;  // optional AI voice-over mp3
+  voiceGainDb?: number;       // optional gain for voice track
+  musicGainDb?: number;       // optional gain for music track
+  voiceEq?: string | null;    // optional eq filter string for voice (ffmpeg expression)
+  musicEq?: string | null;    // optional eq filter string for music (ffmpeg expression)
 }
 
 const FONT_PATH = "/System/Library/Fonts/Supplemental/Arial.ttf";
@@ -34,13 +38,17 @@ export function renderClip(opts: RenderOptions): Promise<string> {
     startSeconds,
     endSeconds,
     hookText,
-    promoLabel,
-    ctaText,
-    brandTag,
-    audioMode = "original_only",
-    musicPath,
-    voicePath,
-  } = opts;
+  promoLabel,
+  ctaText,
+  brandTag,
+  audioMode = "original_only",
+  musicPath,
+  voicePath,
+  voiceGainDb,
+  musicGainDb,
+  voiceEq,
+  musicEq,
+} = opts;
 
   if (!fs.existsSync(videoPath)) {
     throw new Error(`Video file not found: ${videoPath}`);
@@ -95,8 +103,11 @@ export function renderClip(opts: RenderOptions): Promise<string> {
     const hasMusic = !!musicPath && fs.existsSync(musicPath);
     const hasVoice = !!voicePath && fs.existsSync(voicePath);
     let mode: AudioMode = audioMode;
-    const musicVol =
+    const baseMusicVol =
       mode === "voiceover_only" || mode === "voiceover_plus_music" ? 0.15 : 0.25;
+    const finalMusicVol =
+      typeof musicGainDb === "number" ? baseMusicVol * Math.pow(10, musicGainDb / 20) : baseMusicVol;
+    const finalVoiceVol = typeof voiceGainDb === "number" ? Math.pow(10, voiceGainDb / 20) : 1;
 
     // Fallback if required inputs are missing
     if (mode === "original_plus_music" && !hasMusic) mode = "original_only";
@@ -129,31 +140,49 @@ export function renderClip(opts: RenderOptions): Promise<string> {
         case "original_plus_music": {
           cmd.input(musicPath as string); // input #1
           if (sourceHasAudio) {
+            const musicChain = musicEq ? `[1:a]${musicEq},volume=${finalMusicVol}[a1];` : `[1:a]volume=${finalMusicVol}[a1];`;
             const audioFilter =
               "[0:a]volume=1.0[a0];" +
-              "[1:a]volume=" + musicVol + "[a1];" +
+              musicChain +
               "[a0][a1]amix=inputs=2:duration=shortest:dropout_transition=0[aout]";
             cmd.complexFilter(audioFilter);
             cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
           } else {
             // no source audio; just use music
-            cmd.outputOptions(["-map 0:v:0", "-map 1:a:0"]);
+            if (musicEq) {
+              cmd.complexFilter(`[1:a]${musicEq},volume=${finalMusicVol}[aout]`);
+              cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
+            } else {
+              cmd.outputOptions(["-map 0:v:0", "-map 1:a:0", `-af`, `volume=${finalMusicVol}`]);
+            }
           }
           break;
         }
         case "voiceover_only": {
           cmd.input(voicePath as string); // input #1
-          cmd.outputOptions(["-map 0:v:0", "-map 1:a:0"]);
+          const filters: string[] = [];
+          if (voiceEq) {
+            filters.push(`[1:a]${voiceEq}[v0eq]`);
+            filters.push(`[v0eq]volume=${finalVoiceVol}[vout]`);
+            cmd.complexFilter(filters.join(";"));
+            cmd.outputOptions(["-map 0:v:0", "-map [vout]"]);
+          } else {
+            cmd.outputOptions(["-map 0:v:0", "-map 1:a:0", "-af", `volume=${finalVoiceVol}`]);
+          }
           break;
         }
         case "voiceover_plus_music": {
           cmd.input(voicePath as string); // input #1
           cmd.input(musicPath as string); // input #2
-          const audioFilter =
-            "[1:a]volume=1.0[v0];" +
-            "[2:a]volume=" + musicVol + "[v1];" +
-            "[v0][v1]amix=inputs=2:duration=shortest:dropout_transition=0[aout]";
-          cmd.complexFilter(audioFilter);
+          const filters: string[] = [];
+          const voiceLabel = voiceEq ? "[v0eq]" : "[1:a]";
+          const musicLabel = musicEq ? "[m0eq]" : "[2:a]";
+          if (voiceEq) filters.push(`[1:a]${voiceEq}${voiceLabel}`);
+          if (musicEq) filters.push(`[2:a]${musicEq}${musicLabel}`);
+          filters.push(`${voiceLabel}volume=${finalVoiceVol}[v0]`);
+          filters.push(`${musicLabel}volume=${finalMusicVol}[v1]`);
+          filters.push("[v0][v1]amix=inputs=2:duration=shortest:dropout_transition=0[aout]");
+          cmd.complexFilter(filters.join(";"));
           cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
           break;
         }

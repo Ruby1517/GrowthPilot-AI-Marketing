@@ -1,75 +1,177 @@
-// app/billing/page.tsx (client)
-'use client'
-import { useState } from 'react'
-import { modulePlan, moduleLabels } from '@/lib/modules'
 
-const plans = [
-  { key:'starter',  price:'$19',  features:['Basic modules','Limited usage'] },
-  { key:'pro',      price:'$49',  features:['More modules','Higher limits','Priority queue'] },
-  { key:'business', price:'$149', features:['All modules','Team seats','SLA','API'] },
-] as const
+'use client';
+import { useMemo, useState } from 'react';
+import { moduleLabels } from '@/lib/modules';
+import { PLAN_LIMITS } from '@/lib/limits';
 
-type PlanName = 'Starter'|'Pro'|'Business'
-const PLAN_ORDER: Record<PlanName, number> = { Starter: 1, Pro: 2, Business: 3 }
+type PlanName = 'Free' | 'Starter' | 'Pro' | 'Business';
 
-function includedModules(plan: PlanName) {
-  const maxRank = PLAN_ORDER[plan]
-  return (Object.keys(modulePlan) as Array<keyof typeof modulePlan>)
-    .filter((m) => PLAN_ORDER[modulePlan[m] as PlanName] <= maxRank)
-    .map(m => ({ key: m, label: moduleLabels[m] }))
+const PLANS: Array<{
+  key: PlanName;
+  price: string;
+  subtitle: string;
+  highlight?: boolean;
+}> = [
+  { key: 'Free', price: '$0', subtitle: 'Try every module with limited usage' },
+  { key: 'Starter', price: '$19', subtitle: 'Launch projects with steady usage' },
+  { key: 'Pro', price: '$49', subtitle: 'Higher caps + priority processing', highlight: true },
+  { key: 'Business', price: '$149', subtitle: 'Teams, API, and extended uploads' },
+];
+
+const PLAN_LIMIT_KEY: Record<PlanName, keyof typeof PLAN_LIMITS> = {
+  Free: 'Trial',
+  Starter: 'Starter',
+  Pro: 'Pro',
+  Business: 'Business',
+};
+
+const pillModules = (Object.keys(moduleLabels) as Array<keyof typeof moduleLabels>).map((m) => moduleLabels[m]);
+
+function formatFeatures(plan: PlanName) {
+  const limits = PLAN_LIMITS[PLAN_LIMIT_KEY[plan]];
+  const list: string[] = [];
+  list.push('All modules included');
+  list.push('Usage caps apply per plan');
+  list.push(limits.watermark ? 'Watermark on exports' : 'No watermark on exports');
+  if (limits.clippilot_exports) {
+    list.push(`Up to ${limits.clippilot_exports}+ shorts / month`);
+  }
+  const uploadMins = Math.max(1, Math.round((limits.video_length_upload || 0) / 60));
+  list.push(`Max video upload ~${uploadMins} min`);
+  if (limits.priority_processing) list.push('Priority AI processing');
+  if (limits.team_seats) list.push(`${limits.team_seats} team seats`);
+  if (limits.api_access) list.push('API access');
+  return list;
 }
 
 export default function BillingPage() {
-  const [loading, setLoading] = useState<string|null>(null)
-  async function go(plan: 'starter'|'pro'|'business') {
-    setLoading(plan)
+  const [currentPlan] = useState<PlanName>('Free');
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const featureCache = useMemo(() => {
+    const map: Record<PlanName, string[]> = {
+      Free: formatFeatures('Free'),
+      Starter: formatFeatures('Starter'),
+      Pro: formatFeatures('Pro'),
+      Business: formatFeatures('Business'),
+    };
+    return map;
+  }, []);
+
+  async function go(plan: 'starter' | 'pro' | 'business') {
+    setLoading(plan);
     const res = await fetch('/api/billing/create-checkout', {
       method: 'POST',
-      headers: {'content-type':'application/json'},
-      body: JSON.stringify({ plan }) // ✅ not priceId / not prod_…
-    })
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    });
     if (!res.ok) {
-      const text = await res.text()
-      alert(`Checkout failed: ${text}`)
-      setLoading(null)
-      return
+      const text = await res.text();
+      alert(`Checkout failed: ${text}`);
+      setLoading(null);
+      return;
     }
-    const { url } = await res.json()
-    window.location.href = url
+    const { url } = await res.json();
+    window.location.href = url;
   }
+
   async function portal() {
-    const res = await fetch('/api/billing/create-portal', { method: 'POST' })
-    const { url } = await res.json()
-    window.location.href = url
+    const res = await fetch('/api/billing/create-portal', { method: 'POST' });
+    if (!res.ok) {
+      alert('Unable to open billing portal');
+      return;
+    }
+    const { url } = await res.json();
+    window.location.href = url;
   }
+
   return (
-    <div className="space-y-6">
-      <div className="card p-6">
-        <h2 className="text-2xl font-semibold">Choose a Plan</h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {plans.map(p => (
-            <div key={p.key} className="card p-6">
-              <div className="text-sm dark:text-brand-muted text-black/80 capitalize">{p.key}</div>
-              <div className="mt-1 text-3xl font-semibold">{p.price}<span className="text-base dark:text-brand-muted text-black/70">/mo</span></div>
-              <ul className="mt-4 space-y-2 text-sm dark:text-brand-muted text-black/80">
-                {p.features.map((f,i)=>(<li key={i}>• {f}</li>))}
-              </ul>
-              <div className="mt-4 text-sm dark:text-brand-muted text-black/80">Includes modules</div>
-              <ul className="mt-2 flex flex-wrap gap-2 text-xs">
-                {includedModules(p.key === 'starter' ? 'Starter' : p.key === 'pro' ? 'Pro' : 'Business').map(m => (
-                  <li key={String(m.key)} className="px-2 py-1 rounded-md dark:bg-white/5 dark:text-white/90 bg-black/5 text-black/90">{m.label}</li>
-                ))}
-              </ul>
-              <button onClick={()=>go(p.key as any)} className="mt-5 w-full btn-gold">
-                {loading===p.key ? '…' : 'Get Started'}
+    <div className="space-y-8 max-w-[1200px] w-full mx-auto border border-white/5 rounded-3xl p-6 bg-[rgba(0,0,0,0.08)]">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-semibold">Plans & Pricing</h1>
+        <p className="text-sm text-neutral-400">
+          All modules included. Start free with limited usage, then upgrade to lift caps and add team features.
+        </p>
+      </header>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {PLANS.map((plan) => {
+          const isCurrent = plan.key === currentPlan;
+          const isCheckout = plan.key !== 'Free';
+          const isLoading = loading === plan.key.toLowerCase();
+          const features = featureCache[plan.key];
+          return (
+            <div
+              key={plan.key}
+              className={`relative flex flex-col rounded-3xl border border-neutral-700/60 bg-gradient-to-b from-[#111827] via-[#0b1220] to-[#0a0f1c] p-6 shadow-lg ${
+                plan.highlight ? 'ring-1 ring-emerald-400/60' : ''
+              }`}
+            >
+              {plan.highlight && (
+                <span className="absolute right-4 top-4 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300">
+                  MOST POPULAR
+                </span>
+              )}
+              <div className="mb-4 space-y-1">
+                <h2 className="text-lg font-semibold">{plan.key}</h2>
+                <p className="text-3xl font-bold">
+                  {plan.price}
+                  <span className="text-base text-neutral-400">/mo</span>
+                </p>
+                <p className="text-xs text-neutral-400">{plan.subtitle}</p>
+              </div>
+              <button
+                className={`mb-4 w-full rounded-full px-4 py-2 text-sm font-semibold ${
+                  isCurrent
+                    ? 'bg-neutral-700 text-neutral-100 cursor-default'
+                    : 'bg-amber-400 text-black hover:bg-amber-300'
+                }`}
+                disabled={isCurrent || isLoading}
+                onClick={() => {
+                  if (!isCheckout) return;
+                  return go(plan.key.toLowerCase() as any);
+                }}
+              >
+                {isCurrent ? 'Current plan' : isLoading ? '…' : 'Get started'}
               </button>
+              <div className="mb-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  What you can do
+                </p>
+                <ul className="space-y-2 text-sm text-neutral-200">
+                  {features.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-auto">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  Modules included
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {pillModules.map((m) => (
+                    <span
+                      key={m}
+                      className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-100 border border-neutral-700"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-center">
-          <button onClick={portal} className="btn-ghost">Manage Subscription</button>
-        </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center pt-4">
+        <button onClick={portal} className="rounded-full border border-neutral-600 px-4 py-2 text-xs text-neutral-200 hover:border-neutral-400">
+          Manage Subscription
+        </button>
       </div>
     </div>
-  )
+  );
 }

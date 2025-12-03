@@ -688,7 +688,7 @@ export async function POST(req: Request) {
       await UsersModel.updateOne({ _id: me._id }, { $set: { orgId: created._id } });
       await Org.updateOne(
         { _id: created._id },
-        { $set: { ownerId: me._id }, $push: { members: { userId: me._id, role: 'owner', joinedAt: new Date() } } }
+        { $push: { members: { userId: me._id, role: 'member', joinedAt: new Date() } } }
       );
       org = await Org.findById(created._id).lean();
       orgId = String(created._id);

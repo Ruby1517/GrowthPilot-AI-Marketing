@@ -10,14 +10,14 @@ ffmpeg.setFfmpegPath(resolvedFfmpeg);
 // Also set env var as a fallback for libraries that read it directly
 process.env.FFMPEG_PATH = resolvedFfmpeg;
 
-export function extractAudio(inputVideoPath: string): Promise<string> {
+export function extractAudio(inputVideoPath: string): Promise<string | null> {
   const output = path.join("/tmp", `clippilot-audio-${Date.now()}.mp3`);
 
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(inputVideoPath, (probeErr: any, data: any) => {
       if (probeErr) return reject(probeErr);
       const hasAudio = (data.streams || []).some((s: any) => s.codec_type === "audio");
-      if (!hasAudio) return reject(new Error("No audio stream found in uploaded video"));
+      if (!hasAudio) return resolve(null);
 
       ffmpeg(inputVideoPath)
         .inputOption("-y") // overwrite temp outputs if they exist

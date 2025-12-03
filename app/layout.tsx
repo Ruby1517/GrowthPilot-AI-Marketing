@@ -92,8 +92,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <StudioSidebar />
               <div className="flex-1">
                 <main className="py-8 px-6 max-w-6xl mx-auto">{children}</main>
-                <footer className="py-10 px-6 text-center text-sm text-brand-muted max-w-6xl mx-auto">
-                  © {new Date().getFullYear()} GrowthPilot
+                <footer className="py-10 px-6 text-center text-sm text-brand-muted max-w-6xl mx-auto space-y-2">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-xs md:text-sm">
+                    <span className="text-brand-muted">Support: <a className="underline hover:text-white" href="mailto:support@use-growthpilot.ai">support@use-growthpilot.ai</a></span>
+                    <span className="text-brand-muted">Billing: <a className="underline hover:text-white" href="mailto:billing@use-growthpilot.ai">billing@use-growthpilot.ai</a></span>
+                    <span className="text-brand-muted">Security: <a className="underline hover:text-white" href="mailto:security@use-growthpilot.ai">security@use-growthpilot.ai</a></span>
+                  </div>
+                  <div>© {new Date().getFullYear()} GrowthPilot</div>
                 </footer>
               </div>
             </div>

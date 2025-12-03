@@ -24,13 +24,13 @@ export async function POST(req: Request) {
     name: displayName,
     email,
     passwordHash,
-    role: 'owner',
+    role: 'member',
     orgId: org._id,
   })
   const team = await Team.create({ name: `${displayName}'s Team`, ownerId: user._id })
   user.teamId = team._id
   await user.save()
-  org.members = [{ userId: user._id, role: 'owner', joinedAt: new Date() }]
+  org.members = [{ userId: user._id, role: 'member', joinedAt: new Date() }]
   await org.save()
 
   return new Response(JSON.stringify({ ok: true }), {

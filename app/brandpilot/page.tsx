@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { useMemo, useState } from 'react';
 import { useEffect } from 'react';
@@ -245,13 +246,12 @@ export default function BrandPilotPage() {
     { key: 'voice', title: 'Voice & Tone', desc: 'Tone traits, vocabulary, guardrails.' },
     { key: 'audience', title: 'Audience', desc: 'Primary/secondary personas, pains, goals.' },
     { key: 'style', title: 'Colors & Style', desc: 'Color hints, typography, visual mood.' },
-    { key: 'assets', title: 'Logo & Assets', desc: 'Notes about logos or uploads.' },
     { key: 'social', title: 'Social Templates', desc: 'Themes to highlight + generate.' },
   ], []);
 
   function renderStepContent() {
     const commonInput =
-      'w-full rounded-md border border-white/10 bg-transparent p-2.5 text-sm placeholder:text-brand-muted focus:border-white/30 focus:outline-none';
+      'w-full rounded-md border border-slate-300 bg-white text-slate-900 dark:border-white/20 dark:bg-white/5 dark:text-white p-2.5 text-sm placeholder:text-brand-muted focus:border-slate-400 focus:outline-none dark:focus:border-white/40';
 
     switch (steps[stepIdx].key) {
       case 'brand':
@@ -328,7 +328,7 @@ export default function BrandPilotPage() {
                   return (
                     <button
                       key={tone}
-                      className={`rounded-full border px-3 py-1 text-sm ${on ? 'bg-white text-black' : 'text-brand-muted hover:text-white'}`}
+                      className={`rounded-full border px-3 py-1 text-sm ${on ? 'bg-white text-black dark:bg-white dark:text-black' : 'text-brand-muted hover:text-white dark:border-white/30'}`}
                       onClick={() => toggleTone(tone)}
                       type="button"
                     >
@@ -464,21 +464,6 @@ export default function BrandPilotPage() {
             </div>
           </div>
         );
-      case 'assets':
-        return (
-          <div className="space-y-4">
-            <p className="text-sm text-brand-muted">
-              Upload logos/patterns after generation via the image generator, or drop any notes/links here for AI context.
-            </p>
-            <textarea
-              className={commonInput}
-              rows={4}
-              value={form.assetNotes}
-              onChange={(e) => updateForm('assetNotes', e.target.value)}
-              placeholder="Logo is a leaf in a coffee cup. Want to highlight neon sign photos, include QR for menu, etc."
-            />
-          </div>
-        );
       case 'social':
         return (
           <div className="space-y-4">
@@ -514,6 +499,11 @@ export default function BrandPilotPage() {
         <p className="mt-3 max-w-2xl text-brand-muted">
           Palette, font pairing, voice deck—plus social image presets.
         </p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <a className="btn-ghost text-sm border border-slate-300 dark:border-white/25 text-slate-900 dark:text-white" href="/brandpilot/library">
+            View Brand Kits
+          </a>
+        </div>
 
         <div className="mt-6 grid md:grid-cols-2 gap-4">
           <div className="card p-4">
@@ -522,7 +512,9 @@ export default function BrandPilotPage() {
                 <button
                   key={s.key}
                   className={`flex-1 min-w-[120px] rounded-md border px-3 py-2 text-sm ${
-                    idx === stepIdx ? 'bg-white text-black font-medium' : 'text-brand-muted hover:text-white'
+                    idx === stepIdx
+                      ? 'bg-white text-black font-medium border-slate-300'
+                      : 'text-brand-muted border-slate-300 dark:border-white/25 hover:text-white dark:hover:border-white/40'
                   }`}
                   onClick={() => setStepIdx(idx)}
                 >
@@ -539,14 +531,14 @@ export default function BrandPilotPage() {
             </div>
             <div className="mt-4 flex items-center justify-between">
               <button
-                className="btn-ghost"
+                className="btn-ghost text-slate-900 dark:text-white border border-slate-300 dark:border-white/25"
                 disabled={stepIdx === 0}
                 onClick={() => setStepIdx((idx) => Math.max(0, idx - 1))}
               >
                 Back
               </button>
               {stepIdx < steps.length - 1 ? (
-                <button className="btn-ghost" onClick={() => setStepIdx((idx) => Math.min(steps.length - 1, idx + 1))}>
+                <button className="btn-ghost text-slate-900 dark:text-white border border-slate-300 dark:border-white/25" onClick={() => setStepIdx((idx) => Math.min(steps.length - 1, idx + 1))}>
                   Next
                 </button>
               ) : (
@@ -641,7 +633,7 @@ export default function BrandPilotPage() {
                   return (
                     <button
                       key={v}
-                      className={`px-2 py-1 rounded-md border text-xs ${on ? 'bg-white text-black' : 'hover:bg-white/5'}`}
+                      className={`px-2 py-1 rounded-md border text-xs ${on ? 'bg-white text-black dark:bg-white dark:text-black' : 'hover:bg-white/5 dark:border-white/30'}`}
                       onClick={() => toggleDocVoice(v)}
                       aria-pressed={on}
                     >
@@ -655,17 +647,17 @@ export default function BrandPilotPage() {
                 <button className="btn-gold" onClick={saveSelections} disabled={loading}>
                   {loading ? 'Saving…' : 'Save Selections'}
                 </button>
-                <button className="btn-ghost" onClick={handleImages} disabled={loading}>
+                <button className="btn-ghost text-slate-900 dark:text-white border border-slate-300 dark:border-white/25" onClick={handleImages} disabled={loading}>
                   {loading ? 'Working…' : 'Generate Social Images'}
                 </button>
                 <button
-                  className="btn-ghost"
+                  className="btn-ghost text-slate-900 dark:text-white border border-slate-300 dark:border-white/25"
                   onClick={() => window.open(`/api/brandpilot/export?id=${doc._id}&format=zip`, "_blank")}
                 >
                   Download ZIP
                 </button>
                 <button
-                  className="btn-ghost"
+                  className="btn-ghost text-slate-900 dark:text-white border border-slate-300 dark:border-white/25"
                   onClick={() => window.open(`/api/brandpilot/guide?id=${doc._id}`, "_blank")}
                 >
                   Style Guide PDF
