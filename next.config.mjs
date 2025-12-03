@@ -63,7 +63,8 @@ const nextConfig = {
     ];
   },
   webpack(config) {
-    config.resolve.alias['@'] = config.resolve.alias['@'] || projectRoot;
+    // Force @ alias to project root to keep imports like "@/lib/..." working regardless of defaults
+    config.resolve.alias['@'] = projectRoot;
     return config;
   },
 };
