@@ -92,6 +92,9 @@ export default function BillingPage() {
         <p className="text-sm text-neutral-400">
           All modules included. Start free with limited usage, then upgrade to lift caps and add team features.
         </p>
+        <p className="text-xs text-neutral-400">
+          Pricing for the full GrowthPilot AI marketing suite: AI video shorts creator, TikTok Reels automation, AI social media content generator, SEO blog writer, AI ad generation, lead chatbot, and AI email assistant.
+        </p>
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

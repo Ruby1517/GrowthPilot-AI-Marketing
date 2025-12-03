@@ -10,13 +10,23 @@ import SupportChat from '@/components/SupportChat';
 import DemoModeBanner from '@/components/DemoModeBanner';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   title: {
     default: 'GrowthPilot — AI Marketing Suite',
     template: '%s — GrowthPilot',
   },
   description: 'Create posts, blogs, ads, emails & clips 10× faster with GrowthPilot — an all‑in‑one AI marketing suite.',
   applicationName: 'GrowthPilot',
+  keywords: [
+    'AI marketing suite',
+    'AI video shorts creator',
+    'TikTok Reels automation',
+    'AI social media content generator',
+    'SEO blog generation',
+    'AI ad generation',
+    'lead generation chatbot',
+    'AI email assistant',
+  ],
   alternates: {
     canonical: '/',
   },

@@ -9,6 +9,8 @@ import Org from '@/models/Org'
 import Team from '@/models/Team'
 
 export const { handlers, auth } = NextAuth({
+  // Allow local development host (http://localhost:3000) and any host defined in env
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

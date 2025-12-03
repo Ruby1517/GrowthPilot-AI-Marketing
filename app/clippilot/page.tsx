@@ -195,6 +195,9 @@ export default function ClipPilotPage() {
         <p className="text-brand-muted">
           Upload a video, let ClipPilot transcribe and suggest viral clips, then render a ready-to-post short.
         </p>
+        <p className="text-sm text-brand-muted">
+          GrowthPilot’s AI video shorts creator automates TikTok Reels and YouTube Shorts editing with hooks, captions, music, and brand-safe overlays for your marketing suite.
+        </p>
         <div className="flex flex-wrap gap-2 pt-2">
           <a className="btn-ghost text-sm" href="/clippilot/library">
             View Your Clips
