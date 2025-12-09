@@ -25,6 +25,8 @@ export interface AnalyzeResponse {
   transcript: string;
   suggestions: ClipSuggestion[];
   videoPath: string;
+  videoKey?: string;
+  videoUrl?: string;
 }
 
 export interface RenderRequest {

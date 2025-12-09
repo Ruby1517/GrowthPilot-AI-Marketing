@@ -50,12 +50,66 @@ export default function ClipPilotPage() {
     setRenderPath(null);
     setAnalyzeLoading(true);
     try {
-      const fd = new FormData();
-      fd.append("video", file);
+      // 1) Get a presigned upload URL
+      const presignRes = await fetch("/api/clippilot/upload-url", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          size: file.size,
+          contentType: file.type || undefined,
+        }),
+      });
+      const presignData = await presignRes.json().catch(() => ({}));
+      if (!presignRes.ok) throw new Error(presignData?.error || "Failed to start upload");
 
-      const res = await fetch("/api/clippilot/analyze", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Analyze failed");
+      // 2) Upload directly to S3/Blob storage
+      const uploadHeaders = {
+        "Content-Type": file.type || "application/octet-stream",
+        ...(presignData?.requiredHeaders || {}),
+      };
+      const uploadRes = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        headers: uploadHeaders,
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text().catch(() => "");
+        throw new Error(txt || "Upload failed");
+      }
+
+      // 3) Call analyze with only the key/URL (no file body)
+      const res = await fetch("/api/clippilot/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          videoKey: presignData.key,
+        }),
+      });
+      const contentType = res.headers.get("content-type") || "";
+      const isJson = contentType.includes("application/json");
+      let data: any;
+
+      try {
+        data = isJson ? await res.json() : await res.text();
+      } catch {
+        data = await res.text().catch(() => "");
+      }
+
+      if (!res.ok) {
+        const bodyMsg = typeof data === "string" ? data : data?.error || data?.message;
+        const tooLarge =
+          res.status === 413 ||
+          (typeof bodyMsg === "string" && bodyMsg.toLowerCase().includes("entity too large")) ||
+          (typeof bodyMsg === "string" && bodyMsg.toLowerCase().includes("body too large"));
+        const msg = tooLarge
+          ? "Upload is too large for the hosted server (Vercel serverless caps request bodies to a few MB). Trim/compress the video or upload via storage instead of posting the file to the API route."
+          : bodyMsg || "Analyze failed";
+        throw new Error(msg);
+      }
+
+      if (!isJson || !data) throw new Error("Unexpected analyze response");
+
       setAnalyzeResult(data as AnalyzeResponse);
       setShortResult(null);
     } catch (e: any) {
@@ -89,6 +143,7 @@ export default function ClipPilotPage() {
       if (!res.ok) throw new Error(data?.error || "Render failed");
 
       const path =
+        data?.url || // prefer shareable URL
         data?.clipPath ||
         data?.outputPath ||
         data?.videoPath ||

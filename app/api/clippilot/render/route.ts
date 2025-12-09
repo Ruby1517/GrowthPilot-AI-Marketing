@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderClip, AudioMode } from "@/lib/clippilot/render";
+import fs from "fs";
+import path from "path";
+import { putBuffer, presignGet, guessContentType } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +47,24 @@ export async function POST(req: NextRequest) {
       voicePath: null,
     });
 
-    return NextResponse.json({ clipPath });
+    // Upload rendered clip to S3 for sharing
+    let url: string | null = null;
+    let key: string | null = null;
+    try {
+      const filename = path.basename(clipPath || "clip.mp4");
+      const buffer = await fs.promises.readFile(clipPath);
+      key = `clippilot/shorts/${Date.now()}-${filename}`;
+      await putBuffer(key, buffer, guessContentType(filename));
+      url = await presignGet(key, 60 * 60 * 6); // 6h
+    } catch (e) {
+      console.warn("render upload failed; returning local path", e);
+    }
+
+    return NextResponse.json({
+      clipPath,
+      key,
+      url,
+    });
   } catch (err: any) {
     console.error("clippilot/render error", err);
     return NextResponse.json(
