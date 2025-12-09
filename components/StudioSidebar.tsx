@@ -60,12 +60,12 @@ export const tools = [
 
 export default function StudioSidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     try {
       const v = localStorage.getItem('gpSidebarCollapsed');
-      setCollapsed(v === null ? true : v === '1');
+      setCollapsed(v === null ? false : v === '1');
     } catch {}
     function onChanged() {
       try {
