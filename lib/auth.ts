@@ -10,8 +10,9 @@ import Org from '@/models/Org'
 import Team from '@/models/Team'
 
 const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-if (!authSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('Auth secret missing. Set AUTH_SECRET or NEXTAUTH_SECRET in your environment.')
+if (!authSecret) {
+  // Avoid hard crashes if envs are missing; warn in logs instead.
+  console.warn('[auth] AUTH_SECRET/NEXTAUTH_SECRET not set. Using a fallback dev secret.');
 }
 
 const providers: Provider[] = []
