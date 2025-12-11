@@ -110,7 +110,7 @@ pnpm install   # or npm install / yarn
 ```
 pnpm dev
 ```
-4) Start background workers as needed (in separate terminals):
+<!-- 4) Start background workers as needed (in separate terminals):
 ```
 # Clip pipeline worker (shorts assembly)
 pnpm dlx tsx -r tsconfig-paths/register scripts/clip-worker.ts
@@ -122,7 +122,7 @@ pnpm dlx tsx -r tsconfig-paths/register scripts/clip-worker.ts
 ```
 # Open at http://localhost:3000/admin/queues
 pnpm run queues:ui
-```
+``` -->
 
 ## Testing
 - `pnpm test` — run the entire Vitest suite headlessly.
@@ -131,7 +131,7 @@ pnpm run queues:ui
 - Extend `tests/` with similar specs per module to keep coverage focused and fast; Vitest picks up any `*.test.ts` under that directory.
 
 
-## Environment Variables
+<!-- ## Environment Variables -->
 <!-- See `.env.example` for the full list and defaults. Minimum set for local dev:
 - Auth: `NEXTAUTH_URL`, `AUTH_SECRET`
 - Database: `MONGODB_URI`, `MONGODB_DB`
