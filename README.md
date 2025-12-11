@@ -21,7 +21,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - Tailwind CSS, Radix UI, lucide-react
 
 
-## Architecture Highlights
+<!-- ## Architecture Highlights -->
 <!-- - Plans, modules, and gates
   - Modules and required plan: `lib/modules.ts`
   - Feature gates by plan: `lib/features.ts`, `lib/plan-gate.ts`
@@ -49,7 +49,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 ![OpenAI](https://img.shields.io/badge/OpenAI-LLMs-412991?logo=openai&logoColor=white)
 
 
-## Screenshots
+<!-- ## Screenshots
 - PostPilot — Social content generator
   - ![PostPilot](public/images/modules/postpilot.svg)
 - BlogPilot — SEO blog writer
@@ -63,7 +63,7 @@ All‑in‑one AI marketing suite built with Next.js 14 and TypeScript. GrowthPi
 - BrandPilot — Brand kit
   - ![BrandPilot](public/images/modules/brandpilot.svg)
 - ClipPilot — Shorts creator
-  - ![ClipPilot](public/images/modules/clippilot.svg)
+  - ![ClipPilot](public/images/modules/clippilot.svg) -->
 
 
 ## Module Tour
@@ -141,14 +141,14 @@ pnpm run queues:ui
 - AI: `OPENAI_API_KEY` (and optionally `ELEVENLABS_API_KEY`)
 - App: `NEXT_PUBLIC_APP_URL` -->
 
-Optional/advanced:
+<!-- Optional/advanced:
 - Upstash rate limit: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - Model routing overrides: `*_MODEL` keys
 - FFmpeg overrides: `FFMPEG_PATH`, `FFPROBE_PATH`
-- Webhooks: `CLIPS_WEBHOOK_SECRET`, `LEADPILOT_WEBHOOK_URL`
+- Webhooks: `CLIPS_WEBHOOK_SECRET`, `LEADPILOT_WEBHOOK_URL` -->
 
 
-## Billing and Webhooks
+<!-- ## Billing and Webhooks -->
 <!-- - Checkout and portal endpoints under `app/api/billing/*`
 - Stripe webhook: `app/api/webhooks/stripe/route.ts`
   - Set `STRIPE_WEBHOOK_SECRET` and configure the endpoint in your Stripe dashboard.
@@ -157,40 +157,40 @@ Optional/advanced:
 - Overage invoicing support in `jobs/overage-invoice.ts`. -->
 
 
-## Queues and Workers
+<!-- ## Queues and Workers
 - BullMQ queues (Redis) are used for scheduling and background processing.
 - Admin dashboard is served at `/admin/queues` when the app is running.
 - Example ClipPilot worker script: `scripts/clip-worker.ts`
 - Example video clip pipeline: `workers/clip-pipeline.ts` (ffmpeg/whisper, captions, S3 upload).
+ -->
 
-
-## Development Tips
+<!-- ## Development Tips
 - Lint and types:
 ```
 pnpm lint
 pnpm typecheck
 ```
 - Diagnose ffmpeg availability by visiting a diagnostic route you add or set `FFMPEG_PATH`/`FFPROBE_PATH`.
-- Use `NEXT_PUBLIC_DEV_UNLOCK_ALL=true` during local exploration to bypass module plan gates.
+- Use `NEXT_PUBLIC_DEV_UNLOCK_ALL=true` during local exploration to bypass module plan gates. -->
 
 
-## Deployment Notes
+<!-- ## Deployment Notes
 - Set production envs securely in your platform dashboard. Do not commit `.env`.
 - See `docs/GO_LIVE.md` for a production checklist: secrets, billing setup, security, and operations.
 - Ensure proper CORS/CSP and restrict origins to `NEXT_PUBLIC_APP_URL` in production.
-- Configure a CDN (`CDN_URL`) if serving large media from S3.
+- Configure a CDN (`CDN_URL`) if serving large media from S3. -->
 
 
-## Security
+<!-- ## Security
 - Never commit secrets. Use `.env.example` as a template only.
-- Rotate keys if any secret is exposed. Push protection will block commits containing common secret formats.
+- Rotate keys if any secret is exposed. Push protection will block commits containing common secret formats. -->
 
 
-## Troubleshooting
+<!-- ## Troubleshooting
 - Push blocked due to secrets: remove the secret from history (e.g., `git filter-repo`) and rotate the key.
 - Webhook signature errors: confirm `STRIPE_WEBHOOK_SECRET` and use raw request body in your platform.
 - Redis connection issues: set `REDIS_URL` or `REDIS_HOST/PORT/PASSWORD` and ensure the service is reachable.
-- FFmpeg errors on Windows: set `FFMPEG_PATH` and `FFPROBE_PATH` to installed binaries.
+- FFmpeg errors on Windows: set `FFMPEG_PATH` and `FFPROBE_PATH` to installed binaries. -->
 
 
 ## License
