@@ -55,6 +55,8 @@ const nextConfig = {
       ...(process.env.CDN_URL ? [{ protocol: 'https', hostname: process.env.CDN_URL.replace(/^https?:\/\//,'') }] : []),
       // OAuth avatars (e.g., Google)
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      // GitHub avatars
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
     ],
   },
   async headers() {

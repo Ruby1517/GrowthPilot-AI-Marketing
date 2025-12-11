@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation'
 import { modulePlan, moduleLabels } from '@/lib/modules'
 import Uploader from '@/components/Uploader'
 import { canAccess } from '@/lib/access'
+import type { MeterKey, PlanKey } from '@/lib/limits'
 
 type Plan = 'Trial'|'Starter'|'Pro'|'Business'
 type ModuleKey = keyof typeof modulePlan
+type UsageMap = Partial<Record<MeterKey, number>>
+type PlanLimits = Partial<Record<MeterKey, number>>
 
 const moduleRoute: Record<ModuleKey, string> = {
   postpilot: '/postpilot',
@@ -19,12 +22,24 @@ const moduleRoute: Record<ModuleKey, string> = {
   brandpilot: '/brandpilot',
 }
 
+const meterKeyFor: Record<ModuleKey, MeterKey> = {
+  postpilot: 'postpilot_generated',
+  blogpilot: 'blogpilot_words',
+  mailpilot: 'mailpilot_emails',
+  adpilot: 'adpilot_variants',
+  clippilot: 'clippilot_exports',
+  leadpilot: 'leadpilot_convos',
+  brandpilot: 'brandpilot_assets',
+}
+
 export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [plan, setPlan] = useState<Plan>('Trial')
   const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown')
   const [loading, setLoading] = useState(true)
+  const [usage, setUsage] = useState<UsageMap>({})
+  const [limits, setLimits] = useState<PlanLimits>({})
 
   useEffect(() => {
     let cancelled = false
@@ -38,6 +53,21 @@ export default function Dashboard() {
           const eff = (j.effectivePlan as Plan) || (j.plan as Plan) || 'Trial'
           setPlan(eff)
           setMyRole((j.myRole as any) || 'member')
+
+          // Pull usage/limits to render per-module progress; ignore failures silently
+          if (j.id) {
+            fetch(`/api/org/usage?orgId=${j.id}`)
+              .then(res => res.ok ? res.json() : null)
+              .then(data => {
+                if (!data || cancelled) return
+                const planKey = (data.plan as PlanKey) || eff
+                const planLimits = (data.limits || {}) as PlanLimits
+                setLimits(planLimits)
+                setUsage((data.usage || {}) as UsageMap)
+                if (planKey && planKey !== eff) setPlan(planKey as Plan)
+              })
+              .catch(() => {})
+          }
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -64,15 +94,23 @@ export default function Dashboard() {
     const keys = (Object.keys(modulePlan) as Array<keyof typeof modulePlan>) as ModuleKey[]
     return keys.map(k => {
       const access = canAccess({ userPlan: p as any, module: k, userRole })
+      const meterKey = meterKeyFor[k]
+      const used = Number(usage?.[meterKey] ?? 0)
+      const cap = Number(limits?.[meterKey] ?? 0)
+      const pct = cap > 0 ? Math.min(100, (used / cap) * 100) : 0
       return {
         key: k,
         label: moduleLabels[k],
         href: moduleRoute[k],
         unlocked: access,
         required: modulePlan[k],
+        usage: used,
+        limit: cap,
+        percent: pct,
+        meterKey,
       }
     })
-  }, [plan, myRole, session])
+  }, [plan, myRole, session, usage, limits])
 
   if (status === 'loading' || loading) {
     return (
@@ -114,14 +152,23 @@ export default function Dashboard() {
           <div className="card p-6" key={it.key}>
             <div className="text-sm text-brand-muted">Module</div>
             <div className="text-lg font-medium">{it.label}</div>
-            <div className="mt-3 flex items-center gap-2">
-              {it.unlocked ? (
-                <a className="btn-gold" href={it.href}>Open</a>
-              ) : (
-                <>
-                  <span className="text-xs text-brand-muted">Requires {it.required}</span>
-                  <a className="btn-ghost ml-auto" href="/billing">Upgrade</a>
-                </>
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-xs text-brand-muted">
+                <span>{it.meterKey?.replace(/_/g, ' ')}</span>
+                <span>{Number.isFinite(it.usage) ? it.usage : 0} / {it.limit || '—'}</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/5 dark:bg-white/5 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]"
+                  style={{ width: `${it.percent || 0}%` }}
+                  aria-label="Usage progress"
+                />
+              </div>
+              {!it.unlocked && (
+                <div className="flex items-center justify-between text-xs text-amber-400">
+                  <span>Requires {it.required}</span>
+                  <a className="underline hover:text-white" href="/billing">Upgrade</a>
+                </div>
               )}
             </div>
           </div>
