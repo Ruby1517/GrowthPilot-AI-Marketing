@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "SEO + Brand aligned", desc: "Draft long-form blogs that match your voice, keywords, and brand guardrails." },
@@ -15,7 +14,9 @@ const steps = [
   { title: "3) Publish-ready", items: ["Export markdown/HTML with headings, links, and alt text.", "Grab social snippets to promote instantly."] },
 ];
 
-export default function BlogPilotLanding() {
+export default async function BlogPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/blogpilot" : "/api/auth/signin?callbackUrl=/blogpilot";
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -33,8 +34,10 @@ export default function BlogPilotLanding() {
                 Spin out social snippets and summaries from the same draft.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/blogpilot" className="btn-gold">Try BlogPilot</Link>
-                <Link href="/blogpilot" className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-100 dark:border-white/10 dark:text-white">View your drafts</Link>
+                <Link href={tryHref} className="btn-gold">Try BlogPilot</Link>
+                {session?.user && (
+                  <Link href="/blogpilot" className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-100 dark:border-white/10 dark:text-white">View your drafts</Link>
+                )}
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 space-y-3 shadow-[0_12px_30px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5">
@@ -82,8 +85,10 @@ export default function BlogPilotLanding() {
             BlogPilot keeps your posts on-brand, SEO-friendly, and promotion-ready with summaries and social snippets.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/blogpilot" className="btn-gold">Start writing</Link>
-            <Link href="/blogpilot" className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-100 dark:border-white/10 dark:text-white">View your drafts</Link>
+            <Link href={tryHref} className="btn-gold">Start writing</Link>
+            {session?.user && (
+              <Link href="/blogpilot" className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-100 dark:border-white/10 dark:text-white">View your drafts</Link>
+            )}
           </div>
         </section>
       </div>

@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "Channel-aware", desc: "Generates search, social, and display variants with platform-ready lengths and hooks." },
@@ -15,7 +14,9 @@ const steps = [
   { title: "3) Ship & test", items: ["Export variants for your ad manager.", "Run A/B tests with ready-made angles."] },
 ];
 
-export default function AdPilotLanding() {
+export default async function AdPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/adpilot" : "/api/auth/signin?callbackUrl=/adpilot";
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -32,7 +33,7 @@ export default function AdPilotLanding() {
                 Turn offers into ad variants with headlines, CTAs, and visuals tuned for search, social, and display. Produce multiple angles fast so you can test and scale.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/adpilot" className="btn-gold">Try AdPilot</Link>
+                <Link href={tryHref} className="btn-gold">Try AdPilot</Link>
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 space-y-3 shadow-[0_12px_30px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5">
@@ -80,7 +81,7 @@ export default function AdPilotLanding() {
             AdPilot keeps your ads on-message, channel-ready, and testable with visuals and multiple angles.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/adpilot" className="btn-gold">Create ads</Link>
+            <Link href={tryHref} className="btn-gold">Create ads</Link>
           </div>
         </section>
       </div>

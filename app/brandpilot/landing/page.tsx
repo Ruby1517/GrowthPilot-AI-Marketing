@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "Instant brand kits", desc: "Generate palettes, font pairings, and voice/tone guardrails from a short brief or URL." },
@@ -15,7 +14,9 @@ const steps = [
   { title: "3) Export & share", items: ["Download the style guide PDF and asset ZIP.", "Revisit to tweak colors, fonts, and voice."] },
 ];
 
-export default function BrandPilotLanding() {
+export default async function BrandPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/brandpilot" : "/api/auth/signin?callbackUrl=/brandpilot";
   return (
     <main className="min-h-screen bg-transparent text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -32,8 +33,8 @@ export default function BrandPilotLanding() {
                 Generate palettes, fonts, voice/tone guides, messaging pillars, and image prompts—plus a style guide PDF and asset ZIP for handoff.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/brandpilot" className="btn-gold">Try BrandPilot</Link>
-                <Link href="/brandpilot/library" className="btn-ghost">View your kits</Link>
+                <Link href={tryHref} className="btn-gold">Try BrandPilot</Link>
+                {session?.user && <Link href="/brandpilot/library" className="btn-ghost">View your kits</Link>}
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm dark:bg-white/5 dark:border-white/10">
@@ -81,8 +82,8 @@ export default function BrandPilotLanding() {
             BrandPilot keeps your visuals and messaging consistent with exports your team can use immediately.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/brandpilot" className="btn-gold">Create a kit</Link>
-            <Link href="/brandpilot/library" className="btn-ghost">View your kits</Link>
+            <Link href={tryHref} className="btn-gold">Create a kit</Link>
+            {session?.user && <Link href="/brandpilot/library" className="btn-ghost">View your kits</Link>}
           </div>
         </section>
       </div>

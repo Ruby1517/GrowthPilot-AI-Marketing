@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "On-brand chat", desc: "Generate lead capture chat flows that match your brand voice and product positioning." },
@@ -15,7 +14,9 @@ const steps = [
   { title: "3) Launch & iterate", items: ["Export flows for your chat widget or CRM.", "Test variants and keep the best-performing prompts."] },
 ];
 
-export default function LeadPilotLanding() {
+export default async function LeadPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/leadpilot" : "/api/auth/signin?callbackUrl=/leadpilot";
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -26,14 +27,16 @@ export default function LeadPilotLanding() {
           <div className="grid gap-4 lg:grid-cols-2 lg:items-center">
             <div className="space-y-3">
               <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-                Convert visitors with on-brand lead capture flows
+                AI Lead Capture & Appointment Assistant
               </h1>
               <p className="text-slate-700 dark:text-brand-muted text-sm md:text-base">
                 Generate chat flows, qualifying questions, and follow-up messages that match your brand and offers. Keep objection handling and CTAs consistent across channels.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/leadpilot" className="btn-gold">Try LeadPilot</Link>
-                <Link href="/leadpilot" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 bg-white/80 shadow-sm dark:border-white/10 dark:text-white">View your flows</Link>
+                <Link href={tryHref} className="btn-gold">Try LeadPilot</Link>
+                {session?.user && (
+                  <Link href="/leadpilot" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 bg-white/80 shadow-sm dark:border-white/10 dark:text-white">View your flows</Link>
+                )}
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 space-y-3 shadow-[0_12px_30px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5">
@@ -81,8 +84,10 @@ export default function LeadPilotLanding() {
             LeadPilot keeps your chat and follow-ups on-message, with CTA and objection handling ready to go.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/leadpilot" className="btn-gold">Create flows</Link>
-            <Link href="/leadpilot" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">View your flows</Link>
+            <Link href={tryHref} className="btn-gold">Create flows</Link>
+            {session?.user && (
+              <Link href="/leadpilot" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">View your flows</Link>
+            )}
           </div>
         </section>
       </div>

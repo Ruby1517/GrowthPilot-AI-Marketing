@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "Platform-aware", desc: "Auto-tailors captions, hashtags, and tone for Instagram, TikTok, LinkedIn, X, and Facebook." },
@@ -17,7 +16,10 @@ const steps = [
 
 const socials = ["Instagram", "TikTok", "LinkedIn", "X", "Facebook"];
 
-export default function PostPilotLanding() {
+export default async function PostPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/postpilot" : "/api/auth/signin?callbackUrl=/postpilot";
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -35,8 +37,10 @@ export default function PostPilotLanding() {
                 Batch a week—or a month—of content with consistent brand voice.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/postpilot" className="btn-gold">Try PostPilot</Link>
-                <Link href="/postpilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 bg-white/80 shadow-sm dark:border-white/10 dark:text-white">View your content</Link>
+                <Link href={tryHref} className="btn-gold">Try PostPilot</Link>
+                {session?.user && (
+                  <Link href="/postpilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 bg-white/80 shadow-sm dark:border-white/10 dark:text-white">View your content</Link>
+                )}
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 space-y-4 shadow-[0_12px_30px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5">
@@ -108,8 +112,10 @@ export default function PostPilotLanding() {
             Start with PostPilot and keep your social channels fresh with on-brand content and visuals.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/postpilot" className="btn-gold">Try PostPilot</Link>
-            <Link href="/postpilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">View your content</Link>
+            <Link href={tryHref} className="btn-gold">Try PostPilot</Link>
+            {session?.user && (
+              <Link href="/postpilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">View your content</Link>
+            )}
           </div>
         </section>
       </div>

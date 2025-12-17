@@ -92,7 +92,8 @@ export default function Dashboard() {
     const isAuthed = Boolean(session?.user)
     const p: Plan | null = isAuthed ? plan : null
     const keys = (Object.keys(modulePlan) as Array<keyof typeof modulePlan>) as ModuleKey[]
-    return keys.map(k => {
+    const orderedKeys: ModuleKey[] = [...keys.filter(k => k !== 'clippilot'), 'clippilot']
+    return orderedKeys.map(k => {
       const access = canAccess({ userPlan: p as any, module: k, userRole })
       const meterKey = meterKeyFor[k]
       const used = Number(usage?.[meterKey] ?? 0)

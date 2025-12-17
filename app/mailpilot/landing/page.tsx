@@ -1,6 +1,5 @@
-export const revalidate = 60;
-
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "Lifecycle ready", desc: "Generate nurture, promos, reactivation, onboarding, and announcement sequences in your brand voice." },
@@ -15,7 +14,9 @@ const steps = [
   { title: "3) Ship & test", items: ["Export variants, slot into your ESP, and test.", "Reuse snippets for social follow-ups."] },
 ];
 
-export default function MailPilotLanding() {
+export default async function MailPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/mailpilot" : "/api/auth/signin?callbackUrl=/mailpilot";
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-[#0b1224] dark:via-[#0d0f1a] dark:to-[#05060a] dark:text-white">
       <div className="max-w-6xl mx-auto px-6 py-14 space-y-12">
@@ -32,7 +33,7 @@ export default function MailPilotLanding() {
                 Generate lifecycle and promo emails with subject lines, preview text, body copy, CTAs, and visual prompts—ready to test in your ESP.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/mailpilot" className="btn-gold">Try MailPilot</Link>
+                <Link href={tryHref} className="btn-gold">Try MailPilot</Link>
               </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/85 p-5 space-y-3 shadow-[0_12px_30px_rgba(0,0,0,0.06)] dark:border-white/10 dark:bg-white/5">
@@ -80,7 +81,7 @@ export default function MailPilotLanding() {
             MailPilot keeps your emails on-brand and test-ready with multiple variants and visual prompts.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/mailpilot" className="btn-gold">Start writing</Link>
+            <Link href={tryHref} className="btn-gold">Start writing</Link>
           </div>
         </section>
       </div>

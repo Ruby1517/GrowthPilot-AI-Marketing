@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 const highlights = [
   { title: "Auto clip plans", body: "Find the best 15–30s hook, add promo badges, CTA, and brand tag automatically." },
@@ -14,7 +15,9 @@ const steps = [
   "Render, store to private S3, and share the signed link with your team.",
 ];
 
-export default function ClipPilotLanding() {
+export default async function ClipPilotLanding() {
+  const session = await auth();
+  const tryHref = session?.user ? "/clippilot" : "/api/auth/signin?callbackUrl=/clippilot";
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#fffaf3] via-[#fff5e8] to-[#fffaf3] text-slate-900 dark:bg-gradient-to-b dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-white">
       <div className="mx-auto max-w-6xl px-6 py-12 space-y-16">
@@ -31,15 +34,17 @@ export default function ClipPilotLanding() {
               ClipPilot finds the hook, adds promo badges and CTAs, mixes AI voice-over with low background music, and saves everything to your private S3. One click to share a signed link with your team.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/clippilot" className="btn-gold">
+              <Link href={tryHref} className="btn-gold">
                 Try ClipPilot
               </Link>
-              <Link
-                href="/clippilot/library"
-                className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-50/50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
-              >
-                View your clips
-              </Link>
+              {session?.user && (
+                <Link
+                  href="/clippilot/library"
+                  className="btn-ghost border border-slate-200 text-slate-900 bg-transparent hover:bg-slate-50/50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+                >
+                  View your clips
+                </Link>
+              )}
             </div>
             <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-center gap-2">
@@ -94,12 +99,14 @@ export default function ClipPilotLanding() {
             Upload a video, generate the ad-ready plan, add AI voice-over with low music, and share a signed link in minutes.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/clippilot" className="btn-gold">
+            <Link href={tryHref} className="btn-gold">
               Start a new short
             </Link>
-            <Link href="/clippilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">
-              Browse your library
-            </Link>
+            {session?.user && (
+              <Link href="/clippilot/library" className="btn-ghost border border-slate-200 text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white">
+                Browse your library
+              </Link>
+            )}
           </div>
         </section>
       </div>
