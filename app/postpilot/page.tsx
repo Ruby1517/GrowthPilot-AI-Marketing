@@ -168,8 +168,8 @@ export default function PostPilotPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="card p-6 max-w-3xl space-y-3">
+    <div className="p-4 md:p-6 pt-6 space-y-6 max-w-5xl mx-auto">
+      <div className="card p-6 max-w-3xl mx-auto space-y-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold">PostPilot — Create Smarter</h1>
           <p className="text-sm text-brand-muted mt-2">
@@ -193,13 +193,13 @@ export default function PostPilotPage() {
             onChange={(e) => setTopic(e.target.value)}
           />
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Voice</label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Voice</label>
               <select
                 value={voice}
                 onChange={(e) => setVoice(e.target.value as any)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
               >
                 {voices.map((v) => (
                   <option key={v} value={v}>{v}</option>
@@ -207,9 +207,9 @@ export default function PostPilotPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Language</label>
-              <div className="flex-1 flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Language</label>
+              <div className="w-full md:flex-1 flex flex-col gap-2">
                 <select
                   value={languageOptions.some((opt) => opt.value === language) ? language : 'custom'}
                   onChange={(e) => {
@@ -235,46 +235,46 @@ export default function PostPilotPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Industry</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Industry</label>
               <input
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
                 placeholder="e.g., SaaS marketing"
                 required
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Project</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Project</label>
               <input
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
                 placeholder="(optional) projectId"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Schedule</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Schedule</label>
               <input
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-24">Variants</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-24">Variants</label>
               <input
                 type="number"
                 min={1}
                 max={5}
                 value={variants}
                 onChange={(e) => setVariants(Math.max(1, Math.min(5, Number(e.target.value) || 1)))}
-                className="w-28 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:w-28 rounded-md border px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -314,20 +314,20 @@ export default function PostPilotPage() {
                 {p}
               </button>
             ))}
-            <div className="ml-auto">
-              <button className="btn-gold" disabled={loading}>
+            <div className="w-full flex justify-end">
+              <button className="btn-gold w-full md:w-auto" disabled={loading}>
                 {loading ? 'Generating…' : 'Generate'}
               </button>
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-32">Automation</label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-32">Automation</label>
               <select
                 value={automationCadence}
                 onChange={(e) => setAutomationCadence(e.target.value as typeof cadences[number])}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
               >
                 {cadences.map((c) => (
                   <option key={c} value={c}>
@@ -336,24 +336,24 @@ export default function PostPilotPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-32"># of posts</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-32"># of posts</label>
               <input
                 type="number"
                 min={1}
                 max={7}
                 value={automationSlots}
                 onChange={(e) => setAutomationSlots(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
-                className="w-28 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:w-28 rounded-md border px-3 py-2 text-sm"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm w-32">Start date</label>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+              <label className="text-sm md:w-32">Start date</label>
               <input
                 type="date"
                 value={automationStart}
                 onChange={(e) => setAutomationStart(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
+                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
               />
             </div>
             <label className="flex items-center gap-2 text-sm">

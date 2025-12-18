@@ -42,6 +42,45 @@ export default function UserMenu() {
   const demo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
   const displayEmail = demo ? 'demo@growthpilot.ai' : email
   const displayName = demo ? 'Demo user' : (session.user?.name || email)
+  const closeMenu = () => setOpen(false)
+
+  const menuContent = (
+    <>
+      <div className="px-3 py-2 text-xs text-brand-muted truncate">
+        {displayName}
+      </div>
+      <div className="md:hidden">
+        <Link href="/" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+          Home
+        </Link>
+        <Link href="/about" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+          About
+        </Link>
+        <Link href="/billing" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+          Plans & Pricing
+        </Link>
+        <Link href="/dashboard" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+          Dashboard
+        </Link>
+        <div className="my-1 h-px bg-white/10" />
+      </div>
+      <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+        Profile
+      </Link>
+      <Link href="/settings" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg" onClick={closeMenu}>
+        Settings
+      </Link>
+      <button
+        onClick={() => {
+          closeMenu()
+          signOut({ callbackUrl: '/' })
+        }}
+        className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 rounded-lg"
+      >
+        Sign out
+      </button>
+    </>
+  )
 
   return (
     <div ref={ref} className="relative">
@@ -67,26 +106,26 @@ export default function UserMenu() {
       </button>
 
       {open && (
-        <div
-          role="menu"
-          className="absolute right-0 mt-2 z-50 w-56 rounded-2xl border border-white/10 bg-[color:var(--card-bg,rgba(255,255,255,0.04))] backdrop-blur-md shadow-glow p-1"
-        >
-          <div className="px-3 py-2 text-xs text-brand-muted truncate">
-            {displayName}
-          </div>
-          <Link href="/profile" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
-            Profile
-          </Link>
-          <Link href="/settings" className="block px-3 py-2 text-sm hover:bg-white/5 rounded-lg">
-            Settings
-          </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 rounded-lg"
+        <>
+          {/* Mobile overlay behaves like a sidebar sheet */}
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-[#060b12]/85 backdrop-blur-sm"
+            onClick={closeMenu}
+            aria-hidden
+          />
+          <div
+            role="menu"
+            className="hidden md:block absolute right-0 mt-2 z-50 w-56 rounded-2xl border border-white/10 bg-[color:var(--card-bg,rgba(255,255,255,0.04))] backdrop-blur-md shadow-glow p-1"
           >
-            Sign out
-          </button>
-        </div>
+            {menuContent}
+          </div>
+          <div
+            role="menu"
+            className="md:hidden fixed top-16 right-3 left-3 z-50 rounded-2xl border border-white/10 bg-[#0c1424]/95 shadow-2xl p-1"
+          >
+            {menuContent}
+          </div>
+        </>
       )}
     </div>
   )

@@ -63,6 +63,7 @@ export default function StudioSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -76,22 +77,34 @@ export default function StudioSidebar() {
       } catch {}
     }
     window.addEventListener('gp:sidebar-changed', onChanged);
-    return () => window.removeEventListener('gp:sidebar-changed', onChanged);
+    const onMobileToggle = () => setMobileOpen(v => !v);
+    window.addEventListener('gp:sidebar-mobile-toggle', onMobileToggle);
+    return () => {
+      window.removeEventListener('gp:sidebar-changed', onChanged);
+      window.removeEventListener('gp:sidebar-mobile-toggle', onMobileToggle);
+    };
   }, []);
 
-  return (
-    <aside className={`flex ${collapsed ? 'w-16 md:w-16 lg:w-20' : 'w-20 md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
-      <div className="w-full p-3">
-        <div className="card sidebar-card pt-3 pb-8 px-3">
-          <div className="flex items-center justify-end">
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const renderSidebarContent = (opts?: { forceExpanded?: boolean; showCollapse?: boolean; className?: string }) => {
+    const { forceExpanded = false, showCollapse = true, className = '' } = opts || {};
+    const isCollapsed = forceExpanded ? false : collapsed;
+
+    return (
+      <div className={`card sidebar-card pt-3 pb-8 px-3 h-full ${className}`}>
+        <div className="flex items-center justify-end">
+          {showCollapse && (
             <button
               type="button"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand' : 'Collapse'}
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={isCollapsed ? 'Expand' : 'Collapse'}
               onClick={() => {
                 try {
                   // Persist, notify, and update local state so the UI reacts immediately
-                  const willCollapse = !collapsed;
+                  const willCollapse = !isCollapsed;
                   localStorage.setItem('gpSidebarCollapsed', willCollapse ? '1' : '0');
                   window.dispatchEvent(new Event('gp:sidebar-changed'));
                   // Immediate local update (no reliance on the event listener)
@@ -105,99 +118,124 @@ export default function StudioSidebar() {
                 <path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm1 3h14v9H5V8Zm0-2v1h14V6H5Z"/>
               </svg>
             </button>
-          </div>
-          <nav className="mt-1">
-          {!collapsed && (
-            <div className={`mt-3 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70 ${collapsed ? 'text-center px-0' : ''}`}>AI Studio</div>
           )}
-          <ul className="mt-1 space-y-1">
-          {creators.map((l) => {
-            const isComingSoon = l.status === 'coming_soon';
-            if (isComingSoon) {
-              return (
-                <li key={l.href}>
-                  <div
-                    className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 border border-dashed border-white/10 bg-white/0`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span className="text-sm">{l.label}</span>
-                          {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
-                          <span className="text-[10px] uppercase tracking-wide text-brand-muted mt-1">Coming soon</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            }
-            const active = isActive(pathname, l.href);
+        </div>
+        <nav className="mt-1">
+        {!isCollapsed && (
+          <div className={`mt-3 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70 ${isCollapsed ? 'text-center px-0' : ''}`}>AI Studio</div>
+        )}
+        <ul className="mt-1 space-y-1">
+        {creators.map((l) => {
+          const isComingSoon = l.status === 'coming_soon';
+          if (isComingSoon) {
             return (
               <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
-                    active
-                      ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
-                      : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
+                <div
+                  className={`block rounded-md ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'} dark:text-white/70 text-black/70 border border-dashed border-white/10 bg-white/0`}
                 >
                   <div className="flex items-center gap-2">
                     <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                    {!collapsed && (
+                    {!isCollapsed && (
                       <div className="flex flex-col">
                         <span className="text-sm">{l.label}</span>
                         {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                        <span className="text-[10px] uppercase tracking-wide text-brand-muted mt-1">Coming soon</span>
                       </div>
                     )}
                   </div>
-                </Link>
+                </div>
               </li>
             );
-          })}
-          </ul>
+          }
+          const active = isActive(pathname, l.href);
+          return (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                className={`block rounded-md ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
+                  active
+                    ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                    : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                  {!isCollapsed && (
+                    <div className="flex flex-col">
+                      <span className="text-sm">{l.label}</span>
+                      {l.desc && <span className="text-xs opacity-70">{l.desc}</span>}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+        </ul>
 
-          {SHOW_TOOLS && session?.user && (
-            <>
-              {!collapsed && (
-                <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
-              )}
-              <ul className="mt-1 space-y-1">
-                {tools.map((l) => {
-                  const active = isActive(pathname, l.href);
-                  return (
-                    <li key={l.href}>
-                      <Link
-                        href={l.href}
-                        className={`block rounded-md ${collapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
-                          active
-                            ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
-                            : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                      >
-                    <div className="flex items-center gap-2">
-                          <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
-                          {!collapsed && <span className="text-sm">{l.label}</span>}
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
-        </nav>
-        <div className={`mt-5 ${collapsed ? 'px-1 text-center' : 'px-3 flex items-center justify-between'}`}>
-          {!collapsed && <span className="text-xs text-brand-muted">Theme</span>}
-          <div className="ml-auto flex justify-center">
-            <ThemeToggle />
-          </div>
-        </div>
+        {SHOW_TOOLS && session?.user && (
+          <>
+            {!isCollapsed && (
+              <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>
+            )}
+            <ul className="mt-1 space-y-1">
+              {tools.map((l) => {
+                const active = isActive(pathname, l.href);
+                return (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className={`block rounded-md ${isCollapsed ? 'px-2 py-2' : 'px-3 py-2'} ${
+                        active
+                          ? 'dark:bg-white/10 dark:text-[color:var(--gold,theme(colors.brand.gold))] bg-black/5 text-[#14B8A6]'
+                          : 'dark:text-white/80 text-black/80 hover:text-[#14B8A6] dark:hover:text-[color:var(--gold,theme(colors.brand.gold))] hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                  <div className="flex items-center gap-2">
+                        <Icon name={l.icon} className="w-5 h-5 dark:text-brand-gold text-[#14B8A6]" />
+                        {!isCollapsed && <span className="text-sm">{l.label}</span>}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </nav>
+      <div className={`mt-5 ${isCollapsed ? 'px-1 text-center' : 'px-3 flex items-center justify-between'}`}>
+        {!isCollapsed && <span className="text-xs text-brand-muted">Theme</span>}
+        <div className="ml-auto flex justify-center">
+          <ThemeToggle />
         </div>
       </div>
-    </aside>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <aside className={`hidden md:flex ${collapsed ? 'w-16 md:w-16 lg:w-20' : 'w-20 md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
+        <div className="w-full p-3">
+          {renderSidebarContent()}
+        </div>
+      </aside>
+
+      {/* Mobile drawer */}
+      <div className={`md:hidden fixed inset-0 z-40 transition ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <div
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${mobileOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setMobileOpen(false)}
+        />
+        <div
+          className={`absolute left-0 top-16 bottom-0 w-72 max-w-[82vw] transform transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="h-full p-3">
+            {renderSidebarContent({ forceExpanded: true, showCollapse: false, className: 'shadow-2xl' })}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 

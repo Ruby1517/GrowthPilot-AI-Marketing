@@ -9,7 +9,6 @@ export default function ThemeToggle() {
   const nextIcon = targetTheme === 'dark' ? '🌙' : '☀️';
 
   function handleToggle() {
-    // cycle: light <-> dark
     setTheme(theme === 'light' ? 'dark' : 'light');
   }
 
