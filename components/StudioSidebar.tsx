@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import type { ModuleKey, ModuleStatus } from '@/lib/modules';
 import { moduleLabels, moduleStatus } from '@/lib/modules';
 import ThemeToggle from './ThemeToggle';
@@ -59,6 +60,7 @@ export const tools = [
 ];
 
 export default function StudioSidebar() {
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -81,7 +83,7 @@ export default function StudioSidebar() {
     <aside className={`flex ${collapsed ? 'w-16 md:w-16 lg:w-20' : 'w-20 md:w-64 lg:w-72'} shrink-0 mt-3 transition-[width] duration-200`}>
       <div className="w-full p-3">
         <div className="card sidebar-card pt-3 pb-8 px-3">
-          <div className="flex items-center justify-start">
+          <div className="flex items-center justify-end">
             <button
               type="button"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -157,7 +159,7 @@ export default function StudioSidebar() {
           })}
           </ul>
 
-          {SHOW_TOOLS && (
+          {SHOW_TOOLS && session?.user && (
             <>
               {!collapsed && (
                 <div className="mt-4 px-3 text-[11px] uppercase tracking-wide dark:text-white/70 text-black/70">Tools</div>

@@ -133,7 +133,7 @@ pnpm run queues:ui
 
 <!-- ## Environment Variables -->
 <!-- See `.env.example` for the full list and defaults. Minimum set for local dev:
-- Auth: `NEXTAUTH_URL`, `AUTH_SECRET`
+- Auth: `AUTH_URL` (or fallback `NEXTAUTH_URL`), `AUTH_SECRET`
 - Database: `MONGODB_URI`, `MONGODB_DB`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - Storage: `AWS_REGION`, `S3_BUCKET` (+ IAM: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)

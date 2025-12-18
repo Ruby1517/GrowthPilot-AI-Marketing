@@ -2,7 +2,8 @@
 import Link from 'next/link';
 
 async function fetchStatus(id: string) {
-  const r = await fetch(`${process.env.NEXTAUTH_URL || ''}/api/clippilot/${id}/status`, { cache: 'no-store' });
+  const base = process.env.AUTH_URL || process.env.NEXTAUTH_URL || '';
+  const r = await fetch(`${base}/api/clippilot/${id}/status`, { cache: 'no-store' });
   if (!r.ok) return null;
   return r.json();
 }
@@ -39,4 +40,3 @@ export default async function ClipDetailPage({ params }: { params: { id: string 
     </section>
   );
 }
-

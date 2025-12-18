@@ -6,7 +6,7 @@ This guide summarizes what to set before launching GrowthPilot to production and
 
 Set all required env vars in your deployment platform. See `.env.example` for the full list. Minimum:
 
-- Auth: `NEXTAUTH_URL`, `AUTH_SECRET`
+- Auth: `AUTH_URL` (or fallback `NEXTAUTH_URL`), `AUTH_SECRET`
 - Database: `MONGODB_URI`, `MONGODB_DB`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - Storage: `AWS_REGION`, `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional: `CDN_URL`)

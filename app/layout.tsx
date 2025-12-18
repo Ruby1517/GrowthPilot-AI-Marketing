@@ -9,8 +9,10 @@ import AuthSessionProvider from '@/components/AuthSessionProvider';
 import SupportChat from '@/components/SupportChat';
 import DemoModeBanner from '@/components/DemoModeBanner';
 
+const APP_BASE = process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  metadataBase: new URL(APP_BASE),
   title: {
     default: 'GrowthPilot — AI Marketing Suite',
     template: '%s — GrowthPilot',

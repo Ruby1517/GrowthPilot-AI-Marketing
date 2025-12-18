@@ -170,8 +170,8 @@ export async function POST(req: Request) {
     const checkout = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
-      success_url: `${process.env.NEXTAUTH_URL}/billing?success=1`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/billing?canceled=1`,
+      success_url: `${process.env.AUTH_URL || process.env.NEXTAUTH_URL}/billing?success=1`,
+      cancel_url: `${process.env.AUTH_URL || process.env.NEXTAUTH_URL}/billing?canceled=1`,
       line_items: [
         { price: planPriceId, quantity: 1 }, // licensed base plan
         { price: tokensPriceId },            // metered — omit quantity

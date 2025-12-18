@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   user.resetPasswordExpires = new Date(Date.now() + 1000 * 60 * 60) // 1h
   await user.save()
 
-  const base = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const base = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
   const url = `${base}/auth/reset?token=${token}&email=${encodeURIComponent(email)}`
 
   const html = `
