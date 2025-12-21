@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type EmailItem = {
   step: number;
@@ -87,6 +87,43 @@ function parseCSV(csv: string) {
   return out;
 }
 
+function htmlToText(html: string) {
+  if (!html) return '';
+  const withNewlines = html
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|tr|h[1-6]|blockquote)>/gi, '\n')
+    .replace(/<\/(td|th)>/gi, '\t');
+  const stripped = withNewlines.replace(/<[^>]+>/g, '');
+  return stripped
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function applyMergeTags(text: string, vars: Record<string, string>) {
+  if (!text) return '';
+  return text.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key) => {
+    if (Object.prototype.hasOwnProperty.call(vars, key)) return vars[key] ?? '';
+    return match;
+  });
+}
+
+function downloadFile(name: string, content: string, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function MailPilotPage() {
   // form
   const [type, setType] = useState<'cold'|'warm'|'newsletter'|'nurture'>('newsletter');
@@ -112,6 +149,7 @@ export default function MailPilotPage() {
   // recipients
   const [csvText, setCsvText] = useState('');
   const [recipients, setRecipients] = useState<any[]>([]);
+  const [recipientIdx, setRecipientIdx] = useState(-1);
   const parsedCount = recipients.length;
 
   // generation state
@@ -124,7 +162,6 @@ export default function MailPilotPage() {
 
   // history
   const [history, setHistory] = useState<Campaign[]>([]);
-  const testToRef = useRef<HTMLInputElement>(null);
 
   useEffect(()=>{ loadHistory(); },[]);
   useEffect(()=>{ loadBrandProfile(); },[]);
@@ -183,6 +220,7 @@ export default function MailPilotPage() {
 
   function handleCSVImport() {
     setRecipients(parseCSV(csvText));
+    setRecipientIdx(-1);
   }
 
   function applyBaseToSchedule(baseInput?: string) {
@@ -285,6 +323,7 @@ export default function MailPilotPage() {
           type, title, offer, audience, tone,
           sender: { sender_name, sender_company, sender_email },
           steps: type === 'nurture' ? steps : 1,
+          useMergeTags: recipients.length > 0,
         })
       });
       const j = await r.json();
@@ -339,23 +378,38 @@ export default function MailPilotPage() {
     await loadHistory();
   }
 
-  async function sendTest(id: string) {
-    const to = testToRef.current?.value?.trim();
-    if (!to) return alert('Enter a test email address');
-    const r = await fetch('/api/mailpilot/send', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id, to, variant: 'A' })
-    });
-    const j = await r.json();
-    if (!r.ok) return alert(j?.error || 'Send failed');
-    alert('Test email sent!');
-  }
-
   const activeEmail = useMemo(() => {
     if (!gen?.emails?.length) return null;
     return gen.emails[Math.min(activeStepIdx, gen.emails.length-1)];
   }, [gen, activeStepIdx]);
+
+  const selectedRecipient = useMemo(() => {
+    if (recipientIdx < 0) return null;
+    return recipients[recipientIdx] || null;
+  }, [recipients, recipientIdx]);
+
+  const personalizedEmail = useMemo(() => {
+    if (!activeEmail) return null;
+    if (!selectedRecipient) return activeEmail;
+    const vars: Record<string, string> = {
+      first_name: selectedRecipient.first_name || '',
+      last_name: selectedRecipient.last_name || '',
+      company: selectedRecipient.company || '',
+      email: selectedRecipient.email || '',
+      offer: offer || '',
+      sender_name,
+      sender_company,
+      sender_email,
+    };
+    return {
+      ...activeEmail,
+      subjectA: applyMergeTags(activeEmail.subjectA || '', vars),
+      subjectB: applyMergeTags(activeEmail.subjectB || '', vars),
+      preheader: applyMergeTags(activeEmail.preheader || '', vars),
+      html: applyMergeTags(activeEmail.html || '', vars),
+      text: applyMergeTags(activeEmail.text || htmlToText(activeEmail.html || ''), vars),
+    };
+  }, [activeEmail, selectedRecipient, offer, sender_name, sender_company, sender_email]);
 
   return (
     <>
@@ -366,7 +420,7 @@ export default function MailPilotPage() {
           AI email campaigns <span className="text-[color:var(--gold,theme(colors.brand.gold))]">ready to send</span>
         </h1>
         <p className="mt-3 max-w-2xl text-brand-muted">
-          Outreach, newsletters, or nurture sequences with subject A/B, preheaders, spam check, exports, and test send.
+          Outreach, newsletters, or nurture sequences with subject A/B, preheaders, spam check, and exports.
         </p>
 
         {brandProfile && (
@@ -517,15 +571,60 @@ export default function MailPilotPage() {
             <div className="mt-2 flex items-center gap-2">
               <button className="btn-ghost" onClick={handleCSVImport}>Parse CSV</button>
               <div className="text-sm text-brand-muted">Parsed: {parsedCount}</div>
+              {parsedCount > 0 && (
+                <>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => {
+                      const header = 'email,first_name,last_name,company\n';
+                      const rows = recipients.map((r) => [
+                        r.email || '',
+                        r.first_name || '',
+                        r.last_name || '',
+                        r.company || '',
+                      ].map((x) => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\n');
+                      downloadFile('mailpilot_recipients.csv', header + rows, 'text/csv;charset=utf-8;');
+                    }}
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => downloadFile('mailpilot_recipients.json', JSON.stringify(recipients, null, 2), 'application/json')}
+                  >
+                    Export JSON
+                  </button>
+                </>
+              )}
             </div>
+            {parsedCount > 0 && (
+              <div className="mt-3 max-h-44 overflow-auto rounded-md border border-white/10">
+                <table className="w-full text-xs">
+                  <thead className="bg-white/5 text-brand-muted">
+                    <tr>
+                      <th className="text-left font-normal px-2 py-1">Email</th>
+                      <th className="text-left font-normal px-2 py-1">First</th>
+                      <th className="text-left font-normal px-2 py-1">Last</th>
+                      <th className="text-left font-normal px-2 py-1">Company</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recipients.slice(0, 25).map((r, idx) => (
+                      <tr key={`${r.email}-${idx}`} className="border-t border-white/5">
+                        <td className="px-2 py-1">{r.email}</td>
+                        <td className="px-2 py-1">{r.first_name || '-'}</td>
+                        <td className="px-2 py-1">{r.last_name || '-'}</td>
+                        <td className="px-2 py-1">{r.company || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {parsedCount > 25 && (
+                  <div className="px-2 py-1 text-[11px] text-brand-muted">Showing first 25 recipients.</div>
+                )}
+              </div>
+            )}
 
-            <div className="mt-4">
-              <div className="text-sm text-brand-muted mb-1">Send test (to)</div>
-              <input ref={testToRef} className="w-full rounded-md border p-2.5" placeholder="your@email.com" />
-              <p className="mt-2 text-xs text-brand-muted">
-                Use SMTP or SendGrid env keys to enable test sending.
-              </p>
-            </div>
           </div>
         </div>
 
@@ -583,18 +682,18 @@ export default function MailPilotPage() {
             </div>
 
             {/* Current email preview */}
-            {activeEmail && (
+            {personalizedEmail && (
               <div className="mt-3 grid md:grid-cols-2 gap-4">
                 <div className="card p-4">
                   <div className="text-sm">
                     <div className="text-brand-muted">Subject {activeVariant}:</div>
                     <div className="font-medium break-words">
-                      {activeVariant === 'A' ? activeEmail.subjectA : activeEmail.subjectB}
+                      {activeVariant === 'A' ? personalizedEmail.subjectA : personalizedEmail.subjectB}
                     </div>
                   </div>
                   <div className="mt-2 text-sm">
                     <div className="text-brand-muted">Preheader:</div>
-                    <div className="break-words">{activeEmail.preheader}</div>
+                    <div className="break-words">{personalizedEmail.preheader}</div>
                   </div>
 
                   <div className="mt-4">
@@ -603,7 +702,7 @@ export default function MailPilotPage() {
                       {/* Keep it simple: render HTML directly */}
                       <iframe
                         className="w-full h-[360px] bg-white"
-                        srcDoc={activeEmail.html}
+                        srcDoc={personalizedEmail.html}
                       />
                     </div>
                   </div>
@@ -611,36 +710,41 @@ export default function MailPilotPage() {
 
                 <div className="card p-4">
                   <div className="text-sm text-brand-muted">Actions</div>
+                  {recipients.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-xs text-brand-muted mb-1">Preview as recipient</div>
+                      <select
+                        className="w-full rounded-md border p-2.5 text-sm"
+                        value={recipientIdx}
+                        onChange={(e)=>setRecipientIdx(Number(e.target.value))}
+                      >
+                        <option value={-1}>No personalization</option>
+                        {recipients.map((r, idx) => (
+                          <option key={`${r.email}-${idx}`} value={idx}>
+                            {r.email || `Recipient ${idx + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {/* Save was above; here we include handy copies */}
-                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(activeVariant==='A' ? activeEmail.subjectA : activeEmail.subjectB)}>
+                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(activeVariant==='A' ? personalizedEmail.subjectA : personalizedEmail.subjectB)}>
                       Copy Subject {activeVariant}
                     </button>
-                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(activeEmail.preheader)}>
+                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(personalizedEmail.preheader)}>
                       Copy Preheader
                     </button>
-                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(activeEmail.html)}>
+                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(personalizedEmail.html)}>
                       Copy HTML
                     </button>
-                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(activeEmail.text || '')}>
+                    <button className="btn-ghost" onClick={()=>navigator.clipboard.writeText(personalizedEmail.text || htmlToText(personalizedEmail.html))}>
                       Copy Text
                     </button>
                   </div>
 
-                  <div className="mt-4 text-sm text-brand-muted">Test send (uses SMTP/SendGrid env)</div>
-                  <div className="mt-2 flex gap-2">
-                    <input ref={testToRef} className="flex-1 rounded-md border p-2.5" placeholder="your@email.com" />
-                    {/* Send requires a saved ID. Tell user to use history actions for test after save. */}
-                    <button
-                      className="btn-gold"
-                      onClick={()=>alert('Save campaign first, then use "Send test" from History list below.')}
-                    >
-                      Send
-                    </button>
-                  </div>
-
                   <div className="mt-4 text-xs text-brand-muted">
-                    Tip: Save first, then use History actions to export **.html / .eml** or send a **test**.
+                    Tip: Save first, then use History actions to export **.html / .eml**.
                   </div>
                 </div>
               </div>
@@ -674,7 +778,6 @@ export default function MailPilotPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button className="btn-ghost" onClick={()=>exportFile(h._id, 'html')}>Export HTML</button>
                       <button className="btn-ghost" onClick={()=>exportFile(h._id, 'eml')}>Export .EML</button>
-                      <button className="btn-ghost" onClick={()=>sendTest(h._id)}>Send test</button>
                       <button className="btn-ghost text-red-300" onClick={()=>deleteCampaign(h._id)}>Delete</button>
                       <a
                         className="btn-ghost"

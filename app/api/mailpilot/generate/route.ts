@@ -20,8 +20,28 @@ const GenSchema = z.object({
     sender_company: z.string().optional(),
     sender_email: z.string().optional(),
   }).optional(),
+  useMergeTags: z.boolean().optional(),
   steps: z.number().min(1).max(6).default(3), // for nurture
 });
+
+function htmlToText(html: string) {
+  if (!html) return '';
+  const withNewlines = html
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|tr|h[1-6]|blockquote)>/gi, '\n')
+    .replace(/<\/(td|th)>/gi, '\t');
+  const stripped = withNewlines.replace(/<[^>]+>/g, '');
+  return stripped
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -37,21 +57,26 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const parsed = GenSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Bad Request', issues: parsed.error.issues }, { status: 400 });
-  const { type, title, offer, audience, tone, sender, steps } = parsed.data;
+  const { type, title, offer, audience, tone, sender, useMergeTags, steps } = parsed.data;
+
+  const mergeBlock = useMergeTags
+    ? `Merge tags allowed: {{first_name}}, {{last_name}}, {{company}}, {{email}}, {{offer}}, {{sender_name}}, {{sender_company}}, {{sender_email}}.
+Include "mergeVars" in the response listing the tags used.`
+    : `Do not include merge tags or template variables.`;
 
   const sys = `You are MailPilot, an expert email marketer.
 Return STRICT JSON only with:
 {
-  "mergeVars": ["first_name","company","offer","sender_name","sender_company"],
-  "emails": [
+  ${useMergeTags ? `"mergeVars": ["first_name","company","offer","sender_name","sender_company"],\n  ` : ''}"emails": [
     // For cold/warm/newsletter -> one item step=1
     // For nurture -> N items
-    { "step": 1, "delayDays": 0, "subjectA": "string", "subjectB": "string", "preheader": "string", "html": "<html>..." }
+    { "step": 1, "delayDays": 0, "subjectA": "string", "subjectB": "string", "preheader": "string", "html": "<html>...", "text": "Plain text version" }
   ]
 }
 Rules:
 - Use clean, mobile-friendly HTML (no external CSS), inline styles minimal.
-- Insert merge tags like {{first_name}}, {{company}}, {{offer}}, {{sender_name}}, {{sender_company}}.
+- Include a plain-text version of each email in "text" (no HTML tags).
+- ${mergeBlock}
 - Subject lines concise; preheader 35–80 chars.
 - Tone: ${tone || 'friendly, clear, professional'}.
 - For nurture: create ${steps} steps with staggered delayDays (0,3,7,14,...).`;
@@ -92,12 +117,21 @@ Sender: ${JSON.stringify(sender || {})}`;
     return NextResponse.json({ error: 'Model returned invalid JSON', raw }, { status: 502 });
   }
 
+  const emails = Array.isArray(out?.emails) ? out.emails : [];
+  const normalizedEmails = emails.map((email: any) => {
+    const emailObj = email && typeof email === 'object' ? email : {};
+    const html = typeof emailObj.html === 'string' ? emailObj.html : '';
+    const text = typeof emailObj.text === 'string' ? emailObj.text : htmlToText(html);
+    return { ...emailObj, html, text };
+  });
+  const mergeVars = Array.isArray(out?.mergeVars) ? out.mergeVars : [];
+
   // quick spam score on concatenated content
-  const combined = (out.emails || []).map((e:any)=>`${e.subjectA}\n${e.subjectB}\n${e.preheader}\n${e.html}`).join('\n');
+  const combined = normalizedEmails.map((e:any)=>`${e.subjectA}\n${e.subjectB}\n${e.preheader}\n${e.html}`).join('\n');
   const spam = spamScore(combined);
 
   // Enforce plan usage (emails count)
-  const emailsCount = Array.isArray(out?.emails) ? out.emails.length : 0;
+  const emailsCount = normalizedEmails.length;
   if (orgId && emailsCount > 0) {
     const gate = await assertWithinLimit({ orgId, key: 'mailpilot_emails', incBy: emailsCount, allowOverage: true });
     if (!gate.ok) {
@@ -129,5 +163,5 @@ Sender: ${JSON.stringify(sender || {})}`;
     } catch {}
   }
 
-  return NextResponse.json({ result: { ...out, spam } });
+  return NextResponse.json({ result: { ...out, mergeVars, emails: normalizedEmails, spam } });
 }
