@@ -5,13 +5,14 @@ const { Schema, models, model } = mongoose;
 
 export type ModuleKey =
   | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot';
+  | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'auth';
 
 export type EventType =
   | 'generation.requested' | 'generation.completed'
   | 'asset.uploaded' | 'email.drafted'
   | 'ad.variant_created' | 'lead.captured' | 'lead.intent'
-  | 'watchtime.added';
+  | 'watchtime.added' | 'render.completed'
+  | 'auth.login';
 
 export interface EventDoc extends mongoose.Document {
   orgId: mongoose.Types.ObjectId;

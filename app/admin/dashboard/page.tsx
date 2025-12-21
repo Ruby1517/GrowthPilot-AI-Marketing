@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
 import Org from '@/models/Org';
 import User from '@/models/User';
+import Event from '@/models/Event';
 import { PLAN_LIMITS, type MeterKey } from '@/lib/limits';
 import type { Plan } from '@/lib/modules';
 import Link from 'next/link';
@@ -64,6 +65,32 @@ export default async function AdminDashboard() {
     orgId: u.orgId ? String(u.orgId) : null,
   }));
 
+  const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const since90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const [totalLogins, logins7d, logins30d, logins90d] = await Promise.all([
+    Event.countDocuments({ type: 'auth.login' }),
+    Event.countDocuments({ type: 'auth.login', at: { $gte: since7 } }),
+    Event.countDocuments({ type: 'auth.login', at: { $gte: since30 } }),
+    Event.countDocuments({ type: 'auth.login', at: { $gte: since90 } }),
+  ]);
+
+  const months = 12;
+  const now = new Date();
+  const monthKeys: string[] = [];
+  for (let i = months - 1; i >= 0; i -= 1) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    monthKeys.push(d.toISOString().slice(0, 7));
+  }
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+  const monthlyAgg = await Event.aggregate([
+    { $match: { type: 'auth.login', at: { $gte: monthStart } } },
+    { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$at' } }, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+  const monthlyMap = new Map<string, number>((monthlyAgg as any[]).map((a) => [String(a._id), Number(a.count || 0)]));
+  const monthlyLogins = monthKeys.map((key) => ({ month: key, count: monthlyMap.get(key) || 0 }));
+
   return (
     <section className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -78,6 +105,37 @@ export default async function AdminDashboard() {
         <StatCard label="Total orgs" value={orgs.length} />
         <StatCard label="Total users" value={users.length} />
         <StatCard label="Overages enabled" value={orgs.filter(o => o.overageEnabled).length} />
+      </div>
+
+      <div className="card p-4 space-y-3">
+        <div>
+          <div className="text-sm text-brand-muted">Logins</div>
+          <div className="text-lg font-semibold">All users</div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard label="All-time logins" value={totalLogins} />
+          <StatCard label="Last 7 days" value={logins7d} />
+          <StatCard label="Last 30 days" value={logins30d} />
+          <StatCard label="Last 90 days" value={logins90d} />
+        </div>
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-brand-muted">
+              <tr>
+                <th className="py-2 pr-4">Month</th>
+                <th className="py-2 pr-4">Logins</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthlyLogins.map((row) => (
+                <tr key={row.month} className="border-t border-white/10">
+                  <td className="py-2 pr-4">{row.month}</td>
+                  <td className="py-2 pr-4">{row.count.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card p-4 space-y-3">

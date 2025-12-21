@@ -45,7 +45,19 @@ const nextConfig = {
         : ['*']
     },
     // Keep ffmpeg binaries external so Next doesn't try to bundle them
-    serverComponentsExternalPackages: ['@ffmpeg-installer/ffmpeg', 'fluent-ffmpeg', 'ffmpeg-static'],
+    serverComponentsExternalPackages: [
+      '@ffmpeg-installer/ffmpeg',
+      '@ffprobe-installer/ffprobe',
+      'fluent-ffmpeg',
+      'ffmpeg-static',
+      'ffprobe-static',
+    ],
+    outputFileTracingIncludes: {
+      'app/api/clippilot/analyze/route': [
+        'node_modules/@ffmpeg-installer/ffmpeg/**',
+        'node_modules/@ffprobe-installer/ffprobe/**',
+      ],
+    },
   },
   images: {
     remotePatterns: [

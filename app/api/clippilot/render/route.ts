@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       overlayText,   // still accepted from client
       addMusic,      // still accepted from client
       musicPath,
+      playbackRate,
     } = body;
 
     if (!videoPath) {
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
       audioMode,
       musicPath: resolvedMusicPath,
       voicePath: null,
+      playbackRate: Number.isFinite(Number(playbackRate)) ? Number(playbackRate) : 1,
     });
 
     // Upload rendered clip to S3 for sharing

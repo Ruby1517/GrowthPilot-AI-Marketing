@@ -22,6 +22,9 @@ type RequestBody = {
   voiceStyle?: VoiceStyle;
   voiceId?: string | null;
   category?: string | null;
+  startSeconds?: number;
+  endSeconds?: number;
+  playbackRate?: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -32,7 +35,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing videoPath or transcript" }, { status: 400 });
     }
 
-    const plan = await generateClipPlan(transcript);
+    const userStart = Number(body.startSeconds);
+    const userEnd = Number(body.endSeconds);
+    const hasManualRange =
+      Number.isFinite(userStart) &&
+      Number.isFinite(userEnd) &&
+      userEnd > userStart;
+
+    const plan = hasManualRange
+      ? {
+          id: "manual",
+          startSeconds: userStart,
+          endSeconds: userEnd,
+          durationSeconds: userEnd - userStart,
+          hook: body.voiceScript ? "Voice-over clip" : "Custom clip",
+          overlayText: body.voiceScript ? "Voice-over clip" : "Custom clip",
+          title: "Custom clip",
+          summary: "Manual start/end provided",
+          promoLabel: "",
+          ctaText: "",
+          brandTag: "",
+        }
+      : await generateClipPlan(transcript);
 
     // ---- Determine voice-over script
     const requestedMode = body.audioMode as AudioMode | undefined;
@@ -90,6 +114,7 @@ export async function POST(req: NextRequest) {
       musicGainDb: tone.musicGainDb,
       voiceEq: tone.eqVoice,
       musicEq: tone.eqMusic,
+      playbackRate: Number.isFinite(body.playbackRate) ? Number(body.playbackRate) : 1,
     });
 
     // ---- Upload to S3 (private) and presign

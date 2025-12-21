@@ -15,6 +15,7 @@ export interface RenderOptions {
   videoPath: string;
   startSeconds: number;
   endSeconds: number;
+  playbackRate?: number;
 
   hookText?: string;
   promoLabel?: string;
@@ -38,6 +39,7 @@ export function renderClip(opts: RenderOptions): Promise<string> {
     startSeconds,
     endSeconds,
     hookText,
+  playbackRate = 1,
   promoLabel,
   ctaText,
   brandTag,
@@ -72,6 +74,10 @@ export function renderClip(opts: RenderOptions): Promise<string> {
       .replace(/\n/g, " ");
 
   const vfFilters: string[] = [];
+  const speed = Number.isFinite(playbackRate) ? Math.min(2, Math.max(0.5, playbackRate)) : 1;
+  if (speed !== 1) {
+    vfFilters.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
+  }
   vfFilters.push("scale=iw*0.9:ih*0.9,pad=iw/0.9:ih/0.9:(ow-iw)/2:(oh-ih)/2");
 
   if (hookText) {
@@ -134,26 +140,34 @@ export function renderClip(opts: RenderOptions): Promise<string> {
 
       switch (mode) {
         case "original_only": {
-          // If no source audio, leave mapping default; ffmpeg may create silent track.
+          if (speed !== 1 && sourceHasAudio) {
+            cmd.audioFilters(`atempo=${speed}`);
+          }
           break;
         }
         case "original_plus_music": {
           cmd.input(musicPath as string); // input #1
           if (sourceHasAudio) {
             const musicChain = musicEq ? `[1:a]${musicEq},volume=${finalMusicVol}[a1];` : `[1:a]volume=${finalMusicVol}[a1];`;
-            const audioFilter =
+            let audioFilter =
               "[0:a]volume=1.0[a0];" +
               musicChain +
               "[a0][a1]amix=inputs=2:duration=shortest:dropout_transition=0[aout]";
+            if (speed !== 1) {
+              audioFilter += `;[aout]atempo=${speed}[aout]`;
+            }
             cmd.complexFilter(audioFilter);
             cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
           } else {
             // no source audio; just use music
             if (musicEq) {
-              cmd.complexFilter(`[1:a]${musicEq},volume=${finalMusicVol}[aout]`);
+              let filter = `[1:a]${musicEq},volume=${finalMusicVol}[aout]`;
+              if (speed !== 1) filter += `;[aout]atempo=${speed}[aout]`;
+              cmd.complexFilter(filter);
               cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
             } else {
-              cmd.outputOptions(["-map 0:v:0", "-map 1:a:0", `-af`, `volume=${finalMusicVol}`]);
+              const opts = ["-map 0:v:0", "-map 1:a:0", "-af", `volume=${finalMusicVol}${speed !== 1 ? `,atempo=${speed}` : ""}`];
+              cmd.outputOptions(opts);
             }
           }
           break;
@@ -164,10 +178,11 @@ export function renderClip(opts: RenderOptions): Promise<string> {
           if (voiceEq) {
             filters.push(`[1:a]${voiceEq}[v0eq]`);
             filters.push(`[v0eq]volume=${finalVoiceVol}[vout]`);
+            if (speed !== 1) filters.push(`[vout]atempo=${speed}[vout]`);
             cmd.complexFilter(filters.join(";"));
             cmd.outputOptions(["-map 0:v:0", "-map [vout]"]);
           } else {
-            cmd.outputOptions(["-map 0:v:0", "-map 1:a:0", "-af", `volume=${finalVoiceVol}`]);
+            cmd.outputOptions(["-map 0:v:0", "-map 1:a:0", "-af", `volume=${finalVoiceVol}${speed !== 1 ? `,atempo=${speed}` : ""}`]);
           }
           break;
         }
@@ -182,6 +197,7 @@ export function renderClip(opts: RenderOptions): Promise<string> {
           filters.push(`${voiceLabel}volume=${finalVoiceVol}[v0]`);
           filters.push(`${musicLabel}volume=${finalMusicVol}[v1]`);
           filters.push("[v0][v1]amix=inputs=2:duration=shortest:dropout_transition=0[aout]");
+          if (speed !== 1) filters.push(`[aout]atempo=${speed}[aout]`);
           cmd.complexFilter(filters.join(";"));
           cmd.outputOptions(["-map 0:v:0", "-map [aout]"]);
           break;

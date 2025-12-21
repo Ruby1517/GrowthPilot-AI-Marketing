@@ -32,6 +32,43 @@ export default function ClipPilotPage() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualTranscript, setManualTranscript] = useState<string>("");
+  const [startSeconds, setStartSeconds] = useState<string>("");
+  const [endSeconds, setEndSeconds] = useState<string>("");
+  const [savedAnalysis, setSavedAnalysis] = useState<AnalyzeResponse | null>(null);
+  const [playbackRate, setPlaybackRate] = useState<string>("1");
+  const pickVoiceForPersona = (persona: "female" | "male" | "kid") =>
+    VOICE_OPTIONS.find((v) => v.persona === persona)?.id || "";
+  const promoScript = [
+    "Scene 1 — Hook (0–5s)",
+    "Still wasting hours creating content, ads, emails, and videos… manually?",
+    "",
+    "Scene 2 — Introduce GrowthPilot (5–10s)",
+    "Meet GrowthPilot — the all-in-one AI marketing platform that helps you create, publish, and convert… faster than ever.",
+    "",
+    "Scene 3 — PostPilot (10–15s)",
+    "With PostPilot, generate high-engagement social posts in seconds — perfectly written for Instagram, Facebook, LinkedIn, and more.",
+    "",
+    "Scene 4 — BlogPilot (15–20s)",
+    "Need long-form content? BlogPilot writes SEO-optimized blogs that attract traffic and build authority automatically.",
+    "",
+    "Scene 5 — AdPilot & MailPilot (20–28s)",
+    "Launch smarter campaigns with AdPilot and MailPilot — create high-converting ads and email campaigns without hiring an agency.",
+    "",
+    "Scene 6 — ClipPilot (28–35s)",
+    "Turn any video into viral-ready shorts with ClipPilot — auto captions, music, hooks, and social-optimized formats.",
+    "",
+    "Scene 7 — LeadPilot (35–45s)",
+    "And with LeadPilot, your AI sales assistant captures, qualifies, and books leads for you — twenty-four seven.",
+    "",
+    "Scene 8 — Wrap-up / CTA (45–60s)",
+    "One platform. Every marketing tool you need. Start faster. Grow smarter. GrowthPilot. Try GrowthPilot today at growthpilot.ai.",
+  ].join("\n");
+
+  const estimatedVoiceSeconds = Math.round((voiceScript.trim().split(/\s+/).length || 0) / 2.5); // ~150 wpm
+  const manualRangeSeconds =
+    startSeconds && endSeconds && Number.isFinite(Number(startSeconds)) && Number.isFinite(Number(endSeconds))
+      ? Math.max(0, Number(endSeconds) - Number(startSeconds))
+      : null;
 
   useEffect(() => {
     if (voiceMode === "none") return;
@@ -39,6 +76,19 @@ export default function ClipPilotPage() {
     const auto = pickStyleFromCategory(category);
     if (auto) setVoiceStyle(auto);
   }, [category, voiceMode]);
+
+  useEffect(() => {
+    // Restore last analyzed video (if any) from localStorage
+    try {
+      const raw = localStorage.getItem("clippilot:lastAnalysis");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.videoPath) {
+          setSavedAnalysis(parsed as AnalyzeResponse);
+        }
+      }
+    } catch {}
+  }, []);
 
   async function handleAnalyze() {
     if (!file) {
@@ -111,6 +161,10 @@ export default function ClipPilotPage() {
       if (!isJson || !data) throw new Error("Unexpected analyze response");
 
       setAnalyzeResult(data as AnalyzeResponse);
+      try {
+        localStorage.setItem("clippilot:lastAnalysis", JSON.stringify(data));
+        setSavedAnalysis(data as AnalyzeResponse);
+      } catch {}
       setShortResult(null);
     } catch (e: any) {
       setError(e?.message || "Analyze failed");
@@ -124,6 +178,16 @@ export default function ClipPilotPage() {
       setError("Analyze a video first.");
       return;
     }
+    const startVal = Number(startSeconds);
+    const endVal = Number(endSeconds);
+    if (startSeconds || endSeconds) {
+      if (!Number.isFinite(startVal) || !Number.isFinite(endVal) || endVal <= startVal) {
+        setError("Set both start and end seconds (end must be greater).");
+        return;
+      }
+    }
+    const speedVal = Number(playbackRate);
+    const safeSpeed = Number.isFinite(speedVal) ? Math.min(2, Math.max(0.5, speedVal)) : 1;
     setError(null);
     setRenderPath(null);
     setRenderingId(clip.id);
@@ -133,10 +197,11 @@ export default function ClipPilotPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           videoPath: analyzeResult.videoPath,
-          startSeconds: clip.startSeconds,
-          endSeconds: clip.endSeconds,
+          startSeconds: startSeconds ? startVal : clip.startSeconds,
+          endSeconds: endSeconds ? endVal : clip.endSeconds,
           overlayText: clip.hook,
           addMusic: true,
+          playbackRate: safeSpeed,
         }),
       });
       const data = await res.json();
@@ -180,9 +245,22 @@ export default function ClipPilotPage() {
       setError("Analyze a video first.");
       return;
     }
-    const transcriptToUse = analyzeResult.transcript || manualTranscript;
+    const startVal = Number(startSeconds);
+    const endVal = Number(endSeconds);
+    if (startSeconds || endSeconds) {
+      if (!Number.isFinite(startVal) || !Number.isFinite(endVal) || endVal <= startVal) {
+        setError("Set both start and end seconds (end must be greater).");
+        return;
+      }
+    }
+    const speedVal = Number(playbackRate);
+    const safeSpeed = Number.isFinite(speedVal) ? Math.min(2, Math.max(0.5, speedVal)) : 1;
+    const transcriptToUse =
+      analyzeResult.transcript ||
+      manualTranscript ||
+      (voiceMode === "custom" ? voiceScript : "");
     if (!transcriptToUse.trim()) {
-      setError("No transcript found. Add a short summary/script for silent videos.");
+      setError("No transcript found. Add a short summary/script for silent videos or use your custom voice script.");
       return;
     }
     setError(null);
@@ -215,6 +293,9 @@ export default function ClipPilotPage() {
           voiceStyle,
           voiceId,
           category: category || null,
+          startSeconds: startSeconds ? startVal : undefined,
+          endSeconds: endSeconds ? endVal : undefined,
+          playbackRate: safeSpeed,
         }),
       });
       const data = await res.json();
@@ -272,12 +353,95 @@ export default function ClipPilotPage() {
             {analyzeLoading ? "Analyzing…" : "Analyze Video"}
           </button>
         </div>
+        {savedAnalysis && (
+          <div className="flex flex-col gap-2 text-xs text-brand-muted md:flex-row md:items-center md:gap-3">
+            <span className="text-sm font-semibold text-white/90">Reuse last analyzed video?</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-ghost text-xs"
+                onClick={() => {
+                  setAnalyzeResult(savedAnalysis);
+                  setError(null);
+                  setRenderPath(null);
+                  setShortResult(null);
+                }}
+              >
+                Load last analysis
+              </button>
+              <button
+                type="button"
+                className="btn-ghost text-xs"
+                onClick={() => {
+                  try { localStorage.removeItem("clippilot:lastAnalysis"); } catch {}
+                  setSavedAnalysis(null);
+                }}
+              >
+                Clear saved
+              </button>
+              <span className="text-brand-muted truncate">
+                {savedAnalysis.videoPath}
+              </span>
+            </div>
+          </div>
+        )}
         {file && (
           <div className="text-sm text-brand-muted">
             Selected: <b>{file.name}</b> ({Math.round(file.size / 1024 / 1024)} MB)
           </div>
         )}
         {error && <div className="text-sm text-rose-500">{error}</div>}
+      </div>
+
+      <div className="card p-6 space-y-3">
+        <div className="text-sm font-semibold">Clip range (optional)</div>
+        <p className="text-xs text-brand-muted">
+          Set start/end in seconds to force the exact segment you want (e.g., 0 → 120 for a 2-minute cut). Leave empty to auto-pick a short clip.
+        </p>
+        {manualRangeSeconds !== null && (
+          <div className="text-xs text-brand-muted">
+            Range: {manualRangeSeconds.toFixed(0)}s{estimatedVoiceSeconds ? ` • Voice est: ${estimatedVoiceSeconds}s` : ""}
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            Start (seconds)
+            <input
+              type="number"
+              min={0}
+              value={startSeconds}
+              onChange={(e) => setStartSeconds(e.target.value)}
+              className="rounded-md border px-3 py-2 text-sm"
+              placeholder="e.g., 0"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            End (seconds)
+            <input
+              type="number"
+              min={0}
+              value={endSeconds}
+              onChange={(e) => setEndSeconds(e.target.value)}
+              className="rounded-md border px-3 py-2 text-sm"
+              placeholder="e.g., 120"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Playback speed
+            <select
+              className="rounded-md border px-3 py-2 text-sm"
+              value={playbackRate}
+              onChange={(e) => setPlaybackRate(e.target.value)}
+            >
+              <option value="0.5">0.5× (slower)</option>
+              <option value="0.75">0.75×</option>
+              <option value="1">1× (normal)</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2× (double speed)</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {/* Optional background music upload */}
@@ -385,6 +549,24 @@ export default function ClipPilotPage() {
               <div className="space-y-1">
                 <div className="text-xs text-brand-muted">Voice option (American accent)</div>
                 <div className="space-y-2">
+                  <label className="flex flex-col gap-1 text-sm border rounded-lg p-3">
+                    <span className="text-xs text-brand-muted">Voice persona</span>
+                    <select
+                      className="rounded border px-2 py-1 text-sm"
+                      value={voicePersona}
+                      onChange={(e) => {
+                        const persona = e.target.value as "female" | "male" | "kid";
+                        setVoicePersona(persona);
+                        const match = pickVoiceForPersona(persona);
+                        if (match) setVoiceId(match);
+                      }}
+                    >
+                      <option value="female">Female</option>
+                      <option value="male">Male</option>
+                      <option value="kid">Youthful</option>
+                    </select>
+                    <span className="text-[11px] text-brand-muted">Pick persona; choose a specific voice below.</span>
+                  </label>
                   {VOICE_OPTIONS.map((opt) => (
                     <label key={opt.id} className="border rounded-lg p-3 flex gap-3 items-start cursor-pointer">
                       <input
@@ -424,14 +606,32 @@ export default function ClipPilotPage() {
           </div>
         )}
         {voiceMode === "custom" && (
-          <div className="space-y-1">
-            <div className="text-xs text-brand-muted">Enter 1–2 sentences for the voice-over:</div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-brand-muted">
+              <span>Enter your voice-over script:</span>
+              <button
+                type="button"
+                className="btn-ghost text-[11px] px-2 py-1"
+                onClick={() => {
+                  setVoiceScript(promoScript);
+                  setStartSeconds("0");
+                  setEndSeconds("60");
+                }}
+              >
+                Use GrowthPilot promo script (60s)
+              </button>
+            </div>
             <textarea
               className="w-full rounded border p-3 text-sm min-h-[100px]"
               value={voiceScript}
               onChange={(e) => setVoiceScript(e.target.value)}
               placeholder="Type your voice-over script here..."
             />
+            {estimatedVoiceSeconds > 0 && (
+              <div className="text-[11px] text-brand-muted">
+                Estimated voice length: ~{estimatedVoiceSeconds}s. Adjust start/end above to cover it.
+              </div>
+            )}
           </div>
         )}
       </div>

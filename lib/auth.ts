@@ -5,6 +5,7 @@ import Credentials from 'next-auth/providers/credentials'
 import type { Provider } from 'next-auth/providers'
 import bcrypt from 'bcryptjs'
 import { dbConnect } from '@/lib/db'
+import { trackEvent } from '@/lib/events'
 import User from '@/models/User'
 import Org from '@/models/Org'
 import Team from '@/models/Team'
@@ -54,7 +55,7 @@ export const { handlers, auth } = NextAuth({
   pages: { signIn: '/auth/signin' },
   session: { strategy: 'jwt' },
   callbacks: {
-    async signIn({ user, profile }) {
+    async signIn({ user, profile, account }) {
       await dbConnect()
       const email = user?.email || (profile as any)?.email
       if (!email) return false
@@ -96,6 +97,19 @@ export const { handlers, auth } = NextAuth({
           } catch {}
         }
       } catch {}
+      try {
+        if (dbUser?.orgId) {
+          await trackEvent({
+            orgId: String(dbUser.orgId),
+            userId: String(dbUser._id),
+            module: 'auth',
+            type: 'auth.login',
+            meta: { provider: account?.provider },
+          })
+        }
+      } catch (err) {
+        console.warn('[auth] failed to track login event', err)
+      }
       return true
     },
     async session({ session }) {
