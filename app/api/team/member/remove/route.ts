@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
 import Org from '@/models/Org';
 import mongoose from 'mongoose';
+import { syncSeatQuantity } from '@/lib/billing/seats';
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -44,5 +45,9 @@ export async function POST(req: Request) {
     { _id: org._id },
     { $pull: { members: { userId: new mongoose.Types.ObjectId(memberId) } } }
   );
+  const refreshed = await Org.findById(org._id);
+  if (refreshed) {
+    await syncSeatQuantity(refreshed);
+  }
   return NextResponse.json({ ok: true });
 }

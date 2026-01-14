@@ -26,6 +26,8 @@ export interface OrgDoc extends mongoose.Document {
   billingCustomerId?: string | null;
   stripeTokensItemId?: string | null;
   stripeMinutesItemId?: string | null;
+  stripePlanItemId?: string | null;
+  stripePlanItemId?: string | null;
   overageEnabled: boolean;
   usagePeriodStart?: Date | null;
   usagePeriodEnd?: Date | null;
@@ -56,6 +58,7 @@ const OrgSchema = new Schema<OrgDoc>(
     billingCustomerId: { type: String },
     stripeTokensItemId: { type: String },
     stripeMinutesItemId: { type: String },
+    stripePlanItemId: { type: String },
     overageEnabled: { type: Boolean, default: false },
     usagePeriodStart: { type: Date },
     usagePeriodEnd: { type: Date },

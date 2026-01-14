@@ -171,7 +171,10 @@ export default function BillingPage() {
       </div>
 
       <div className="flex justify-center pt-4">
-        <button onClick={portal} className="rounded-full border border-neutral-600 px-4 py-2 text-xs text-neutral-200 hover:border-neutral-400">
+        <button
+          onClick={portal}
+          className="rounded-full border border-neutral-600 px-4 py-2 text-xs text-neutral-200 hover:border-neutral-400"
+        >
           Manage Subscription
         </button>
       </div>

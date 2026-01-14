@@ -165,6 +165,8 @@ export async function POST(req: Request) {
   // Stripe customer by org
   const customerId = await getOrCreateStripeCustomer(String(org._id), session.user.email!);
 
+  const seatQty = Math.max(1, Number(org.members?.length || 1));
+
   // Create Checkout Session
   try {
     const checkout = await stripe.checkout.sessions.create({
@@ -173,7 +175,7 @@ export async function POST(req: Request) {
       success_url: `${process.env.AUTH_URL || process.env.NEXTAUTH_URL}/billing?success=1`,
       cancel_url: `${process.env.AUTH_URL || process.env.NEXTAUTH_URL}/billing?canceled=1`,
       line_items: [
-        { price: planPriceId, quantity: 1 }, // licensed base plan
+        { price: planPriceId, quantity: seatQty }, // licensed base plan (per-seat)
         { price: tokensPriceId },            // metered — omit quantity
         { price: minutesPriceId },           // metered — omit quantity
       ],

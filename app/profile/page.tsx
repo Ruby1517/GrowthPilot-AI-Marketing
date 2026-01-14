@@ -9,6 +9,11 @@ type OrgSettings = {
   subscription: { id?: string } | null;
   usagePeriodStart?: string | null;
   usagePeriodEnd?: string | null;
+  myRole?: 'owner'|'admin'|'member'|'viewer';
+}
+type OrgUsage = {
+  usage: Record<string, number>;
+  limits: Record<string, number>;
 }
 
 export default function ProfilePage() {
@@ -18,6 +23,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [org, setOrg] = useState<OrgSettings | null>(null)
+  const [orgUsage, setOrgUsage] = useState<OrgUsage | null>(null)
+  const [canceling, setCanceling] = useState(false)
 
   async function load() {
     const r = await fetch('/api/me', { cache: 'no-store' })
@@ -42,7 +49,20 @@ export default function ProfilePage() {
           subscription: j.subscription || null,
           usagePeriodStart: j.usagePeriodStart || null,
           usagePeriodEnd: j.usagePeriodEnd || null,
+          myRole: (j.myRole as any) || 'member',
         })
+        if (!cancelled && j?.id) {
+          fetch(`/api/org/usage?orgId=${j.id}`)
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (!data || cancelled) return
+              setOrgUsage({
+                usage: data.usage || {},
+                limits: data.limits || {},
+              })
+            })
+            .catch(() => {})
+        }
       } catch {}
     }
     loadOrg()
@@ -60,6 +80,27 @@ export default function ProfilePage() {
     setSavedAt(Date.now())
     await load()
   }
+
+  async function cancelSubscription() {
+    const ok = window.confirm('Cancel your subscription and remove your seat from this organization?')
+    if (!ok) return
+    setCanceling(true)
+    const r = await fetch('/api/billing/cancel-seat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+    })
+    setCanceling(false)
+    if (!r.ok) { alert(await r.text()); return }
+    const j = await r.json().catch(() => ({}))
+    if (j.canceledOrg) alert('Subscription set to cancel at period end.')
+    else alert('Your seat has been removed.')
+  }
+
+  const creditsUsed = Number(orgUsage?.usage?.postpilot_generated ?? 0)
+  const creditsCap = Number(orgUsage?.limits?.postpilot_generated ?? 0)
+  const creditsRemaining = creditsCap ? Math.max(0, creditsCap - creditsUsed) : null
+  const tokensCap = Number(orgUsage?.limits?.blogpilot_words ?? 0)
+  const tokensRemaining = tokensCap ? Math.max(0, tokensCap - Number(orgUsage?.usage?.blogpilot_words ?? 0)) : null
 
   return (
     <section className="space-y-6">
@@ -112,6 +153,22 @@ export default function ProfilePage() {
         {org?.subscription?.id && (
           <div className="mt-1 text-sm text-brand-muted">Subscription ID: <span className="opacity-80">{org.subscription.id}</span></div>
         )}
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="text-xs text-brand-muted">Remaining credits</div>
+            <div className="text-lg font-semibold">
+              {creditsRemaining === null ? '-' : creditsRemaining.toLocaleString()}
+            </div>
+            <div className="text-xs text-brand-muted">Posts this period</div>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="text-xs text-brand-muted">Remaining tokens</div>
+            <div className="text-lg font-semibold">
+              {tokensRemaining === null ? '-' : tokensRemaining.toLocaleString()}
+            </div>
+            <div className="text-xs text-brand-muted">Word credits this period</div>
+          </div>
+        </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           <div>
             <div className="text-xs text-brand-muted">Current period start</div>
@@ -122,8 +179,19 @@ export default function ProfilePage() {
             <div className="text-sm">{org?.usagePeriodEnd ? new Date(org.usagePeriodEnd).toLocaleString() : '-'}</div>
           </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-4 flex flex-wrap gap-2">
           <a className="btn-ghost" href="/billing">Manage Plan</a>
+          <button
+            className="btn-ghost"
+            type="button"
+            onClick={cancelSubscription}
+            disabled={canceling}
+          >
+            {canceling ? 'Canceling…' : 'Cancel Subscription'}
+          </button>
+        </div>
+        <div className="mt-2 text-xs text-brand-muted">
+          Canceling removes your seat from this organization.
         </div>
       </div>
     </section>

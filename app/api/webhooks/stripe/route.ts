@@ -51,9 +51,30 @@ export async function POST(req: Request) {
     case 'customer.subscription.updated': {
       const sub = event.data.object as any;
       const customerId = sub.customer;
+      const items = Array.isArray(sub.items?.data) ? sub.items.data : [];
+      const planItem = items.find((i: any) => i?.price?.recurring?.usage_type === 'licensed');
+      const tokensItem = items.find((i: any) => i?.price?.recurring?.usage_type === 'metered' && String(i?.price?.nickname || '').toLowerCase().includes('token'));
+      const minutesItem = items.find((i: any) => i?.price?.recurring?.usage_type === 'metered' && String(i?.price?.nickname || '').toLowerCase().includes('minute'));
       await Org.updateOne(
         { billingCustomerId: customerId },
-        { $set: { subscription: { id: sub.id } } }
+        {
+          $set: {
+            subscription: { id: sub.id },
+            stripePlanItemId: planItem?.id || null,
+            stripeTokensItemId: tokensItem?.id || null,
+            stripeMinutesItemId: minutesItem?.id || null,
+          },
+        }
+      );
+      break;
+    }
+
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object as any;
+      const customerId = sub.customer;
+      await Org.updateOne(
+        { billingCustomerId: customerId },
+        { $set: { subscription: null, plan: 'Trial', stripeTokensItemId: null, stripeMinutesItemId: null } }
       );
       break;
     }

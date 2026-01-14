@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { Invite } from '@/models/Invite';
 import { Org } from '@/models/Org';
 import { dbConnect } from '@/lib/db';
+import { syncSeatQuantity } from '@/lib/billing/seats';
 
 export async function POST(req: Request) {
   await dbConnect();
@@ -12,6 +13,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid invite' }, { status: 400 });
   }
   await Org.updateOne({ _id: inv.orgId }, { $push: { members: { userId, role: inv.role, joinedAt: new Date() } } });
+  const org = await Org.findById(inv.orgId);
+  if (org) {
+    await syncSeatQuantity(org);
+  }
   await Invite.updateOne({ _id: inv._id }, { $set: { status: 'accepted', acceptedBy: userId } });
   return NextResponse.json({ ok: true });
 }
