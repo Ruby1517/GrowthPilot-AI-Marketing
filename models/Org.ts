@@ -27,7 +27,6 @@ export interface OrgDoc extends mongoose.Document {
   stripeTokensItemId?: string | null;
   stripeMinutesItemId?: string | null;
   stripePlanItemId?: string | null;
-  stripePlanItemId?: string | null;
   overageEnabled: boolean;
   usagePeriodStart?: Date | null;
   usagePeriodEnd?: Date | null;
