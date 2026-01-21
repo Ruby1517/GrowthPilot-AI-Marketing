@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     if (!fallback && imageModels[0] === 'gpt-image-1') imageModels.push('dall-e-3');
   }
   let imageModelIndex = 0;
-  let imageModel = imageModels[imageModelIndex] ?? null;
+  let imageModel: string | null = imageModels[imageModelIndex] ?? null;
   let imageModelUnavailable = false;
 
   let effectiveTopic = topic?.trim() || '';
@@ -227,7 +227,6 @@ export async function POST(req: Request) {
                 console.warn(`PostPilot image model unavailable; falling back to ${imageModel}.`);
               } else {
                 imageModelUnavailable = true;
-                imageModel = null;
                 console.warn('PostPilot image models unavailable; disable images or set POSTPILOT_IMAGE_MODEL.');
               }
             } else {
