@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
-import { limiterPerOrg } from '@/lib/ratelimit';
+import { safeLimitPerOrg } from '@/lib/ratelimit';
 import { generatePlatformPost } from '@/lib/generators/postpilot';
 import { Org, type Plan as OrgPlan } from '@/models/Org';
 import { reportUsageForOrg } from '@/lib/billing/usage'; // Stripe metering (optional but recommended)
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
   }
 
   // ---- rate limit per org
-  const { success, limit, remaining, reset } = await limiterPerOrg.limit(orgId);
+  const { success, limit, remaining, reset } = await safeLimitPerOrg(orgId);
   if (!success) {
     return NextResponse.json(
       { ok: false, error: 'Rate limit exceeded. Please wait a bit.' },
@@ -159,9 +159,16 @@ export async function POST(req: Request) {
   const textModel = resolveModelSpec({ module: 'postpilot', task: 'text.generate', plan: routingPlan }).model;
   // Trial cannot generate images; force-disable visuals
   const allowImages = orgPlan !== 'Trial' && includeImages !== false;
-  const imageModel = allowImages && routingPlan
-    ? resolveModelSpec({ module: 'postpilot', task: 'image.generate', plan: routingPlan }).model
-    : null;
+  const imageModels: string[] = [];
+  if (allowImages && routingPlan) {
+    imageModels.push(resolveModelSpec({ module: 'postpilot', task: 'image.generate', plan: routingPlan }).model);
+    const fallback = (process.env.POSTPILOT_IMAGE_FALLBACK_MODEL || '').trim();
+    if (fallback && !imageModels.includes(fallback)) imageModels.push(fallback);
+    if (!fallback && imageModels[0] === 'gpt-image-1') imageModels.push('dall-e-3');
+  }
+  let imageModelIndex = 0;
+  let imageModel = imageModels[imageModelIndex] ?? null;
+  let imageModelUnavailable = false;
 
   let effectiveTopic = topic?.trim() || '';
   let siteContext: { title: string | null; description: string | null; snippet: string | null } | null = null;
@@ -205,14 +212,27 @@ export async function POST(req: Request) {
         );
 
         let imageDataUrl: string | null = null;
-        if (imageModel) {
+        if (imageModel && !imageModelUnavailable) {
           try {
             const prompt = `${post.visualPrompt}. Platform: ${platform}. Industry: ${industry}. Target audience: ${audience || 'general social users'}. Offer: ${offers || 'evergreen value'}. ${sourceSummary ? `Source details: ${sourceSummary.slice(0, 400)}` : ''}`;
             const img = await callImage({ prompt, model: imageModel, size: '1024x1024' });
             const b64 = img.images?.[0]?.b64;
             if (b64) imageDataUrl = `data:image/png;base64,${b64}`;
           } catch (err) {
-            console.warn('PostPilot image generation failed', err);
+            if (isImageModelAccessError(err)) {
+              const next = imageModels[imageModelIndex + 1];
+              if (next) {
+                imageModelIndex += 1;
+                imageModel = next;
+                console.warn(`PostPilot image model unavailable; falling back to ${imageModel}.`);
+              } else {
+                imageModelUnavailable = true;
+                imageModel = null;
+                console.warn('PostPilot image models unavailable; disable images or set POSTPILOT_IMAGE_MODEL.');
+              }
+            } else {
+              console.warn('PostPilot image generation failed', err);
+            }
           }
         }
 
@@ -287,6 +307,13 @@ export async function POST(req: Request) {
     usage: { totalTokens },
     automationPlan: scheduleDates.map((d) => d.toISOString()),
   });
+}
+
+function isImageModelAccessError(err: any) {
+  const status = err?.status;
+  const code = err?.code;
+  const message = err?.error?.message || err?.message || '';
+  return status === 403 && (code === 'model_not_found' || /does not have access to model/i.test(message));
 }
 async function extractSiteContext(url: string) {
   try {

@@ -49,7 +49,7 @@ export default function PostPilotPage() {
     const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return localMidnight.toISOString().slice(0, 10);
   });
-  const [includeImages, setIncludeImages] = useState(true);
+  const [includeImages, setIncludeImages] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
@@ -360,6 +360,7 @@ export default function PostPilotPage() {
               <input
                 type="checkbox"
                 checked={includeImages}
+                disabled
                 onChange={(e) => setIncludeImages(e.target.checked)}
               />
               Generate AI visuals

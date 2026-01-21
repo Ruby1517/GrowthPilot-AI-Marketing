@@ -5,7 +5,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import Org from "@/models/Org";
-import { limiterPerOrg } from "@/lib/ratelimit";
+import { safeLimitPerOrg } from "@/lib/ratelimit";
 import { assertWithinLimit } from "@/lib/usage";
 import { recordOverageRow } from "@/lib/overage";
 import { track } from "@/lib/track";
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
     const org = await Org.findById(orgId).lean();
     if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
 
-    const rl = await limiterPerOrg.limit(orgId);
+    const rl = await safeLimitPerOrg(orgId);
     if (!rl.success) {
       return NextResponse.json(
         { ok: false, error: 'Rate limit exceeded. Please wait a bit.' },

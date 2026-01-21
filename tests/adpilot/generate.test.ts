@@ -47,9 +47,7 @@ vi.mock('@/models/User', () => ({
 }));
 
 vi.mock('@/lib/ratelimit', () => ({
-  limiterPerOrg: {
-    limit: vi.fn(async () => ({ success: true, limit: 100, remaining: 99, reset: 0 })),
-  },
+  safeLimitPerOrg: vi.fn(async () => ({ success: true, limit: 100, remaining: 99, reset: 0 })),
 }));
 
 vi.mock('@/lib/usage', () => ({

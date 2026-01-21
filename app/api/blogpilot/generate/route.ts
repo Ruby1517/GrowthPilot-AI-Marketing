@@ -421,7 +421,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { dbConnect } from '@/lib/db';
-import { limiterPerOrg } from '@/lib/ratelimit';
+import { safeLimitPerOrg } from '@/lib/ratelimit';
 import { Org } from '@/models/Org';
 import { assertWithinLimit } from '@/lib/usage';
 import { track } from '@/lib/track';
@@ -695,7 +695,7 @@ export async function POST(req: Request) {
     }
 
     // ---- rate limit per org
-    const { success, limit, remaining, reset } = await limiterPerOrg.limit(orgId);
+    const { success, limit, remaining, reset } = await safeLimitPerOrg(orgId);
     if (!success) {
       return NextResponse.json(
         { ok: false, error: 'Rate limit exceeded. Please wait a bit.' },
