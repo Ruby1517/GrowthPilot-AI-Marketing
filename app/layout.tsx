@@ -1,5 +1,4 @@
 // app/layout.tsx
-import '@/lib/env'  // validate required env vars at startup
 import './globals.css';
 import { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
