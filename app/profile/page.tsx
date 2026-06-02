@@ -9,7 +9,7 @@ type OrgSettings = {
   subscription: { id?: string } | null;
   usagePeriodStart?: string | null;
   usagePeriodEnd?: string | null;
-  myRole?: 'owner'|'admin'|'member'|'viewer';
+  myRole?: 'owner'|'manager'|'editor'|'viewer';
 }
 type OrgUsage = {
   usage: Record<string, number>;

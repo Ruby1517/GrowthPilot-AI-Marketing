@@ -1,89 +1,153 @@
 "use client";
 import Link from 'next/link';
-import Script from 'next/script';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { canAccess } from '@/lib/access';
-import type { ModuleKey, ModuleStatus, Plan } from '@/lib/modules';
-import { modulePlan, moduleStatus } from '@/lib/modules';
+import type { ModuleKey, Plan } from '@/lib/modules';
 
-const WAITLIST_EMAIL = process.env.NEXT_PUBLIC_WAITLIST_EMAIL || 'hello@growthpilot.ai';
+// ── Data ──────────────────────────────────────────────────────────────────────
 
-type ModuleInfo = {
-  key: ModuleKey;
-  t: string;
-  d: string;
-  icon: string;
-  href: string;
-  img: string;
-  points: string[];
-  status: ModuleStatus;
-  response?: string;
-};
-
-const moduleConfigs: ModuleInfo[] = [
-  { key: 'postpilot', t: 'PostPilot', d: 'AI Social Content Generator', icon: 'post', href: '/postpilot', img: '/images/modules/postpilot.svg',
-    points: ['Generate posts across platforms', 'On-brand tone controls', 'Schedule + track performance'], status: moduleStatus.postpilot, response: '2.4s avg output' },
-  { key: 'clippilot', t: 'ClipPilot', d: 'Viral-ready Shorts from Long Videos', icon: 'clip', href: '/clippilot', img: '/images/modules/clippilot.svg',
-    points: ['Smart scene detection + hooks', 'Auto captions, zoom/punch, music', 'Exports for TikTok, Reels, Shorts'], status: moduleStatus.clippilot, response: 'Live for shorts' },
-  { key: 'blogpilot', t: 'BlogPilot', d: 'AI SEO Writer', icon: 'blog', href: '/blogpilot', img: '/images/modules/blogpilot.svg',
-    points: ['SEO briefs to drafts', 'Optimizes for keywords', 'Images and headings ready'], status: moduleStatus.blogpilot, response: '3.1s outline + draft' },
-  { key: 'adpilot', t: 'AdPilot', d: 'AI Ads Optimizer', icon: 'ad', href: '/adpilot', img: '/images/modules/adpilot.svg',
-    points: ['Generate ad variants', 'Iterate with scoring', 'Export to major platforms'], status: moduleStatus.adpilot, response: '1.1s multi-variant' },
-  { key: 'leadpilot', t: 'LeadPilot', d: 'AI Chatbot for Leads', icon: 'lead', href: '/leadpilot', img: '/images/modules/leadpilot.svg',
-    points: ['Qualify leads instantly', 'Route and capture context', 'CRM-friendly transcripts'], status: moduleStatus.leadpilot, response: 'Live concierge handoff' },
-  { key: 'mailpilot', t: 'MailPilot', d: 'AI Email Writer', icon: 'mail', href: '/mailpilot', img: '/images/modules/mailpilot.svg',
-    points: ['Subject + body + sequences', 'Personalize at scale', 'ESP-ready output'], status: moduleStatus.mailpilot, response: '3.6s per sequence' },
-  { key: 'brandpilot', t: 'BrandPilot', d: 'AI Design/Branding Assistant', icon: 'brand', href: '/brandpilot', img: '/images/modules/brandpilot.svg',
-    points: ['Logos, colors, fonts kit', 'Guidelines and templates', 'On-brand assets quickly'], status: moduleStatus.brandpilot, response: 'Live style system' },
+const MODULES = [
+  { key: 'postpilot' as ModuleKey, label: 'PostPilot',  desc: 'AI Social Content',  icon: '📱', href: '/postpilot',  points: ['Platform-native captions for Instagram, LinkedIn, X, TikTok', 'Tone controls + hashtags + visual ideas', 'Refine any post with one sentence of feedback'] },
+  { key: 'blogpilot' as ModuleKey, label: 'BlogPilot',  desc: 'SEO Blog Writer',    icon: '📝', href: '/blogpilot',  points: ['Keyword-targeted outlines + full drafts', 'Meta title, description, FAQ auto-generated', 'Export to Markdown or HTML'] },
+  { key: 'adpilot'   as ModuleKey, label: 'AdPilot',   desc: 'Ad Copy Generator',  icon: '🎯', href: '/adpilot',   points: ['A/B/C variants for Meta, Google, TikTok', 'Hook + primary text + headlines + CTA', 'Retargeting ads + test plan included'] },
+  { key: 'leadpilot' as ModuleKey, label: 'LeadPilot',  desc: 'AI Lead Chatbot',    icon: '💬', href: '/leadpilot',  points: ['Add a lead capture chatbot in 30 seconds', 'Qualifies visitors and collects contacts', 'Leads routed to your dashboard with transcripts'] },
+  { key: 'mailpilot' as ModuleKey, label: 'MailPilot',  desc: 'Email Campaigns',    icon: '📧', href: '/mailpilot',  points: ['Cold, warm, newsletter, or nurture sequences', 'Spam score + subject lines included', 'Copy-paste into any ESP'] },
 ];
 
-const statHighlights = [
-  { label: 'Teams onboarded', value: '280+', detail: 'From SaaS to eCom' },
-  { label: 'Avg. hours saved', value: '12h/wk', detail: 'per marketer' },
-  { label: 'Campaigns shipped', value: '4.2k', detail: 'last 90 days' },
-  { label: 'NPS', value: '67', detail: 'Loved by operators' },
+const STATS = [
+  { value: '280+',   label: 'Teams using GrowthPilot' },
+  { value: '12h',    label: 'Saved per marketer per week' },
+  { value: '4.2k',   label: 'Campaigns shipped in 90 days' },
+  { value: '67',     label: 'NPS score' },
+];
+
+const AGENTS = [
+  {
+    icon: '✨', label: 'Campaign Agent', color: 'gold',
+    desc: 'Type a brief — the agent decides which tools to run, executes them in order, and delivers a full campaign.',
+    href: '/agent',
+    cta: 'Open Campaign Agent',
+    bullets: ['Blog + social + ads + email in one run', 'Agent plans the sequence, you review the output', 'Async — no page timeout'],
+  },
+  {
+    icon: '✏️', label: 'Iteration Agent', color: 'emerald',
+    desc: 'Generated content 90% there? Refine it with plain language. Every version saved, undo anytime.',
+    href: '/agent/iterate',
+    cta: 'Try Iteration Agent',
+    bullets: ['Works inside every module after generation', 'Module-aware: respects platform limits', 'Full version history'],
+  },
+  {
+    icon: '🔍', label: 'Research Agent', color: 'violet',
+    desc: 'Enter a topic — get keywords, content gaps, the best angle, and an enriched brief ready for any module.',
+    href: '/agent/research',
+    cta: 'Try Research Agent',
+    bullets: ['8–12 real SEO keywords', 'Identifies what competitors miss', 'Enriched brief auto-fills the module form'],
+  },
+];
+
+const PLANS = [
+  { name: 'Trial', price: 'Free', desc: 'Try every module with limited usage. No credit card.', features: ['All 5 modules', '10 posts · 5k blog words · 5 ads', '10 lead conversations', '3 email campaigns'] },
+  { name: 'Starter', price: '$49/mo', desc: 'For small teams shipping consistent content.', features: ['All 5 modules + all 3 agents', '200 posts · 50k words · 50 ads', '50 lead conversations', '50 email campaigns'], highlight: true },
+  { name: 'Pro', price: '$149/mo', desc: 'For growing teams with high content volume.', features: ['Everything in Starter', '2k posts · 500k words · 500 ads', '1k lead conversations', '2k email campaigns', 'Priority AI processing'] },
+];
+
+const FAQS = [
+  { q: 'Do I need to set up anything to use GrowthPilot?', a: 'No. Sign up, and every module is available immediately. No integrations required to generate content.' },
+  { q: 'How is the Campaign Agent different from the individual modules?', a: 'The Campaign Agent runs multiple modules automatically — you type one brief and it generates a blog, social posts, ads, and email in sequence. The modules let you control each piece individually.' },
+  { q: 'Can I use my own tone and brand voice?', a: "Yes. Every module has a tone selector and free-text audience field. The Research Agent can also identify your best content angle before you generate." },
+  { q: 'Does GrowthPilot post content for me?', a: 'GrowthPilot generates content and lets you export or copy it. Direct scheduling and publishing integrations are on the roadmap.' },
+  { q: 'What AI models power GrowthPilot?', a: 'OpenAI GPT-4o for agent planning and gpt-4o-mini for fast content generation. You can override models per plan.' },
+  { q: 'What happens when I hit my usage limit?', a: 'You can upgrade your plan or enable overage billing, which charges per unit beyond your cap. No hard cutoffs by default.' },
+];
+
+const TESTIMONIALS = [
+  { quote: 'GrowthPilot replaced five point solutions. Our paid, lifecycle, and social teams finally sound the same.', name: 'Diana Chen', role: 'VP Growth @ Brightly', metric: '+42% content throughput' },
+  { quote: 'We ship twice as many campaigns with a three-person team. The agents do the heavy lifting.', name: 'Marcus Lee', role: 'Head of Marketing @ Launchpad', metric: '8 hrs/week saved' },
+  { quote: 'The Research Agent alone is worth it. We stopped guessing what to write about.', name: 'Hannah Ortiz', role: 'Creative Lead @ Tala', metric: 'Content always on-brief' },
+];
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+const colorMap = {
+  gold:    { ring: 'ring-[color:var(--gold)]/30',    bg: 'bg-[color:var(--gold)]/10',    text: 'text-[color:var(--gold)]',    border: 'border-[color:var(--gold)]/30' },
+  emerald: { ring: 'ring-emerald-500/30',             bg: 'bg-emerald-500/10',            text: 'text-emerald-400',            border: 'border-emerald-500/30' },
+  violet:  { ring: 'ring-violet-500/30',              bg: 'bg-violet-500/10',             text: 'text-violet-400',             border: 'border-violet-500/30' },
+};
+
+// ── Campaign Agent animated demo ──────────────────────────────────────────────
+
+const DEMO_STEPS = [
+  { icon: '📝', label: 'BlogPilot',  desc: 'SEO blog draft',        color: 'border-sky-500/30     bg-sky-500/10' },
+  { icon: '📱', label: 'PostPilot',  desc: '5 social posts',         color: 'border-violet-500/30  bg-violet-500/10' },
+  { icon: '🎯', label: 'AdPilot',   desc: 'Ad variants',            color: 'border-rose-500/30    bg-rose-500/10' },
+  { icon: '📧', label: 'MailPilot', desc: '3-email sequence',        color: 'border-amber-500/30   bg-amber-500/10' },
+  { icon: '💬', label: 'LeadPilot', desc: 'Lead chatbot config',     color: 'border-emerald-500/30 bg-emerald-500/10' },
 ] as const;
 
-const featureHighlights = [
-  { title: 'Campaign Brain', desc: 'Brief once, reuse across posts, blogs, ads, email, and lead funnels. Every module syncs context instantly.', metric: '1 brief → 6 outputs' },
-  { title: 'Brand-safe automation', desc: 'BrandPilot keeps logos, typography, colors, and guardrails synchronized so every asset ships on-brand.', metric: '99.2% on-brand' },
-  { title: 'Usage guardrails', desc: 'Usage metering, approvals, and alerts keep spend predictable even when AI is running 24/7.', metric: 'No surprise overages' },
-  { title: 'Collaboration built-in', desc: 'Roles, comments, and shared analytics keep marketing + creative on the same page.', metric: '+43% faster approvals' },
-] as const;
+function CampaignDemo() {
+  const [active, setActive] = useState(-1);
+  const [done, setDone] = useState<number[]>([]);
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-const workflowSteps = [
-  { title: '1. Brief once', desc: 'Drop a URL, product launch doc, or keywords. GrowthPilot ingests everything plus your BrandPilot kit.', items: ['Starter brief + target audience', 'Brand assets + offers synced'] },
-  { title: '2. Generate everywhere', desc: 'PostPilot, BlogPilot, AdPilot, MailPilot, and LeadPilot stay in lockstep so stories match across channels.', items: ['Shared tone + hook variations', 'Usage analytics per module'] },
-  { title: '3. Review & launch', desc: 'Send to your ESP, CMS, ad manager, or CRM knowing every asset uses the same source of truth.', items: ['One-click exports & webhooks', 'Audit trail + approvals'] },
-] as const;
-
-const testimonialQuotes = [
-  { quote: 'GrowthPilot replaced five point solutions for us. The shared brief + brand kit means our paid, lifecycle, and social teams finally sound the same.', name: 'Diana Chen', role: 'VP Growth @ Brightly', metric: '+42% content throughput' },
-  { quote: 'We ship twice as many campaigns with a three-person team. Usage guardrails and billing transparency make finance happy too.', name: 'Marcus Lee', role: 'Head of Marketing @ Launchpad', metric: '8 hrs/week saved' },
-  { quote: 'BrandPilot keeps every render perfectly on-brand. Designers set the system once and the team reuses it everywhere.', name: 'Hannah Ortiz', role: 'Creative Lead @ Tala', metric: 'Brand kit synced automatically' },
-] as const;
-
-const waitlistHrefFor = (moduleName: string) => `mailto:${WAITLIST_EMAIL}?subject=${encodeURIComponent(`${moduleName} waitlist`)}`;
-
-function Icon({ name, className = 'w-5 h-5' }: { name: string; className?: string }) {
-  switch (name) {
-    case 'post': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M5 4h14a1 1 0 0 1 1 1v3H4V5a1 1 0 0 1 1-1Zm-1 7h16v2H4v-2Zm0 4h10v2H4v-2Z"/></svg>);
-    case 'clip': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M4 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3l4-2.5V18L14 15.5V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5Z"/></svg>);
-    case 'blog': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M4 5a2 2 0 0 1 2-2h12v14a4 4 0 0 1-4 4H6a2 2 0 0 1-2-2V5Zm4 2h8v2H8V7Zm0 4h8v2H8v-2Zm0 4h6v2H8v-2Z"/></svg>);
-    case 'ad': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M3 5h18v10H3V5Zm2 2v6h14V7H5Zm-2 12h10v2H3v-2Zm14 0h4v2h-4v-2Z"/></svg>);
-    case 'lead': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.015-8 4.5V21h16v-2.5c0-2.485-3.582-4.5-8-4.5Z"/></svg>);
-    case 'mail': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M4 6h16a2 2 0 0 1 2 2v8H2V8a2 2 0 0 1 2-2Zm0 2v.2l8 4.8l8-4.8V8H4Zm0 8h16v2H4v-2Z"/></svg>);
-    case 'brand': return (<svg viewBox="0 0 24 24" className={className}><path fill="currentColor" d="M6 3h12a2 2 0 0 1 2 2v8l-8 6l-8-6V5a2 2 0 0 1 2-2Z"/><path fill="currentColor" d="M12 6.5l.9 1.8l2 .3l-1.45 1.4l.35 2l-1.8-.95L10.2 12l.35-2L9.1 8.6l2-.3L12 6.5Z"/></svg>);
-    case 'youtube':
-      return (
-        <svg viewBox="0 0 24 24" className={className} aria-hidden>
-          <path fill="currentColor" d="M10 15l5.19-3L10 9v6Zm12-3c0 0-0.02-2.04-.26-3.02a3.04 3.04 0 0 0-2.14-2.14C18.61 6.5 12 6.5 12 6.5s-6.61 0-7.6.24A3.04 3.04 0 0 0 2.26 8.88C2.02 9.86 2 11.9 2 11.9s.02 2.04.26 3.02a3.04 3.04 0 0 0 2.14 2.14c.99.24 7.6.24 7.6.24s6.61 0 7.6-.24a3.04 3.04 0 0 0 2.14-2.14c.24-.98.26-3.02.26-3.02Z" />
-        </svg>
-      );
-    default: return null;
+  function run() {
+    if (running) return;
+    setActive(-1); setDone([]); setFinished(false); setRunning(true);
+    let i = 0;
+    const next = () => {
+      if (i >= DEMO_STEPS.length) { setActive(-1); setRunning(false); setFinished(true); return; }
+      setActive(i);
+      t.current = setTimeout(() => { setDone(p => [...p, i]); i++; t.current = setTimeout(next, 250); }, 1300);
+    };
+    t.current = setTimeout(next, 300);
   }
+  useEffect(() => () => { if (t.current) clearTimeout(t.current); }, []);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden text-sm">
+      <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-black/20">
+        <div className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 font-mono text-xs text-white/70 truncate">
+          &ldquo;Launch our SaaS tool to startup founders — SEO, social, and email&rdquo;
+        </div>
+        <button onClick={run} disabled={running}
+          className="btn-gold text-xs px-3 py-1.5 flex-shrink-0 disabled:opacity-50 flex items-center gap-1.5">
+          {running
+            ? <><svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round"/></svg>Running…</>
+            : finished ? '▶ Again' : '✨ Run'}
+        </button>
+      </div>
+      <div className="p-3 space-y-2">
+        {DEMO_STEPS.map((s, i) => {
+          const isDone = done.includes(i);
+          const isNow  = active === i;
+          const wait   = !isDone && !isNow;
+          return (
+            <div key={s.label} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-400
+              ${isDone ? s.color : isNow ? s.color + ' scale-[1.01]' : 'border-white/8 bg-white/[0.02] opacity-35'}`}>
+              <span className={`text-base ${isNow ? 'animate-bounce' : ''}`}>{s.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-xs">{s.label}</div>
+                <div className="text-[10px] text-brand-muted">{s.desc}</div>
+              </div>
+              {isDone && <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>}
+              {isNow  && <svg className="animate-spin w-3.5 h-3.5 text-[color:var(--gold)] flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round"/></svg>}
+              {wait   && <span className="w-3.5 h-3.5 rounded-full border border-white/15 flex-shrink-0 block"/>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="px-4 py-2.5 border-t border-white/10 text-[10px] text-brand-muted min-h-[32px]">
+        {finished && <span className="text-emerald-400">✓ Campaign complete — 5 pieces of content generated</span>}
+        {running && active >= 0 && <span>Running {DEMO_STEPS[active]?.label}…</span>}
+        {!running && !finished && <span>Click Run to see the agent work in real-time</span>}
+      </div>
+    </div>
+  );
 }
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -93,350 +157,295 @@ export default function Home() {
   const [planLoading, setPlanLoading] = useState(false);
 
   useEffect(() => {
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
-    if (status !== 'authenticated') {
-      setPlan(null);
-      setRole(null);
-      setPlanLoading(false);
-      return;
-    }
-    async function load() {
-      try {
-        setPlanLoading(true);
-        const r = await fetch('/api/org/settings', { cache: 'no-store' });
-        if (!r.ok) return;
-        const j = await r.json();
-        if (!cancelled) {
-          const eff = (j.effectivePlan as Plan) || (j.plan as Plan) || 'Trial';
-          setPlan(eff);
-          setRole((j.myRole as any) || null);
-        }
-      } finally {
-        if (!cancelled) setPlanLoading(false);
-      }
-    }
-    load();
+    if (status !== 'authenticated') { setPlan(null); setRole(null); setPlanLoading(false); return; }
+    setPlanLoading(true);
+    fetch('/api/org/settings', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(j => { if (!cancelled) { setPlan(j.effectivePlan ?? j.plan ?? 'Trial'); setRole(j.myRole ?? null); } })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setPlanLoading(false); });
     return () => { cancelled = true; };
   }, [status]);
 
-  const userPlanForGate: Plan | null = isAuthed ? (plan ?? 'Trial') : null;
+  const userPlan: Plan | null = isAuthed ? (plan ?? 'Trial') : null;
 
   return (
-    <section className="space-y-16 md:space-y-24 relative overflow-hidden">
-      <div className="relative z-10 space-y-16 md:space-y-24">
-        <Script id="ld-home" type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            name: 'GrowthPilot',
-            url: typeof window !== 'undefined' ? window.location.origin : 'https://growthpilot.ai',
-            potentialAction: {
-              '@type': 'SearchAction',
-              target: `${typeof window !== 'undefined' ? window.location.origin : 'https://growthpilot.ai'}/?q={search_term_string}`,
-              'query-input': 'required name=search_term_string'
-            }
-          }) }}
-        />
-        <LandingHero isAuthed={isAuthed} />
-        <StatsStrip />
-        <ModulesShowcase modules={moduleConfigs} isAuthed={isAuthed} userPlan={userPlanForGate} userRole={role ?? undefined} planLoading={planLoading} />
-        <FeatureHighlights />
-        <WorkflowSection />
-        <TestimonialsSection />
-        <CallToAction isAuthed={isAuthed} />
-      </div>
-      <div className="absolute inset-0 opacity-40 pointer-events-none" aria-hidden>
-        <div className="absolute -left-32 top-0 h-72 w-72 rounded-full bg-sky-500/30 blur-[140px]" />
-        <div className="absolute right-0 bottom-0 h-[420px] w-[420px] rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]/20 blur-[160px]" />
-      </div>
-    </section>
-  );
-}
+    <div className="space-y-20 md:space-y-28 relative overflow-hidden">
 
-function LandingHero({ isAuthed }: { isAuthed: boolean }) {
-  const chips = [
-    { icon: 'post', label: 'Social, blogs, ads, email' },
-    { icon: 'lead', label: 'Lead capture + concierge' },
-    { icon: 'clip', label: 'Short-form video ready' },
-    { icon: 'brand', label: 'Brand kits shared' },
-  ];
-
-  return (
-    <div className="relative">
-      <div className="text-center">
-        <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
-          Supercharge Your <span className="text-[color:var(--gold,theme(colors.brand.gold))]">Marketing</span> with AI
-        </h1>
-        <p className="mt-3 md:mt-4 text-base md:text-lg text-brand-muted">
-          All‑in‑one AI Marketing Automation Platform
-        </p>
+      {/* Glow background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+        <div className="absolute -left-40 top-10 w-80 h-80 rounded-full bg-sky-500/20 blur-[140px]" />
+        <div className="absolute right-0 top-60 w-96 h-96 rounded-full bg-[color:var(--gold)]/15 blur-[160px]" />
+        <div className="absolute left-1/3 bottom-40 w-64 h-64 rounded-full bg-violet-500/15 blur-[120px]" />
       </div>
 
-      {/* Simplified hero card (full slider saved in components/HeroSlider.tsx for later) */}
-      <div className="mt-8 md:mt-12 grid gap-4 lg:grid-cols-[2fr_1.2fr] items-stretch">
-        <div className="rounded-3xl border border-white/10 bg-white/70 dark:bg-white/5 dark:border-white/15 p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-brand-muted">
-            <span className="badge">GrowthPilot</span>
-            <span className="text-emerald-600 dark:text-emerald-300">Live modules</span>
-          </div>
-          <h3 className="mt-3 text-2xl md:text-3xl font-semibold">Unified AI console for every channel</h3>
-          <p className="mt-2 text-sm md:text-base text-brand-muted">
-            Brief once, reuse everywhere: social, blogs, ads, email, lead capture, and branding stay in sync.
-          </p>
-          <div className="mt-4 grid sm:grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/20 bg-white/80 dark:bg-white/5 dark:border-white/10 p-4">
-              <div className="text-xs uppercase tracking-wide text-brand-muted">Ready today</div>
-              <ul className="mt-2 space-y-2 text-sm">
-                <li>• PostPilot, BlogPilot, AdPilot, MailPilot</li>
-                <li>• LeadPilot with live concierge handoff</li>
-                <li>• ClipPilot ready for shorts</li>
-                <li>• BrandPilot kits shared across modules</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-white/20 bg-white/80 dark:bg-white/5 dark:border-white/10 p-4">
-              <div className="text-xs uppercase tracking-wide text-brand-muted">What you get</div>
-              <ul className="mt-2 space-y-2 text-sm">
-                <li>• Hooks, CTAs, scripts, and prompts per channel</li>
-                <li>• Signed asset storage + exports (CSV, PNG, PDF)</li>
-                <li>• Guardrails: tone, banned words, approvals</li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold">
-              {isAuthed ? 'Open AI Studio' : 'Start free'}
-            </Link>
-            <Link href={isAuthed ? '/postpilot' : '/billing'} className="btn-ghost">
-              {isAuthed ? 'Explore modules' : 'View plans'}
-            </Link>
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/70 dark:bg-white/5 dark:border-white/15 p-6 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.18)] flex flex-col justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-brand-muted">Status</div>
-            <h4 className="mt-2 text-xl font-semibold">Concierge handoff ready</h4>
-            <p className="mt-2 text-sm text-brand-muted">
-              LeadPilot collects context, tags intent, and routes to your team with transcripts.
+      <div className="relative z-10 space-y-20 md:space-y-28">
+
+        {/* ── Hero ── */}
+        <section className="text-center space-y-8 pt-8">
+          <div className="space-y-4">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5 text-xs text-brand-muted">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              All 5 modules + 3 AI agents — live now
+            </span>
+            <h1 className="text-4xl md:text-6xl font-semibold tracking-tight leading-tight max-w-4xl mx-auto">
+              Your AI marketing team,<br />
+              <span className="text-[color:var(--gold,theme(colors.brand.gold))]">inside one dashboard</span>
+            </h1>
+            <p className="text-base md:text-xl text-brand-muted max-w-2xl mx-auto leading-relaxed">
+              Write a brief once. GrowthPilot generates your blog, social posts, ads, email campaigns, and lead chatbot — together, on-brand, in minutes.
             </p>
           </div>
-          <div className="mt-4 rounded-2xl border border-white/20 bg-black/80 text-white p-4 text-center">
-            <div className="text-xs uppercase tracking-wide text-white/60">Live preview placeholder</div>
-            <div className="mt-2 text-lg font-semibold">Demo video slot</div>
-            <p className="text-sm text-white/60">Add your demo when ready.</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-6 md:mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
-        {chips.map((c, i) => (
-          <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-transparent border border-transparent dark:border-white/10 dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition">
-            <Icon name={c.icon} className="w-4 h-4 text-[color:var(--gold,theme(colors.brand.gold))]" />
-            <span className="text-sm">{c.label}</span>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold px-6 py-3 text-base">
+              {isAuthed ? 'Go to dashboard' : 'Start free — no card needed'}
+            </Link>
+            <Link href="/agent" className="btn-ghost px-6 py-3 text-base">
+              Try Campaign Agent →
+            </Link>
           </div>
-        ))}
-      </div>
 
-      <div className="mt-8 md:mt-10 flex items-center justify-center gap-3">
-        <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold">
-          {isAuthed ? 'Open AI Studio' : 'Launch modules'}
-        </Link>
-        <Link href={isAuthed ? '/postpilot' : '/billing'} className="btn-ghost">
-          {isAuthed ? 'Explore Modules' : 'View Plans'}
-        </Link>
+          {/* Module pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-brand-muted">
+            {['📱 PostPilot', '📝 BlogPilot', '🎯 AdPilot', '💬 LeadPilot', '📧 MailPilot'].map(m => (
+              <span key={m} className="px-3 py-1 rounded-full border border-white/10 bg-white/5">{m}</span>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Stats ── */}
+        <section className="card p-6 md:p-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {STATS.map(s => (
+              <div key={s.label}>
+                <div className="text-3xl md:text-4xl font-semibold">{s.value}</div>
+                <div className="text-sm text-brand-muted mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Modules ── */}
+        <section className="space-y-8" id="modules">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-semibold">5 tools. Every marketing channel.</h2>
+            <p className="text-brand-muted">Each module is a specialist. Together they&apos;re a full team.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {MODULES.map(m => {
+              const unlocked = !planLoading && canAccess({ userPlan: userPlan as any, module: m.key, userRole: role ?? undefined });
+              const href = !isAuthed ? '/api/auth/signin' : unlocked ? m.href : '/billing';
+              const cta  = !isAuthed ? 'Sign in to launch' : unlocked ? `Open ${m.label}` : 'Upgrade to unlock';
+              return (
+                <div key={m.key} className="card p-5 flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{m.icon}</span>
+                      <div>
+                        <div className="font-semibold">{m.label}</div>
+                        <div className="text-xs text-brand-muted">{m.desc}</div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Live</span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {m.points.map((p, i) => (
+                      <li key={i} className="text-sm text-brand-muted flex gap-2">
+                        <span className="mt-1 w-1 h-1 rounded-full bg-[color:var(--gold)] flex-shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={href} className="btn-gold text-sm mt-auto self-start">{cta}</Link>
+                </div>
+              );
+            })}
+            {/* Agents promo card */}
+            <div className="card p-5 flex flex-col gap-4 border-[color:var(--gold)]/20 bg-[color:var(--gold)]/5">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <div className="font-semibold">AI Agents</div>
+                  <div className="text-xs text-brand-muted">Campaign · Iteration · Research</div>
+                </div>
+              </div>
+              <p className="text-sm text-brand-muted">Three agents that work across all modules — plan, generate, refine, and research automatically.</p>
+              <div className="flex gap-2 mt-auto">
+                <Link href="/agent" className="btn-gold text-sm">Campaign Agent</Link>
+                <Link href="/agent/research" className="btn-ghost text-sm">Research</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── AI Agents ── */}
+        <section className="space-y-10" id="agents">
+          <div className="text-center space-y-2">
+            <span className="badge">AI Agents</span>
+            <h2 className="text-3xl font-semibold mt-3">Three agents that do the work for you</h2>
+            <p className="text-brand-muted max-w-2xl mx-auto">
+              Not just content tools — autonomous agents that plan, execute, refine, and research. Each one handles a different part of the marketing workflow.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {AGENTS.map(a => {
+              const c = colorMap[a.color as keyof typeof colorMap];
+              return (
+                <div key={a.label} className={`card p-5 flex flex-col gap-4 border ${c.border}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center text-lg flex-shrink-0`}>{a.icon}</div>
+                    <div className={`font-semibold ${c.text}`}>{a.label}</div>
+                  </div>
+                  <p className="text-sm text-brand-muted leading-relaxed">{a.desc}</p>
+                  <ul className="space-y-1.5">
+                    {a.bullets.map((b, i) => (
+                      <li key={i} className="text-xs text-brand-muted flex gap-2">
+                        <span className={`mt-0.5 w-1 h-1 rounded-full ${c.text} flex-shrink-0`} style={{background:'currentColor'}} />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={a.href} className={`text-sm px-4 py-2 rounded-lg border ${c.border} ${c.text} hover:${c.bg} transition self-start mt-auto`}>
+                    {a.cta} →
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Campaign Agent interactive demo */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Campaign Agent — live demo</div>
+              <Link href="/agent" className="text-xs text-brand-muted hover:text-white transition">Open the real thing →</Link>
+            </div>
+            <CampaignDemo />
+          </div>
+        </section>
+
+        {/* ── How it works ── */}
+        <section className="card p-6 md:p-10 space-y-8">
+          <div className="space-y-1">
+            <h2 className="text-2xl md:text-3xl font-semibold">From brief to launch in three steps</h2>
+            <p className="text-brand-muted">One source of truth powers every module.</p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              { step: '01', title: 'Research & brief', desc: 'Use the Research Agent to find your best angle, then write a brief. Keywords, gaps, and audience — all pre-filled.', icon: '🔍' },
+              { step: '02', title: 'Generate everywhere', desc: 'Run the Campaign Agent or open any module. Blog, social, ads, email, and lead chatbot stay in lockstep.', icon: '⚙️' },
+              { step: '03', title: 'Refine & export', desc: 'The Iteration Agent polishes any piece with one sentence of feedback. Export to CSV, Markdown, or your ESP.', icon: '✅' },
+            ].map(s => (
+              <div key={s.step} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{s.icon}</span>
+                  <span className="text-xs text-brand-muted font-mono">{s.step}</span>
+                </div>
+                <div className="font-semibold">{s.title}</div>
+                <p className="text-sm text-brand-muted leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Pricing ── */}
+        <section className="space-y-8" id="pricing">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-semibold">Simple, honest pricing</h2>
+            <p className="text-brand-muted">Start free. Upgrade when you need more.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {PLANS.map(p => (
+              <div key={p.name} className={`card p-6 flex flex-col gap-5 ${p.highlight ? 'border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 ring-1 ring-[color:var(--gold)]/20' : ''}`}>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold">{p.name}</div>
+                    {p.highlight && <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[color:var(--gold)]/20 text-[color:var(--gold)]">Most popular</span>}
+                  </div>
+                  <div className="text-2xl font-semibold mt-2">{p.price}</div>
+                  <div className="text-sm text-brand-muted mt-1">{p.desc}</div>
+                </div>
+                <ul className="space-y-2 flex-1">
+                  {p.features.map((f, i) => (
+                    <li key={i} className="text-sm flex gap-2 text-brand-muted">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={isAuthed ? '/billing' : '/api/auth/signin'} className={`text-sm text-center py-2.5 rounded-xl border transition ${p.highlight ? 'btn-gold' : 'btn-ghost'}`}>
+                  {p.name === 'Trial' ? 'Start free' : `Get ${p.name}`}
+                </Link>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-brand-muted">All plans include every module. Upgrade or downgrade anytime. Overage billing available on paid plans.</p>
+        </section>
+
+        {/* ── Testimonials ── */}
+        <section className="space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-semibold">Loved by marketing teams</h2>
+            <p className="text-brand-muted">Less time writing. More campaigns shipped.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {TESTIMONIALS.map(t => (
+              <figure key={t.name} className="card p-5 flex flex-col gap-4">
+                <blockquote className="text-sm text-brand-muted leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</blockquote>
+                <div className="border-t border-white/10 pt-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold">{t.name}</div>
+                    <div className="text-xs text-brand-muted">{t.role}</div>
+                  </div>
+                  <div className="text-xs text-[color:var(--gold)] font-medium">{t.metric}</div>
+                </div>
+              </figure>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="space-y-6 max-w-3xl mx-auto" id="faq">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-semibold">Common questions</h2>
+          </div>
+          <div className="space-y-3">
+            {FAQS.map((f, i) => (
+              <details key={i} className="card p-5 group">
+                <summary className="font-medium text-sm cursor-pointer flex items-center justify-between gap-3 list-none">
+                  {f.q}
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-brand-muted flex-shrink-0 transition-transform group-open:rotate-180">
+                    <path fill="currentColor" d="m6 9 6 6 6-6H6Z"/>
+                  </svg>
+                </summary>
+                <p className="mt-3 text-sm text-brand-muted leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Final CTA ── */}
+        <section className="card p-8 md:p-14 text-center space-y-5">
+          <h2 className="text-3xl md:text-4xl font-semibold">Ship your next campaign today</h2>
+          <p className="text-brand-muted max-w-xl mx-auto">
+            Start free. Every module is available on the Trial plan. No credit card required.
+          </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold px-6 py-3">
+              {isAuthed ? 'Open dashboard' : 'Start free'}
+            </Link>
+            <Link href="/agent" className="btn-ghost px-6 py-3">
+              Try Campaign Agent →
+            </Link>
+          </div>
+          <p className="text-xs text-brand-muted">
+            Free plan includes all 5 modules + 3 agents with usage limits.
+          </p>
+        </section>
+
       </div>
     </div>
-  );
-}
-
-function StatsStrip() {
-  return (
-    <section className="card p-6 md:p-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {statHighlights.map((stat) => (
-          <div key={stat.label}>
-            <div className="text-2xl md:text-3xl font-semibold">{stat.value}</div>
-            <div className="text-sm text-brand-muted">{stat.label}</div>
-            <div className="text-xs text-brand-muted mt-1">{stat.detail}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ModulesShowcase({
-  modules,
-  isAuthed,
-  userPlan,
-  userRole,
-  planLoading,
-}: {
-  modules: ModuleInfo[];
-  isAuthed: boolean;
-  userPlan: Plan | null;
-  userRole?: string;
-  planLoading: boolean;
-}) {
-  const ordered = [...modules].sort((a, b) => (a.status === 'coming_soon' ? 1 : 0) - (b.status === 'coming_soon' ? 1 : 0));
-  return (
-    <section className="space-y-6" id="modules">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-semibold">Your entire marketing team, inside one login</h2>
-        <p className="text-brand-muted">Most modules are production-ready today; ClipPilot is now live with scene detection, captions, zooms, music, and social-native exports.</p>
-      </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        {ordered.map((module) => {
-          const isComingSoon = module.status === 'coming_soon';
-          const required = modulePlan[module.key];
-          const unlocked = !planLoading && canAccess({ userPlan: userPlan as any, module: module.key, userRole });
-          const launchHref = isComingSoon
-            ? waitlistHrefFor(module.t)
-            : !isAuthed
-            ? '/api/auth/signin'
-            : unlocked
-            ? module.href
-            : '/billing';
-          return (
-            <div key={module.key} className="card p-6 flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="w-12 h-12 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center">
-                    <Icon name={module.icon} className="w-6 h-6 text-[color:var(--gold,theme(colors.brand.gold))]" />
-                  </span>
-                  <div>
-                    <div className="text-lg font-semibold">{module.t}</div>
-                    <div className="text-sm text-brand-muted">{module.d}</div>
-                  </div>
-                </div>
-                <span className={`text-xs uppercase tracking-wide px-2 py-1 rounded-full ${isComingSoon ? 'bg-white/0 border border-white/10' : 'bg-emerald-500/15 text-emerald-400'}`}>
-                  {isComingSoon ? 'Coming Soon' : 'Live'}
-                </span>
-              </div>
-              <ul className="text-sm text-brand-muted space-y-2">
-                {module.points.slice(0, 3).map((point, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]" aria-hidden />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-auto flex flex-wrap gap-3">
-                {isComingSoon ? (
-                  <a href={waitlistHrefFor(module.t)} className="btn-ghost text-sm">
-                    Join waitlist
-                  </a>
-                ) : (
-                  <>
-                    <Link href={launchHref} className="btn-gold text-sm">
-                      {isComingSoon
-                        ? 'Join waitlist'
-                        : !isAuthed
-                        ? 'Sign in to launch'
-                        : unlocked
-                        ? `Launch ${module.t}`
-                        : `Unlock ${required}`}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function FeatureHighlights() {
-  return (
-    <section className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-semibold">Built for ambitious growth teams</h2>
-        <p className="text-brand-muted">Everything shares the same brain, billing, analytics, and approvals.</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {featureHighlights.map((feature) => (
-          <div key={feature.title} className="card p-5 flex flex-col gap-3">
-            <div className="text-sm uppercase tracking-wide text-brand-muted">{feature.metric}</div>
-            <div className="text-xl font-semibold">{feature.title}</div>
-            <p className="text-sm text-brand-muted">{feature.desc}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function WorkflowSection() {
-  return (
-    <section className="card p-6 md:p-8 space-y-6">
-      <div>
-        <span className="badge mb-3">Workflow</span>
-        <h2 className="text-2xl md:text-3xl font-semibold">Launch-ready workflows in three steps</h2>
-        <p className="text-brand-muted mt-2">One brief powers every module, then analytics keep score.</p>
-      </div>
-      <div className="grid gap-6 md:grid-cols-3">
-        {workflowSteps.map((step) => (
-          <div key={step.title} className="rounded-2xl border border-white/10 p-4">
-            <div className="text-sm font-semibold">{step.title}</div>
-            <p className="text-sm text-brand-muted mt-1">{step.desc}</p>
-            <ul className="mt-3 space-y-2 text-sm text-brand-muted">
-              {step.items.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[color:var(--gold,theme(colors.brand.gold))]" aria-hidden />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TestimonialsSection() {
-  return (
-    <section className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-semibold">Loved by modern marketing teams</h2>
-        <p className="text-brand-muted">Less thrash, more launches, happier stakeholders.</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {testimonialQuotes.map((t) => (
-          <figure key={t.name} className="card p-5 flex flex-col gap-3">
-            <blockquote className="text-sm text-brand-muted leading-relaxed">“{t.quote}”</blockquote>
-            <div>
-              <div className="font-semibold">{t.name}</div>
-              <div className="text-xs text-brand-muted">{t.role}</div>
-            </div>
-            <div className="text-xs uppercase tracking-wide text-brand-muted">{t.metric}</div>
-          </figure>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CallToAction({ isAuthed }: { isAuthed: boolean }) {
-  return (
-    <section className="card p-8 md:p-12 text-center space-y-4">
-      <span className="badge">Launch</span>
-      <h2 className="text-3xl font-semibold">Ready to ship your next campaign?</h2>
-      <p className="text-brand-muted text-sm md:text-base max-w-2xl mx-auto">
-        Spin up social content, SEO blogs, ads, lifecycle email, lead chatbots, and brand assets without switching tabs. ClipPilot now turns long videos into viral-ready shorts—everything else is production ready today.
-      </p>
-      <div className="flex items-center justify-center gap-3">
-        <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold">
-          {isAuthed ? 'Back to dashboard' : 'Start free'}
-        </Link>
-        <Link href="/billing" className="btn-ghost">
-          See plans
-        </Link>
-      </div>
-    </section>
   );
 }

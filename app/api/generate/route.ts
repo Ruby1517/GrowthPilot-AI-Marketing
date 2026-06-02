@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const { module, templateId, prompt, vars, schema } = await req.json()
+  const { module, prompt, vars, schema } = await req.json()
   const orgId = (session.user as any).orgId as string | undefined
 
   try {
@@ -32,7 +32,6 @@ export async function POST(req: Request) {
     orgId,
     userId: (session.user as any).id,
     module,
-    templateId,
     prompt,
     vars,
     jsonSchema: schema,

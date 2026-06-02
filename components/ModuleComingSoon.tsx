@@ -80,7 +80,7 @@ export default function ModuleComingSoon({
       <div className="card p-6 md:p-8">
         <div className="text-sm text-brand-muted">Ready today</div>
         <p className="text-lg md:text-xl font-medium mt-1">
-          PostPilot, BlogPilot, AdPilot, LeadPilot, MailPilot, and BrandPilot are live and production ready.
+          PostPilot, BlogPilot, AdPilot, LeadPilot, and MailPilot are live and production ready.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-xs text-brand-muted">
           <Link href="/postpilot" className="btn-ghost text-xs">PostPilot</Link>
@@ -88,7 +88,6 @@ export default function ModuleComingSoon({
           <Link href="/adpilot" className="btn-ghost text-xs">AdPilot</Link>
           <Link href="/leadpilot" className="btn-ghost text-xs">LeadPilot</Link>
           <Link href="/mailpilot" className="btn-ghost text-xs">MailPilot</Link>
-          <Link href="/brandpilot" className="btn-ghost text-xs">BrandPilot</Link>
         </div>
       </div>
     </section>

@@ -1,5 +1,29 @@
 import { modulePlan, DEV_UNLOCK_ALL, ADMIN_ROLES, Plan, ModuleKey } from './modules';
 
+// ── Org-role helpers ──────────────────────────────────────────────────────────
+// Use these everywhere instead of repeating arrays.
+
+
+/** Can modify org settings (name, overage) and manage team */
+export function canManage(role: string | null | undefined): boolean {
+  return role === 'owner' || role === 'manager';
+}
+
+/** Can generate / publish content */
+export function canCreate(role: string | null | undefined): boolean {
+  return role === 'owner' || role === 'manager' || role === 'editor';
+}
+
+/** Only the org owner can touch billing */
+export function canBill(role: string | null | undefined): boolean {
+  return role === 'owner';
+}
+
+/** GrowthPilot platform staff */
+export function isPlatformAdmin(platformRole: string | null | undefined): boolean {
+  return platformRole === 'superadmin';
+}
+
 const RANK: Record<Plan, number> = { Trial: 0, Starter: 1, Pro: 2, Business: 3 };
 const ADMIN_OVERRIDE_ENABLED = process.env.NEXT_PUBLIC_ALLOW_ADMIN_OVERRIDE === 'true';
 const TRIAL_UNLOCK_MODULES = new Set<ModuleKey>(['postpilot', 'blogpilot']);

@@ -1,7 +1,7 @@
 // app/api/leadpilot/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { safeLimitPerOrg } from "@/lib/ratelimit";
 import OpenAI from "openai";
-import { getPlaybook } from "@/models/Playbook";
 import { fetchBlogContext } from "@/lib/kb";
 import { track } from "@/lib/track";
 import { dbConnect } from "@/lib/db";
@@ -79,8 +79,15 @@ async function classifyIntent(openai: OpenAI | null, convo: Msg[]) {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit by IP (public endpoint — no auth required)
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anon'
+  const rl = await safeLimitPerOrg(`leadpilot:${ip}`)
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 })
+  }
+
   const { playbook, site, messages, orgId: orgFromBody } = await req.json();
-  const pb = getPlaybook(playbook);
+  void playbook;
   const hasKey = Boolean(process.env.OPENAI_API_KEY);
   const openai = hasKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
@@ -106,7 +113,7 @@ export async function POST(req: NextRequest) {
 
   const systemParts = [
     // Sales assistant framing: greet, offer categories, qualify, collect contact, and surface booking.
-    `${pb.prompt}\nYou are a sales assistant. Start with a concise greeting and offer: Products, Pricing, or Support. Ask 1–2 qualifying questions based on what they ask, then collect name/email/phone and offer to book if relevant.`,
+    `You are a sales assistant. Start with a concise greeting and offer: Products, Pricing, or Support. Ask 1–2 qualifying questions based on what they ask, then collect name/email/phone and offer to book if relevant.`,
     siteCtx
       ? `You are acting as the assistant for the site the visitor is on (${site}). Use this site content to answer questions about that business. Do NOT talk about GrowthPilot unless explicitly asked about GrowthPilot.\n${siteCtx}`
       : siteProvided
@@ -141,7 +148,7 @@ export async function POST(req: NextRequest) {
   } else {
     const last = userText.toLowerCase();
     if (/price|cost|plan/.test(last)) {
-      reply = "Our plans start with Starter (10 seats), Pro (unlocks ClipPilot + MailPilot automations), and Business for large teams. Want me to connect you with sales?";
+      reply = "Our plans start with Starter, Pro (more usage + priority AI), and Business for large teams. All plans include PostPilot, BlogPilot, AdPilot, LeadPilot, and MailPilot. Want me to connect you with sales?";
     } else if (/book|demo/.test(last)) {
       reply = "Happy to line that up! Drop your name, email, and company and I'll pass it along to the team.";
     } else if (/hours|support|help/.test(last)) {

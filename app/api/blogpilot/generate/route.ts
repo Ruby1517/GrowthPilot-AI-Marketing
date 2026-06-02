@@ -429,6 +429,7 @@ import { track } from '@/lib/track';
 import { callText } from '@/lib/provider';
 import { resolveModelSpec } from '@/lib/model-routing';
 import { safetyCheck, plagiarismHeuristic } from '@/lib/safety';
+import { buildBrandVoicePrompt } from '@/lib/brand-voice';
 
 // (optional) Stripe metering safe wrapper
 import { reportUsageForOrg } from '@/lib/billing/usage';
@@ -521,8 +522,9 @@ function blogPilotPrompt(opts: {
   tone: string;
   wordCount: number;
   targetLinks: Array<{ anchor: string; url: string }>;
+  brandVoiceContext?: string;
 }) {
-  const { keywords, url, tone, wordCount, targetLinks } = opts;
+  const { keywords, url, tone, wordCount, targetLinks, brandVoiceContext } = opts;
   const targetLinksBlock = targetLinks.length
     ? `Internal links (use each EXACTLY ONCE if possible; markdown format [ANCHOR](URL)):
 ${targetLinks.map(x => `- ${x.anchor} → ${x.url}`).join('\n')}`
@@ -533,7 +535,7 @@ ${targetLinks.map(x => `- ${x.anchor} → ${x.url}`).join('\n')}`
       role: 'system' as const,
       content: `You are BlogPilot, an SEO-savvy content generator.
 Return a STRICT JSON object that follows the "BlogPilotJSON" schema below.
-Do not include markdown fences or commentary—JSON only.`,
+Do not include markdown fences or commentary—JSON only.${brandVoiceContext ? `\n\n${brandVoiceContext}` : ''}`,
     },
     {
       role: 'user' as const,
@@ -688,7 +690,7 @@ export async function POST(req: Request) {
       await UsersModel.updateOne({ _id: me._id }, { $set: { orgId: created._id } });
       await Org.updateOne(
         { _id: created._id },
-        { $push: { members: { userId: me._id, role: 'member', joinedAt: new Date() } } }
+        { $push: { members: { userId: me._id, role: 'owner', joinedAt: new Date() } } }
       );
       org = await Org.findById(created._id).lean();
       orgId = String(created._id);
@@ -744,12 +746,14 @@ export async function POST(req: Request) {
     });
 
     // ---- build messages & call provider
+    const brandVoiceContext = buildBrandVoicePrompt((org as any)?.brandVoice)
     const messages = blogPilotPrompt({
       keywords: toArray(b.keywords as any),
       url: b.url,
       tone: b.tone!,
       wordCount: b.wordCount!,
       targetLinks: b.targetLinks!,
+      brandVoiceContext: brandVoiceContext || undefined,
     });
 
     await track(orgId, String(me._id), {

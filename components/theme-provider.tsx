@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
       {/* Avoid flash of wrong theme */}
-      <div style={{ visibility: mounted ? 'visible' : 'hidden' }}>{children}</div>
+      <div className="flex flex-col flex-1 min-h-0" style={{ visibility: mounted ? 'visible' : 'hidden' }}>{children}</div>
     </ThemeContext.Provider>
   );
 }

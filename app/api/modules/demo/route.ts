@@ -23,8 +23,8 @@ export async function POST(req: Request) {
   const me = await User.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId | string }>()
   if (!me?.orgId) return new Response('Forbidden', { status: 403 })
   const org = await Org.findById(me.orgId).lean()
-  const myRole = org?.members?.find((m: any) => String(m.userId) === String(me._id))?.role || 'member'
-  if (!['owner','admin'].includes(String(myRole))) return new Response('Forbidden', { status: 403 })
+  const myRole = org?.members?.find((m: any) => String(m.userId) === String(me._id))?.role || 'editor'
+  if (!['owner','manager'].includes(String(myRole))) return new Response('Forbidden', { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const moduleKey = String(body.module || '')

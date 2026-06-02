@@ -4,7 +4,7 @@ export type FeatureKey = 'team_management' | 'api_access' | 'sla' | 'demo_mode';
 
 // Minimum plan required per feature
 export const featurePlan: Record<FeatureKey, Plan> = {
-  team_management: 'Business',
+  team_management: 'Starter',
   api_access: 'Business',
   sla: 'Business',
   demo_mode: 'Trial',

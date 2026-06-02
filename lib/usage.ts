@@ -2,7 +2,6 @@ import { Org } from '@/models/Org';
 import { PLAN_LIMITS, MeterKey } from '@/lib/limits';
 
 type Plan = keyof typeof PLAN_LIMITS;                  // 'Starter' | 'Pro' | 'Business'
-// type UsageKey = keyof typeof PLAN_LIMITS['Starter'];   // union of meter keys, e.g. 'clippilot_videos' | ...
 
 const PLAN_NORMALIZE: Record<string, Plan> = {
   Trial: 'Trial', trial: 'Trial', free: 'Trial',

@@ -1,24 +1,27 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import IterationPanel from '@/components/IterationPanel';
 
-const platformsAll = ['instagram','tiktok','linkedin','x', 'facebook'] as const;
-const voices = ['Friendly','Professional','Witty','Inspirational','Authoritative'] as const;
-const languageOptions = [
-  { label: 'English (US)', value: 'en-US' },
-  { label: 'Spanish', value: 'es-ES' },
-  { label: 'Persian', value: 'fa-IR' },
-  { label: 'Arabic', value: 'ar-SA' },
-  { label: 'Chinese (Simplified)', value: 'zh-CN' },
-  { label: 'French', value: 'fr-FR' },
-  { label: 'German', value: 'de-DE' },
-];
-const cadences = ['none','daily','weekly'] as const;
+// ── Constants ──────────────────────────────────────────────────────────────────
 
-type Item = {
-  platform: typeof platformsAll[number];
+const PLATFORMS = [
+  { key: 'instagram', label: 'Instagram', icon: '📸' },
+  { key: 'linkedin',  label: 'LinkedIn',  icon: '💼' },
+  { key: 'x',         label: 'X',         icon: '✕' },
+  { key: 'tiktok',    label: 'TikTok',    icon: '🎵' },
+  { key: 'facebook',  label: 'Facebook',  icon: '👥' },
+] as const;
+
+const TONES = ['Friendly', 'Professional', 'Witty', 'Inspirational', 'Authoritative'] as const;
+
+type Platform = typeof PLATFORMS[number]['key'];
+type Tone = typeof TONES[number];
+
+type Post = {
+  platform: Platform;
   headline: string;
   caption: string;
   hashtags: string[];
@@ -29,409 +32,471 @@ type Item = {
   imageDataUrl?: string | null;
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+// ── Post card ──────────────────────────────────────────────────────────────────
+
+function PostCard({
+  post, brief, onUpdate, cardRef, connectedPlatforms,
+}: {
+  post: Post;
+  brief: string;
+  onUpdate: (updated: Post) => void;
+  cardRef: (el: HTMLDivElement | null) => void;
+  connectedPlatforms: string[];
+}) {
+  const [copied,      setCopied]      = useState(false);
+  const [showExtras,  setShowExtras]  = useState(false);
+  const [publishing,  setPublishing]  = useState(false);
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [publishErr,  setPublishErr]  = useState<string | null>(null);
+
+  const platform = PLATFORMS.find(p => p.key === post.platform);
+  const canPublish = (post.platform === 'linkedin' || post.platform === 'x') &&
+    connectedPlatforms.includes(post.platform);
+
+  function copy() {
+    copyToClipboard(post.caption);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function publish() {
+    setPublishing(true); setPublishErr(null); setPublishedAt(null);
+    try {
+      const r = await fetch('/api/social/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: post.platform, caption: post.caption, hashtags: post.hashtags }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Publish failed');
+      setPublishedAt(new Date().toLocaleTimeString());
+    } catch (e: any) {
+      setPublishErr(e?.message || 'Something went wrong');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  return (
+    <div ref={cardRef} className="card p-5 space-y-4">
+      {/* Platform badge */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{platform?.icon}</span>
+          <span className="text-sm font-medium capitalize">{post.platform}</span>
+        </div>
+        {post.scheduledFor && (
+          <span className="text-xs text-brand-muted">{new Date(post.scheduledFor).toLocaleDateString()}</span>
+        )}
+      </div>
+
+      {/* Headline */}
+      {post.headline && (
+        <div className="font-semibold leading-snug">{post.headline}</div>
+      )}
+
+      {/* Caption */}
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/90">{post.caption}</div>
+
+      {/* Hashtags */}
+      {post.hashtags?.length > 0 && (
+        <div className="text-sm text-brand-muted/80">
+          {post.hashtags.map(h => `#${h}`).join(' ')}
+        </div>
+      )}
+
+      {/* Generated image */}
+      {post.imageDataUrl && (
+        <img
+          src={post.imageDataUrl}
+          alt={post.altText || post.headline}
+          className="w-full rounded-xl border border-white/10 object-cover"
+        />
+      )}
+
+      {/* Publish feedback */}
+      {publishedAt && (
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          Published at {publishedAt}
+        </div>
+      )}
+      {publishErr && (
+        <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">{publishErr}</div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={copy}
+          className="btn-gold flex items-center gap-1.5 text-sm"
+        >
+          {copied ? (
+            <><svg viewBox="0 0 24 24" className="w-4 h-4"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> Copied!</>
+          ) : (
+            <><svg viewBox="0 0 24 24" className="w-4 h-4"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg> Copy</>
+          )}
+        </button>
+
+        {canPublish && !publishedAt && (
+          <button
+            type="button"
+            onClick={publish}
+            disabled={publishing}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
+          >
+            {publishing ? (
+              <><svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round"/></svg> Publishing…</>
+            ) : (
+              <><svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Publish to {post.platform === 'x' ? 'X' : 'LinkedIn'}</>
+            )}
+          </button>
+        )}
+
+        {(post.platform === 'linkedin' || post.platform === 'x') && !canPublish && (
+          <a href="/settings/social"
+            className="text-xs text-brand-muted hover:text-white transition underline underline-offset-2">
+            Connect {post.platform === 'x' ? 'X' : 'LinkedIn'} to publish →
+          </a>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowExtras(v => !v)}
+          className="btn-ghost text-sm"
+        >
+          {showExtras ? 'Less' : 'More ↓'}
+        </button>
+      </div>
+
+      {/* Extras (alt text, visual ideas) — collapsed by default */}
+      {showExtras && (
+        <div className="space-y-2 border-t border-white/10 pt-3 text-xs text-brand-muted">
+          {post.altText && (
+            <div><span className="font-medium text-white/60">Alt text:</span> {post.altText}</div>
+          )}
+          {post.visualIdeas?.length > 0 && (
+            <div>
+              <span className="font-medium text-white/60">Visual ideas:</span>
+              <ul className="mt-1 space-y-0.5 list-disc list-inside">
+                {post.visualIdeas.map((idea, i) => <li key={i}>{idea}</li>)}
+              </ul>
+            </div>
+          )}
+          {post.imageDataUrl && (
+            <button
+              className="btn-ghost text-xs"
+              onClick={() => {
+                const a = document.createElement('a');
+                a.href = post.imageDataUrl!;
+                a.download = `${post.platform}_visual.png`;
+                a.click();
+              }}
+            >
+              Download visual
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Iteration panel */}
+      <IterationPanel
+        module="postpilot"
+        content={post}
+        brief={brief}
+        onUpdate={(updated) => onUpdate({ ...post, ...updated })}
+      />
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
+
 export default function PostPilotPage() {
-  const [topic, setTopic] = useState('');
-  const [sourceUrl, setSourceUrl] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [voice, setVoice] = useState<typeof voices[number]>('Friendly');
-  const [language, setLanguage] = useState('en-US');
-  const [offers, setOffers] = useState('');
-  const [audience, setAudience] = useState('');
-  const [platforms, setPlatforms] = useState<string[]>(['instagram','x']);
-  const [variants, setVariants] = useState<number>(1);
-  const [projectId, setProjectId] = useState<string>('');
-  const [scheduledAt, setScheduledAt] = useState<string>(''); // ISO string from datetime-local
-  const [automationCadence, setAutomationCadence] = useState<typeof cadences[number]>('none');
-  const [automationSlots, setAutomationSlots] = useState<number>(3);
-  const [automationStart, setAutomationStart] = useState<string>(() => {
-    // default to today's local date (avoid UTC offset issues)
-    const now = new Date();
-    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return localMidnight.toISOString().slice(0, 10);
-  });
-  const [includeImages, setIncludeImages] = useState(false);
+  // Core fields
+  const [brief, setBrief]         = useState('');
+  const [platforms, setPlatforms] = useState<Platform[]>(['instagram', 'linkedin']);
 
+  // Advanced (hidden by default)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [tone, setTone]           = useState<Tone>('Friendly');
+  const [audience, setAudience]   = useState('');
+  const [language, setLanguage]   = useState('en-US');
+  const [variants, setVariants]   = useState(1);
+
+  // State
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string|null>(null);
-  const [items, setItems] = useState<Item[]>([]);
-  const [usage, setUsage] = useState<{ totalTokens?: number } | null>(null);
-  const [postId, setPostId] = useState<string | null>(null);
-  const [automationPlan, setAutomationPlan] = useState<string[]>([]);
+  const [error, setError]     = useState<string | null>(null);
+  const [posts, setPosts]     = useState<Post[]>([]);
 
-  // keep card refs for PNG export
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [fromResearch, setFromResearch] = useState(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
 
-  const toggle = (p: string) =>
-    setPlatforms((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
+  useEffect(() => {
+    try {
+      const storedBrief = sessionStorage.getItem('gp_research_brief');
+      if (storedBrief) { setBrief(storedBrief); setFromResearch(true); sessionStorage.removeItem('gp_research_brief'); }
+      sessionStorage.removeItem('gp_research_keywords');
+    } catch {}
+    fetch('/api/social/accounts')
+      .then(r => r.json())
+      .then(j => setConnectedPlatforms((j.accounts || []).map((a: any) => a.platform)))
+      .catch(() => {});
+  }, []);
 
-  async function onGenerate(e: React.FormEvent) {
+  const togglePlatform = (key: Platform) =>
+    setPlatforms(prev =>
+      prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
+    );
+
+  async function generate(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true); setError(null); setItems([]); setPostId(null); setUsage(null); setAutomationPlan([]);
+    if (!brief.trim()) { setError('Tell us what to post about.'); return; }
+    if (!platforms.length) { setError('Pick at least one platform.'); return; }
+
+    setLoading(true); setError(null); setPosts([]);
 
     try {
-      const automationStartIso = (() => {
-        if (automationCadence === 'none' || !automationStart) return undefined;
-        const parsed = new Date(automationStart);
-        if (isNaN(parsed.getTime())) throw new Error('Pick a valid start date.');
-        return parsed.toISOString();
-      })();
-
-      if (!topic.trim() && !sourceUrl.trim()) throw new Error('Enter a topic/brief or paste a website URL.');
-      if (!industry.trim()) throw new Error('Please provide your industry.');
-      if (!platforms.length) throw new Error('Pick at least one platform.');
-
-      const body: any = {
-        topic: topic.trim() || undefined,
-        sourceUrl: sourceUrl.trim() || undefined,
-        industry: industry.trim(),
-        offers: offers.trim() || undefined,
-        audience: audience.trim() || undefined,
-        voice,
-        language,
-        platforms,
-        variants,
-        automationCadence,
-        automationSlots,
-        automationStart: automationStartIso,
-        includeImages,
-      };
-      if (projectId) body.projectId = projectId.trim();
-      if (scheduledAt) body.scheduledAt = new Date(scheduledAt).toISOString();
-
       const res = await fetch('/api/postpilot/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          topic: brief.trim(),
+          industry: 'General',
+          voice: tone,
+          language,
+          audience: audience.trim() || undefined,
+          platforms,
+          variants,
+        }),
       });
 
-      const text = await res.text();
-      const json = (() => { try { return JSON.parse(text); } catch { return { ok: false, error: text }; } })();
+      const json = await res.json().catch(() => ({ ok: false, error: 'Server error' }));
+      if (!res.ok || json.ok === false) throw new Error(json?.error || 'Generation failed');
 
-      if (!res.ok || json.ok === false) {
-        throw new Error(json?.error ? (typeof json.error === 'string' ? json.error : 'Generation failed') : 'Generation failed');
-      }
-
-      setItems(Array.isArray(json.items) ? json.items : []);
-      setUsage(json.usage ?? null); // { totalTokens }
-      setPostId(json.postId ?? null);
-      setAutomationPlan(Array.isArray(json.automationPlan) ? json.automationPlan : []);
-
-      // resize refs array to match items for PNG export
-      cardRefs.current = new Array(json.items?.length || 0).fill(null);
+      const items: Post[] = Array.isArray(json.items) ? json.items : [];
+      setPosts(items);
+      cardRefs.current = new Array(items.length).fill(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
-  function copyText(txt: string) {
-    navigator.clipboard.writeText(txt);
-    alert('Copied!');
-  }
-
-  function exportCSVForItem(item: Item, index: number) {
-    const header = 'platform,scheduledFor,headline,hashtags,altText,caption\n';
-    const row = [
-      item.platform,
-      item.scheduledFor ? new Date(item.scheduledFor).toLocaleString() : '',
-      item.headline,
-      (item.hashtags || []).map((h: string) => `#${h}`).join(' '),
-      (item.altText || '').replace(/\n/g, ' '),
-      (item.caption || '').replace(/\n/g, ' '),
-    ]
-      .map((x) => `"${String(x).replace(/"/g, '""')}"`)
-      .join(',');
-    const blob = new Blob([header + row], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `postpilot_variant_${index + 1}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function exportPNG(idx: number) {
-    const el = cardRefs.current[idx];
-    if (!el) return;
-    const canvas = await html2canvas(el, { backgroundColor: '#0b0b0b', scale: 2 });
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `postpilot_${postId || 'preview'}_${idx + 1}.png`;
-    a.click();
-  }
-
-  function downloadImage(dataUrl: string, name: string) {
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `${name}.png`;
-    a.click();
-  }
+  const briefForIteration = brief.trim();
 
   return (
-    <div className="p-4 md:p-6 pt-6 space-y-6 max-w-5xl mx-auto">
-      <div className="card p-6 max-w-3xl mx-auto space-y-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-semibold">PostPilot — Create Smarter</h1>
-          <p className="text-sm text-brand-muted mt-2">
-            Stop spending hours on social content. Type what your business does and boom — captions, hashtags, CTAs,
-            and brand-ready visuals appear. Generate full campaigns (a week or even 30 days) in any language.
-            GrowthPilot designs the images too, so you can launch faster.
-          </p>
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+
+      {/* ── Header ── */}
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-2xl font-semibold">PostPilot</h1>
+          <Link href="/agent/research?module=postpilot" className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-violet-500/30 text-violet-400 hover:bg-violet-500/10 transition flex-shrink-0">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="currentColor" d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5l-1.5 1.5l-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16A6.5 6.5 0 0 1 3 9.5A6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14S14 12 14 9.5S12 5 9.5 5Z"/></svg>
+            Research first
+          </Link>
         </div>
-        <form onSubmit={onGenerate} className="mt-4 space-y-4">
-          <input
-            className="w-full rounded-md border p-3 text-sm"
-            placeholder="Website URL (auto-scan) — optional"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            type="url"
-          />
-          <textarea
-            className="w-full rounded-md border p-3"
-            placeholder="Topic / brief (optional if URL provided)…"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Voice</label>
-              <select
-                value={voice}
-                onChange={(e) => setVoice(e.target.value as any)}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-              >
-                {voices.map((v) => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Language</label>
-              <div className="w-full md:flex-1 flex flex-col gap-2">
-                <select
-                  value={languageOptions.some((opt) => opt.value === language) ? language : 'custom'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setLanguage(val === 'custom' ? '' : val);
-                  }}
-                  className="rounded-md border px-3 py-2 text-sm"
-                >
-                  {languageOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                  <option value="custom">Custom…</option>
-                </select>
-                {(!languageOptions.some((opt) => opt.value === language)) && (
-                  <input
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="rounded-md border px-3 py-2 text-sm"
-                    placeholder="Enter locale (e.g., es-MX)"
-                    required={!language}
-                  />
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Industry</label>
-              <input
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-                placeholder="e.g., SaaS marketing"
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Project</label>
-              <input
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-                placeholder="(optional) projectId"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Schedule</label>
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-24">Variants</label>
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={variants}
-                onChange={(e) => setVariants(Math.max(1, Math.min(5, Number(e.target.value) || 1)))}
-                className="w-full md:w-28 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
+        <p className="text-brand-muted mt-1 text-sm">
+          Describe what you want to post — get ready-to-publish captions for every platform.
+        </p>
+        {fromResearch && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-2">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            Brief pre-filled from Research Agent
           </div>
-
-          <div className="grid gap-3">
-            <div>
-              <label className="text-sm">Offers / promos</label>
-              <textarea
-                value={offers}
-                onChange={(e) => setOffers(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 text-sm"
-                placeholder="Seasonal discounts, bundles, CTAs"
-              />
-            </div>
-            <div>
-              <label className="text-sm">Target audience</label>
-              <textarea
-                value={audience}
-                onChange={(e) => setAudience(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 text-sm"
-                placeholder="Persona, pain points, preferences"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm">Platforms:</span>
-            {platformsAll.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => toggle(p)}
-                className={`px-3 py-1.5 rounded-xl text-sm border ${
-                  platforms.includes(p) ? 'border-white/20' : 'border-white/10 text-brand-muted'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <div className="w-full flex justify-end">
-              <button className="btn-gold w-full md:w-auto" disabled={loading}>
-                {loading ? 'Generating…' : 'Generate'}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-32">Automation</label>
-              <select
-                value={automationCadence}
-                onChange={(e) => setAutomationCadence(e.target.value as typeof cadences[number])}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-              >
-                {cadences.map((c) => (
-                  <option key={c} value={c}>
-                    {c === 'none' ? 'Manual / single run' : c === 'daily' ? 'Daily (auto)' : 'Weekly (auto)'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-32"># of posts</label>
-              <input
-                type="number"
-                min={1}
-                max={7}
-                value={automationSlots}
-                onChange={(e) => setAutomationSlots(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
-                className="w-full md:w-28 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-              <label className="text-sm md:w-32">Start date</label>
-              <input
-                type="date"
-                value={automationStart}
-                onChange={(e) => setAutomationStart(e.target.value)}
-                className="w-full md:flex-1 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={includeImages}
-                disabled
-                onChange={(e) => setIncludeImages(e.target.checked)}
-              />
-              Generate AI visuals
-            </label>
-          </div>
-
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          {!!usage?.totalTokens && (
-            <p className="text-xs text-brand-muted">
-              Tokens used (total): {usage.totalTokens.toLocaleString()}
-            </p>
-          )}
-        </form>
+        )}
       </div>
 
-      {!!automationPlan.length && (
-        <div className="card p-4">
-          <h2 className="text-lg font-semibold">Automation plan</h2>
-          <p className="text-sm text-brand-muted">{automationCadence === 'none' ? 'Single run' : `${automationCadence} cadence`} ({automationPlan.length} slots)</p>
-          <ol className="mt-3 space-y-1 text-sm text-brand-muted">
-            {automationPlan.map((d, idx) => (
-              <li key={d}>{idx + 1}. {new Date(d).toLocaleString()}</li>
-            ))}
-          </ol>
+      {/* ── Form ── */}
+      <form onSubmit={generate} className="card p-6 space-y-5">
+
+        {/* Main input */}
+        <div>
+          <label className="text-sm font-medium block mb-1.5">
+            What do you want to post about?
+          </label>
+          <textarea
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[color:var(--gold)] placeholder:text-brand-muted/60 leading-relaxed"
+            rows={4}
+            placeholder="e.g. We just launched our AI writing tool. It cuts content creation time in half. Targeting startup founders who are tired of slow content workflows."
+            value={brief}
+            onChange={e => setBrief(e.target.value)}
+            maxLength={2000}
+          />
+          <div className="text-right text-xs text-brand-muted mt-0.5">{brief.length}/2000</div>
         </div>
-      )}
 
-      {!!items.length && (
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold">
-            Variants <span className="text-brand-muted text-sm">({items.length})</span>
-          </h2>
-
-          <div className="mt-4 grid gap-6 md:grid-cols-2">
-            {items.map((v, i) => (
-              <div
-                key={`${v.platform}-${i}`}
-                ref={(el) => { cardRefs.current[i] = el; }}
-                className="card p-4 space-y-3 w-full"
+        {/* Platform selector */}
+        <div>
+          <label className="text-sm font-medium block mb-2">Platforms</label>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORMS.map(p => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => togglePlatform(p.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm border transition ${
+                  platforms.includes(p.key)
+                    ? 'border-[color:var(--gold)]/50 bg-[color:var(--gold)]/10 text-white'
+                    : 'border-white/10 text-brand-muted hover:border-white/20'
+                }`}
               >
-                <div className="flex items-center justify-between text-xs uppercase tracking-wide text-brand-muted">
-                  <span>{v.platform}</span>
-                  {v.scheduledFor && <span>{new Date(v.scheduledFor).toLocaleString()}</span>}
-                </div>
-                {v.headline && <h3 className="text-lg font-semibold">{v.headline}</h3>}
-                <pre className="whitespace-pre-wrap text-sm">{v.caption}</pre>
-                {!!v.hashtags?.length && (
-                  <div className="text-sm opacity-80">
-                    {v.hashtags.map((h: string) => `#${h}`).join(' ')}
-                  </div>
-                )}
-                {!!v.altText && (
-                  <div className="text-xs text-brand-muted">Alt text: {v.altText}</div>
-                )}
-                {!!v.visualIdeas?.length && (
-                  <div className="text-xs text-brand-muted">Ideas: {v.visualIdeas.join(' • ')}</div>
-                )}
-                {!!v.imageDataUrl && (
-                  <div className="space-y-2">
-                    <img src={v.imageDataUrl} alt={v.altText || v.headline || 'Post visual'} className="w-full rounded-xl border border-white/10 object-cover" />
-                    <button className="btn-ghost" type="button" onClick={() => downloadImage(v.imageDataUrl!, `${v.platform}_${i+1}`)}>Download visual</button>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <button className="btn-gold" type="button" onClick={() => copyText(v.caption)}>Copy</button>
-                  <button className="btn-gold" type="button" onClick={() => exportPNG(i)}>Export PNG</button>
-                  <button className="btn-ghost" type="button" onClick={() => exportCSVForItem(v, i)}>Export CSV</button>
-                </div>
-              </div>
+                <span>{p.icon}</span>
+                <span>{p.label}</span>
+              </button>
             ))}
           </div>
+        </div>
+
+        {/* Advanced toggle */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(v => !v)}
+          className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-white transition"
+        >
+          <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
+            <path fill="currentColor" d="m6 9 6 6 6-6H6Z"/>
+          </svg>
+          {showAdvanced ? 'Hide options' : 'Tone, audience & language'}
+        </button>
+
+        {/* Advanced options */}
+        {showAdvanced && (
+          <div className="grid gap-4 md:grid-cols-2 pt-1 border-t border-white/10">
+            {/* Tone */}
+            <div>
+              <label className="text-xs text-brand-muted block mb-1.5">Tone</label>
+              <div className="flex flex-wrap gap-1.5">
+                {TONES.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTone(t)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                      tone === t
+                        ? 'border-white/30 bg-white/10 text-white'
+                        : 'border-white/10 text-brand-muted hover:border-white/20'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Language */}
+            <div>
+              <label className="text-xs text-brand-muted block mb-1.5">Language</label>
+              <select
+                value={language}
+                onChange={e => setLanguage(e.target.value)}
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm focus:outline-none"
+              >
+                <option value="en-US">English</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+                <option value="de-DE">German</option>
+                <option value="ar-SA">Arabic</option>
+                <option value="zh-CN">Chinese (Simplified)</option>
+                <option value="fa-IR">Persian</option>
+              </select>
+            </div>
+
+            {/* Audience */}
+            <div className="md:col-span-2">
+              <label className="text-xs text-brand-muted block mb-1.5">Target audience <span className="opacity-60">(optional)</span></label>
+              <input
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[color:var(--gold)]"
+                placeholder="e.g. startup founders, B2B SaaS teams"
+                value={audience}
+                onChange={e => setAudience(e.target.value)}
+              />
+            </div>
+
+            {/* Variants */}
+            <div>
+              <label className="text-xs text-brand-muted block mb-1.5">Variants per platform</label>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setVariants(v => Math.max(1, v - 1))}
+                  className="w-8 h-8 rounded-lg border border-white/15 hover:bg-white/5 text-sm transition">−</button>
+                <span className="w-6 text-center text-sm font-medium">{variants}</span>
+                <button type="button" onClick={() => setVariants(v => Math.min(3, v + 1))}
+                  className="w-8 h-8 rounded-lg border border-white/15 hover:bg-white/5 text-sm transition">+</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-400">
+            {error}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading || !brief.trim() || !platforms.length}
+          className="w-full btn-gold py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-sm font-medium"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round"/>
+              </svg>
+              Generating…
+            </>
+          ) : (
+            <>✨ Generate Posts</>
+          )}
+        </button>
+      </form>
+
+      {/* ── Results ── */}
+      {posts.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">
+              Your posts{' '}
+              <span className="text-brand-muted font-normal text-sm">({posts.length})</span>
+            </h2>
+            <button
+              type="button"
+              className="text-xs text-brand-muted hover:text-white transition"
+              onClick={() => {
+                const all = posts.map(p =>
+                  `--- ${p.platform.toUpperCase()} ---\n${p.caption}\n${p.hashtags.map(h => `#${h}`).join(' ')}`
+                ).join('\n\n');
+                copyToClipboard(all);
+              }}
+            >
+              Copy all
+            </button>
+          </div>
+
+          {posts.map((post, i) => (
+            <PostCard
+              key={`${post.platform}-${i}`}
+              post={post}
+              brief={briefForIteration}
+              onUpdate={(updated) =>
+                setPosts(prev => prev.map((p, idx) => idx === i ? updated : p))
+              }
+              cardRef={(el) => { cardRefs.current[i] = el; }}
+              connectedPlatforms={connectedPlatforms}
+            />
+          ))}
         </div>
       )}
     </div>

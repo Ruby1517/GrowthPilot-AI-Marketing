@@ -11,18 +11,11 @@ html.dark { color-scheme: dark; }
 
 /* ===== Brand background that adapts to light/dark ===== */
 body {
-  /* light background */
-  --gp-bg: theme(colors.brand.bg); /* default fallback */
-
-  /* light teal glows */
-  --gp-glow1: rgba(20,184,166,0.10);
-  --gp-glow2: rgba(94,234,212,0.06);
-
   background:
-    radial-gradient(1200px 700px at 20% 0%, var(--gp-glow1), transparent 40%),
-    radial-gradient(1000px 600px at 100% 0%, var(--gp-glow2), transparent 45%),
-    theme(colors.brand.bg);
-  color: theme(colors.brand.text);
+    radial-gradient(900px 500px at 10% 0%, rgba(20,184,166,0.07), transparent 50%),
+    radial-gradient(800px 500px at 90% 10%, rgba(94,234,212,0.04), transparent 50%),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 html.dark body {
@@ -39,14 +32,15 @@ html.dark body {
   .card {
     @apply rounded-2xl border border-[color:var(--card-stroke,theme(colors.brand.stroke))] bg-[color:var(--card-bg,theme(colors.brand.card))] backdrop-blur-md;
   }
-  /* Light mode: make all .card backgrounds transparent, remove blur */
+  /* Light mode cards: white with clean border + shadow */
   html:not(.dark) .card {
-    background: transparent !important;
+    background: #ffffff !important;
+    border-color: rgba(220,228,240,0.95) !important;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow:
-      0 8px 24px rgba(0,0,0,0.08),
-      0 1px 3px rgba(0,0,0,0.04);
+      0 1px 3px rgba(0,0,0,0.06),
+      0 4px 16px rgba(0,0,0,0.06);
   }
   /* Dark glass look for cards */
   html.dark .card {
@@ -102,72 +96,85 @@ html.dark body {
     border-color: rgba(0,0,0,0.06);
   }
 
-  /* ---- Light‑mode sidebar shadow (gray, like navbar) ---- */
+  /* ---- Light-mode sidebar ---- */
   html:not(.dark) .sidebar-card {
+    background: #ffffff !important;
+    border-color: rgba(220,228,240,0.95) !important;
     box-shadow:
-      0 12px 24px rgba(0,0,0,0.10),    /* ambient */
-      0 2px 8px rgba(0,0,0,0.05),      /* lift */
-      inset 0 1px 0 rgba(255,255,255,0.60); /* subtle top highlight */
-    border-color: rgba(0,0,0,0.08);
-    /* Make sidebar background transparent in light mode */
-    background: transparent;
+      2px 0 12px rgba(0,0,0,0.05),
+      0 1px 3px rgba(0,0,0,0.04);
+    border-radius: 16px;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+
+  /* ---- Light-mode navbar ---- */
+  html:not(.dark) .glass-dark {
+    background: rgba(255,255,255,0.92) !important;
+    border-color: rgba(220,228,240,0.9) !important;
+    box-shadow: 0 1px 0 rgba(220,228,240,1), 0 2px 8px rgba(0,0,0,0.05);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  /* Light-mode text adjustments */
+  html:not(.dark) .text-brand-muted { color: hsl(220 12% 52%); }
+  html:not(.dark) .text-white\/90   { color: hsl(220 25% 14%); }
+  html:not(.dark) .text-white\/80   { color: hsl(220 20% 20%); }
+  html:not(.dark) .text-white       { color: hsl(220 25% 10%); }
 }
 
 /* ===== Design tokens (light + dark) ===== */
 @layer base {
   /* LIGHT */
   :root {
-    /* Light creamy background */
-    --background: 45 100% 97%;
-    --foreground: 0 0% 3.9%;
+    /* Clean cool-white background */
+    --background: 210 20% 97%;
+    --foreground: 220 25% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 220 25% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 220 25% 12%;
 
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 173 80% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 210 16% 93%;
+    --secondary-foreground: 220 25% 20%;
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 220 12% 48%;
 
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 173 60% 92%;
+    --accent-foreground: 173 80% 25%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 173 80% 36%;
 
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 173 80% 36%;
+    --chart-2: 43 74% 55%;
+    --chart-3: 197 60% 42%;
+    --chart-4: 280 60% 55%;
+    --chart-5: 27 87% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* Glass tokens (light) */
-    --glass-bg: rgba(255,255,255,0.55);
-    --glass-stroke: rgba(20,184,166,0.18);
-    /* Cards use these by default in light mode */
+    --glass-bg: rgba(255,255,255,0.80);
+    --glass-stroke: rgba(20,184,166,0.15);
     --card-bg: var(--glass-bg);
-    --card-stroke: var(--glass-stroke);
+    --card-stroke: rgba(220,228,240,0.9);
 
-    /* Light-mode accents: teal replaces gold */
-    --gold: #14B8A6;
-    --goldLight: #5EEAD4;
-    --btn-shadow: rgba(20,184,166,0.25);
+    /* Light-mode accents: teal */
+    --gold: #0D9488;
+    --goldLight: #14B8A6;
+    --btn-shadow: rgba(13,148,136,0.22);
   }
 
   /* DARK (via .dark on <html>) */
@@ -227,13 +234,6 @@ html.dark body {
   
 }
 
-body {
-  background:
-    radial-gradient(1200px 700px at 20% 0%, rgba(20,184,166,0.10), transparent 40%),
-    radial-gradient(1000px 600px at 100% 0%, rgba(94,234,212,0.06), transparent 45%),
-    hsl(var(--background)); /* ✅ dynamic background */
-  color: hsl(var(--foreground));
-}
 
 
 

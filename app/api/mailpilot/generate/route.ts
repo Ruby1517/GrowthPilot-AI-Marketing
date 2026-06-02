@@ -8,6 +8,7 @@ import { dbConnect } from '@/lib/db';
 import { assertWithinLimit } from '@/lib/usage';
 import { recordOverageRow } from '@/lib/overage';
 import { track } from '@/lib/track';
+import { safeLimitPerOrg } from '@/lib/ratelimit';
 
 const GenSchema = z.object({
   type: z.enum(['cold','warm','newsletter','nurture']),
@@ -53,6 +54,16 @@ export async function POST(req: NextRequest) {
     .lean()
     .catch(() => null)) as { orgId?: string | import('mongoose').Types.ObjectId } | null;
   const orgId = me?.orgId ? String(me.orgId) : null;
+
+  if (orgId) {
+    const rl = await safeLimitPerOrg(orgId)
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Rate limit exceeded. Please wait a moment.' }, {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.reset - Date.now()) / 1000)) },
+      })
+    }
+  }
 
   const body = await req.json();
   const parsed = GenSchema.safeParse(body);

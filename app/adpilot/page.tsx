@@ -1,10 +1,11 @@
 'use client';
-import { useState } from 'react';
 
-type PlatformKey = 'meta'|'google'|'tiktok'|'youtube';
-type PlatformVariant = {
-  platform: PlatformKey;
-  variant: 'A'|'B'|'C';
+import { useState } from 'react';
+import IterationPanel from '@/components/IterationPanel';
+
+type Ad = {
+  platform: string;
+  variant: string;
   angle: string;
   hook: string;
   primaryText: string;
@@ -13,36 +14,115 @@ type PlatformVariant = {
   cta: string;
   audience: string;
   creativeIdeas: string[];
-  videoScript?: string;
-  utm: { source: string; medium: string; campaign: string; content: string; term?: string };
+  utm: { source: string; medium: string; campaign: string; content: string };
 };
-type RetargetingAd = { headline: string; body: string; cta: string; audience: string; schedule: string };
-type CreativeConcept = { platform: PlatformKey|'general'; concepts: string[]; videoScript?: string };
-type ResultShape = {
-  platforms: Record<PlatformKey, PlatformVariant[]>;
-  retargeting: { summary: string; ads: RetargetingAd[] };
+
+type Result = {
+  platforms: Record<string, Ad[]>;
+  retargeting: { summary: string; ads: any[] };
   lookalikeIdeas: string[];
-  creativeConcepts: CreativeConcept[];
+  creativeConcepts: any[];
   testPlan: string;
 };
 
-const PLATFORM_LABELS: Record<PlatformKey, string> = {
-  meta: 'Meta (Facebook / Instagram)',
-  google: 'Google / PMAX',
-  tiktok: 'TikTok',
+const PLATFORM_LABELS: Record<string, string> = {
+  meta:    'Meta (FB / IG)',
+  google:  'Google',
+  tiktok:  'TikTok',
   youtube: 'YouTube',
 };
 
-export default function AdPilotPage() {
-  const [offer, setOffer] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ResultShape | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+const PLATFORM_ICONS: Record<string, string> = {
+  meta: '📘', google: '🔍', tiktok: '🎵', youtube: '▶️',
+};
 
-  async function handleGenerate() {
-    setLoading(true);
-    setErr(null);
-    setResult(null);
+function copy(text: string) { navigator.clipboard.writeText(text).catch(() => {}); }
+
+function AdCard({ ad }: { ad: Ad }) {
+  const [copied, setCopied] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  function copyAll() {
+    copy(`${ad.hook}\n\n${ad.primaryText}\n\nHeadlines: ${ad.headlines.join(' | ')}\nCTA: ${ad.cta}`);
+    setCopied(true); setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <span className="text-xs text-brand-muted uppercase tracking-wide">Variant {ad.variant}</span>
+          <div className="text-xs font-medium text-[color:var(--gold)] mt-0.5">{ad.angle}</div>
+        </div>
+        <button onClick={copyAll} className="btn-ghost text-xs flex-shrink-0">
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+
+      {/* Hook */}
+      <div className="text-sm font-semibold leading-snug">{ad.hook}</div>
+
+      {/* Primary text */}
+      <div className="text-sm text-white/80 leading-relaxed">{ad.primaryText}</div>
+
+      {/* Headlines */}
+      <div className="space-y-1">
+        {ad.headlines.slice(0, 2).map((h, i) => (
+          <div key={i} className="text-xs rounded-lg bg-white/5 border border-white/10 px-3 py-1.5">{h}</div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <div className="flex items-center gap-2 text-xs text-brand-muted">
+        <span className="px-2.5 py-1 rounded-full border border-white/15 text-white font-medium">{ad.cta}</span>
+        <span>· {ad.audience.slice(0, 60)}{ad.audience.length > 60 ? '…' : ''}</span>
+      </div>
+
+      {/* Extras collapsed */}
+      <button
+        type="button"
+        onClick={() => setShowDetails(v => !v)}
+        className="text-xs text-brand-muted hover:text-white transition flex items-center gap-1"
+      >
+        <svg viewBox="0 0 24 24" className={`w-3 h-3 transition-transform ${showDetails ? 'rotate-180' : ''}`}>
+          <path fill="currentColor" d="m6 9 6 6 6-6H6Z"/>
+        </svg>
+        {showDetails ? 'Less' : 'Descriptions, creative ideas & UTM'}
+      </button>
+
+      {showDetails && (
+        <div className="space-y-2 pt-1 border-t border-white/10 text-xs text-brand-muted">
+          {ad.descriptions?.length > 0 && (
+            <div>
+              <div className="font-medium text-white/60 mb-1">Descriptions</div>
+              {ad.descriptions.map((d, i) => <div key={i}>• {d}</div>)}
+            </div>
+          )}
+          {ad.creativeIdeas?.length > 0 && (
+            <div>
+              <div className="font-medium text-white/60 mb-1">Creative ideas</div>
+              {ad.creativeIdeas.map((c, i) => <div key={i}>• {c}</div>)}
+            </div>
+          )}
+          <div className="font-mono opacity-60">
+            UTM: ?utm_source={ad.utm.source}&utm_medium={ad.utm.medium}&utm_campaign={ad.utm.campaign}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AdPilotPage() {
+  const [offer,   setOffer]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result,  setResult]  = useState<Result | null>(null);
+  const [err,     setErr]     = useState<string | null>(null);
+  const [showStrategy, setShowStrategy] = useState(false);
+
+  async function generate() {
+    if (!offer.trim()) { setErr('Describe your offer first.'); return; }
+    setLoading(true); setErr(null); setResult(null);
     try {
       const r = await fetch('/api/adpilot/generate', {
         method: 'POST',
@@ -50,198 +130,155 @@ export default function AdPilotPage() {
         body: JSON.stringify({ offer }),
       });
       const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || 'Failed to generate');
+      if (!r.ok) throw new Error(j?.error || 'Generation failed');
       setResult(j.result);
-    } catch (e:any) {
-      setErr(e?.message || 'Failed to generate');
+    } catch (e: any) {
+      setErr(e?.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
   }
 
-  function haveRows() {
-    return !!result;
-  }
-
-  function downloadCSV() {
+  function exportCSV() {
     if (!result) return;
-    const rows: string[][] = [];
-    rows.push([
-      "Variant","Platform","Angle","Primary Text","Headline","Description","CTA","Audience",
-      "UTM Source","UTM Medium","UTM Campaign","UTM Content","UTM Term"
-    ]);
-
-    (Object.keys(result.platforms) as PlatformKey[]).forEach((platformKey) => {
-      const variants = result.platforms[platformKey] || [];
-      variants.forEach((ad) => {
-        ad.headlines.forEach((headline) => {
-          rows.push([
-            `${PLATFORM_LABELS[platformKey]} Variant ${ad.variant}`,
-            platformKey,
-            ad.angle,
-            ad.primaryText,
-            headline,
-            ad.descriptions.join(" | "),
-            ad.cta,
-            ad.audience,
-            ad.utm.source,
-            ad.utm.medium,
-            ad.utm.campaign,
-            ad.utm.content,
-            ad.utm.term || ""
-          ]);
-        });
-      });
+    const rows = [['Platform', 'Variant', 'Hook', 'Primary Text', 'Headlines', 'CTA', 'Audience']];
+    Object.entries(result.platforms).forEach(([platform, ads]) => {
+      ads.forEach(ad => rows.push([
+        PLATFORM_LABELS[platform] || platform,
+        ad.variant, ad.hook, ad.primaryText,
+        ad.headlines.join(' | '), ad.cta, ad.audience,
+      ]));
     });
-
-    const csv = rows.map(r => r.map(x => `"${String(x ?? '').replace(/"/g,'""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "adpilot-ads.csv";
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+      download: 'adpilot-ads.csv',
+    });
     a.click();
   }
 
-  function downloadJSON() {
-    if (!result) return;
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "adpilot-result.json";
-    a.click();
-  }
+  const platforms = result ? Object.keys(result.platforms).filter(k => result.platforms[k]?.length) : [];
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="card p-8 md:p-12">
-        <span className="badge mb-4">AdPilot</span>
-        <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-          Generate ad sets & <span className="text-[color:var(--gold,theme(colors.brand.gold))]">optimize faster</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-brand-muted">Input your offer or landing page; get A/B/C variants, angles, audiences, UTMs, and a test plan.</p>
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
 
-        <div className="mt-6 space-y-3">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold">AdPilot</h1>
+        <p className="text-brand-muted mt-1 text-sm">
+          Describe your offer — get ad copy variants for Meta, Google, and TikTok, ready to test.
+        </p>
+      </div>
+
+      {/* Form */}
+      <div className="card p-6 space-y-4">
+        <div>
+          <label className="text-sm font-medium block mb-1.5">What are you advertising?</label>
           <textarea
-            className="w-full rounded-md border p-3"
-            rows={3}
-            placeholder="Describe your offer or paste landing page URL..."
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[color:var(--gold)] placeholder:text-brand-muted/60 leading-relaxed"
+            rows={4}
+            placeholder={`Describe your product, offer, and target audience.\n\ne.g. GrowthPilot — AI marketing suite for startup founders. $49/mo. Cuts content creation time by 70%. Target: marketing managers at B2B SaaS companies.`}
             value={offer}
-            onChange={e=>setOffer(e.target.value)}
+            onChange={e => setOffer(e.target.value)}
           />
-          <div className="flex gap-3">
-            <button className="btn-gold" onClick={handleGenerate} disabled={loading || !offer.trim()}>
-              {loading ? "Generating…" : "Generate Ads"}
-            </button>
-            {err && <div className="text-sm text-red-500 px-2 py-1">{err}</div>}
-          </div>
         </div>
 
-        {result && (
-          <div className="mt-8 space-y-6">
-            {(Object.keys(result.platforms) as PlatformKey[]).map((platformKey) => {
-              const variants = result.platforms[platformKey] || [];
-              if (!variants.length) return null;
-              return (
-                <div key={platformKey} className="card p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-lg font-semibold">{PLATFORM_LABELS[platformKey]}</div>
-                    <span className="badge">Prospecting</span>
-                  </div>
-                  <div className="mt-3 grid md:grid-cols-2 gap-4">
-                    {variants.map((ad) => (
-                      <div key={`${platformKey}-${ad.variant}`} className="rounded-lg border border-white/10 p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">Variant {ad.variant} • {ad.angle}</div>
-                          <span className="text-xs text-brand-muted">{ad.utm.campaign}</span>
-                        </div>
-                        <div className="text-sm text-brand-muted">{ad.hook}</div>
-                        <div className="text-sm text-white/90 whitespace-pre-wrap">{ad.primaryText}</div>
-                        <div className="text-sm"><b>Headlines:</b> {ad.headlines.join(" • ")}</div>
-                        <div className="text-sm"><b>Descriptions:</b> {ad.descriptions.join(" | ")}</div>
-                        <div className="text-sm"><b>CTA:</b> {ad.cta}</div>
-                        <div className="text-sm"><b>Audience:</b> {ad.audience}</div>
-                        <div className="text-sm"><b>Creative ideas:</b>
-                          <ul className="list-disc list-inside text-brand-muted">
-                            {ad.creativeIdeas.map((idea) => <li key={idea}>{idea}</li>)}
-                          </ul>
-                        </div>
-                        {ad.videoScript && (
-                          <div>
-                            <div className="text-xs uppercase text-brand-muted">Video Script</div>
-                            <pre className="whitespace-pre-wrap bg-black/30 rounded-md p-2 text-xs">{ad.videoScript}</pre>
-                          </div>
-                        )}
-                        <div className="text-xs text-brand-muted">
-                          UTM: {ad.utm.source}/{ad.utm.medium} • {ad.utm.campaign} • {ad.utm.content}
-                        </div>
+        {err && (
+          <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-400">{err}</div>
+        )}
+
+        <button
+          onClick={generate}
+          disabled={loading || !offer.trim()}
+          className="w-full btn-gold py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-sm font-medium"
+        >
+          {loading ? (
+            <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" strokeLinecap="round"/></svg>Generating…</>
+          ) : '🎯 Generate Ads'}
+        </button>
+      </div>
+
+      {/* Results */}
+      {result && (
+        <div className="space-y-6">
+
+          {/* Platform tabs */}
+          {platforms.map(platformKey => (
+            <div key={platformKey} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{PLATFORM_ICONS[platformKey] || '📢'}</span>
+                <h2 className="font-semibold">{PLATFORM_LABELS[platformKey] || platformKey}</h2>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {result.platforms[platformKey].map(ad => (
+                  <AdCard key={`${platformKey}-${ad.variant}`} ad={ad} />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Strategy extras — collapsed */}
+          <button
+            type="button"
+            onClick={() => setShowStrategy(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-white transition w-full justify-center py-2 border-t border-white/10 pt-4"
+          >
+            <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${showStrategy ? 'rotate-180' : ''}`}>
+              <path fill="currentColor" d="m6 9 6 6 6-6H6Z"/>
+            </svg>
+            {showStrategy ? 'Hide strategy' : 'Retargeting, lookalike audiences & test plan'}
+          </button>
+
+          {showStrategy && (
+            <div className="space-y-4">
+              {result.retargeting?.ads?.length > 0 && (
+                <div className="card p-4 space-y-3">
+                  <div className="font-semibold text-sm">Retargeting ads</div>
+                  <p className="text-xs text-brand-muted">{result.retargeting.summary}</p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {result.retargeting.ads.map((ad: any, i: number) => (
+                      <div key={i} className="rounded-lg border border-white/10 p-3 text-sm space-y-1">
+                        <div className="font-medium">{ad.headline}</div>
+                        <div className="text-xs text-brand-muted">{ad.body}</div>
+                        <div className="text-xs">CTA: <span className="text-white">{ad.cta}</span></div>
                       </div>
                     ))}
                   </div>
                 </div>
-              );
-            })}
+              )}
 
-            <div className="card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-semibold">Retargeting Flow</div>
-                <span className="badge">Warm</span>
-              </div>
-              <p className="text-sm text-brand-muted whitespace-pre-wrap">{result.retargeting.summary}</p>
-              <div className="grid md:grid-cols-2 gap-3">
-                {result.retargeting.ads.map((ad) => (
-                  <div key={ad.headline} className="rounded-lg border border-white/10 p-3 text-sm space-y-1">
-                    <div className="font-medium">{ad.headline}</div>
-                    <div className="text-brand-muted">{ad.body}</div>
-                    <div><b>CTA:</b> {ad.cta}</div>
-                    <div><b>Audience:</b> {ad.audience}</div>
-                    <div className="text-xs text-brand-muted">{ad.schedule}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+              {result.lookalikeIdeas?.length > 0 && (
+                <div className="card p-4 space-y-2">
+                  <div className="font-semibold text-sm">Lookalike audience seeds</div>
+                  {result.lookalikeIdeas.map((idea, i) => (
+                    <div key={i} className="text-sm text-brand-muted">• {idea}</div>
+                  ))}
+                </div>
+              )}
 
-            <div className="card p-4 space-y-2">
-              <div className="text-lg font-semibold">Lookalike / LAL Seeds</div>
-              <ul className="list-disc list-inside text-sm text-white/80 space-y-1">
-                {result.lookalikeIdeas.map((idea) => <li key={idea}>{idea}</li>)}
-              </ul>
+              {result.testPlan && (
+                <div className="card p-4 space-y-2">
+                  <div className="font-semibold text-sm">Test plan</div>
+                  <div className="text-sm text-brand-muted whitespace-pre-wrap leading-relaxed">{result.testPlan}</div>
+                </div>
+              )}
             </div>
+          )}
 
-            <div className="card p-4 space-y-3">
-              <div className="text-lg font-semibold">Creative Concepts & Video Scripts</div>
-              <div className="grid md:grid-cols-2 gap-3">
-                {result.creativeConcepts.map((concept, idx) => (
-                  <div key={`${concept.platform}-${idx}`} className="rounded-lg border border-white/10 p-3 space-y-2 text-sm">
-                    <div className="font-medium">{concept.platform === 'general' ? 'General' : PLATFORM_LABELS[concept.platform]}</div>
-                    <ul className="list-disc list-inside text-white/80">
-                      {concept.concepts.map((c) => <li key={c}>{c}</li>)}
-                    </ul>
-                    {concept.videoScript && (
-                      <pre className="whitespace-pre-wrap bg-black/30 p-2 text-xs rounded-md">
-                        {concept.videoScript}
-                      </pre>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-4">
-              <b>Test Plan</b>
-              <pre className="whitespace-pre-wrap text-sm mt-2">{result.testPlan}</pre>
-            </div>
-
-            <div className="flex gap-2">
-              <button className="btn-ghost" onClick={downloadCSV} disabled={!haveRows()}>
-                Export CSV
-              </button>
-              <button className="btn-ghost" onClick={downloadJSON} disabled={!haveRows()}>
-                Save JSON
-              </button>
-            </div>
+          {/* Actions */}
+          <div className="flex gap-2 pt-2">
+            <button onClick={exportCSV} className="btn-ghost text-sm">Export CSV</button>
           </div>
-        )}
-      </div>
-    </section>
+
+          <IterationPanel
+            module="adpilot"
+            content={result}
+            brief={offer}
+            onUpdate={updated => setResult(updated)}
+            label="Refine these ads"
+          />
+        </div>
+      )}
+    </div>
   );
 }

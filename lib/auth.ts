@@ -55,6 +55,18 @@ export const { handlers, auth } = NextAuth({
   pages: { signIn: '/auth/signin' },
   session: { strategy: 'jwt' },
   callbacks: {
+    // Embed platformRole into the JWT on sign-in so middleware can read it
+    // without hitting the database on every request.
+    async jwt({ token, user, trigger }) {
+      if ((trigger === 'signIn' || trigger === 'signUp') && user?.email) {
+        try {
+          await dbConnect()
+          const dbUser = await User.findOne({ email: user.email }).lean<{ role?: string }>()
+          if (dbUser) token.platformRole = dbUser.role || 'user'
+        } catch {}
+      }
+      return token
+    },
     async signIn({ user, profile, account }) {
       await dbConnect()
       const email = user?.email || (profile as any)?.email
@@ -64,13 +76,13 @@ export const { handlers, auth } = NextAuth({
         const org = await Org.create({ name: `${user?.name || 'My'} Org` })
         dbUser = await User.create({
           name: user?.name, email, image: (user as any).image,
-          role: 'member', orgId: org._id
+          role: 'user', orgId: org._id
         })
         const team = await Team.create({ name: `${user.name || 'My'} Team`, ownerId: dbUser._id })
         dbUser.teamId = team._id
         await dbUser.save()
-        // Trial users default to member
-        org.members = [{ userId: dbUser._id, role: 'member', joinedAt: new Date() as any } as any]
+        // First user is the org owner
+        org.members = [{ userId: dbUser._id, role: 'owner', joinedAt: new Date() as any } as any]
         await org.save()
       }
 
@@ -119,16 +131,18 @@ export const { handlers, auth } = NextAuth({
         ;(session.user as any).id = dbUser._id.toString()
         ;(session.user as any).teamId = dbUser.teamId?.toString()
         ;(session.user as any).orgId = dbUser.orgId?.toString()
-        // Derive role from org membership, not from User document (prevents self-escalation)
-        let effectiveRole = dbUser.role || 'member'
+        // Platform role (superadmin = GrowthPilot staff)
+        ;(session.user as any).platformRole = dbUser.role || 'user'
+        // Org-level role (owner / manager / editor / viewer)
+        let orgRole: string = 'editor'
         if (dbUser.orgId) {
           try {
             const org = await Org.findById(dbUser.orgId).lean()
             const inOrg = org?.members?.find((m: any) => String(m.userId) === String(dbUser._id))
-            if (inOrg?.role) effectiveRole = inOrg.role
+            if (inOrg?.role) orgRole = inOrg.role
           } catch {}
         }
-        ;(session.user as any).role = effectiveRole
+        ;(session.user as any).role = orgRole
       }
       return session
     },

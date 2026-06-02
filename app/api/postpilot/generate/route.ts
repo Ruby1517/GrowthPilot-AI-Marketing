@@ -12,6 +12,7 @@ import { assertWithinLimit } from '@/lib/usage';         // If you want plan har
 import { track } from '@/lib/track';                     // If you want analytics events
 import { callImage } from '@/lib/provider';
 import { resolveModelSpec, type Plan as RoutingPlan } from '@/lib/model-routing';
+import { buildBrandVoicePrompt } from '@/lib/brand-voice';
 
 const cadences = ['none','daily','weekly'] as const;
 
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
     await UsersModel.updateOne({ _id: me._id }, { $set: { orgId: created._id } });
     await Org.updateOne(
       { _id: created._id },
-      { $push: { members: { userId: me._id, role: 'member', joinedAt: new Date() } } }
+      { $push: { members: { userId: me._id, role: 'owner', joinedAt: new Date() } } }
     );
     org = await Org.findById(created._id).lean();
     orgId = String(created._id);
@@ -170,6 +171,8 @@ export async function POST(req: Request) {
   let imageModel: string | null = imageModels[imageModelIndex] ?? null;
   let imageModelUnavailable = false;
 
+  const brandVoiceContext = buildBrandVoicePrompt((org as any)?.brandVoice) || undefined
+
   let effectiveTopic = topic?.trim() || '';
   let siteContext: { title: string | null; description: string | null; snippet: string | null } | null = null;
   if (sourceUrl) {
@@ -207,6 +210,7 @@ export async function POST(req: Request) {
             audience,
             sourceSummary,
             sourceUrl: sourceUrl || null,
+            brandVoiceContext,
           },
           { model: textModel }
         );

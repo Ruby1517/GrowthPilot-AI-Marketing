@@ -2,13 +2,11 @@ export const GROWTHPILOT_FAQ = `
 Title: GrowthPilot Overview and Plans
 Outline: Modules • Plans and Limits • Overage • Team Invites/Roles • Demos
 Body: GrowthPilot is an AI marketing suite with modules:
-- PostPilot: social content generation.
-- ClipPilot: turn long videos into viral-ready shorts (scene detection, captions, zoom/punch effects, music, B-roll suggestions); minutes are metered.
+- PostPilot: social content generation across platforms; posts are metered.
 - BlogPilot: SEO blog writer; words are metered.
-- AdPilot: generate ad variants (A/B/C) with UTMs.
-- LeadPilot: embeddable chatbot for lead capture.
-- MailPilot: draft and export email campaigns.
-- BrandPilot: brand assets and imagery.
+- AdPilot: generate ad variants (A/B/C) with UTMs; variants are metered.
+- LeadPilot: embeddable chatbot for lead capture; conversations are metered.
+- MailPilot: draft and export email campaigns; emails are metered.
 
 Plans: Starter, Pro, Business. Each plan has usage meters (e.g., blog words, email count, render minutes, ad variants, conversations, assets). When usage exceeds the plan cap and overage is enabled, extra units are billed per overage pricing.
 

@@ -1,4 +1,5 @@
 // app/layout.tsx
+import '@/lib/env'  // validate required env vars at startup
 import './globals.css';
 import { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
@@ -94,15 +95,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body className="min-h-screen">
+      <body className="h-screen flex flex-col overflow-hidden">
         {/* ThemeProvider toggles the .dark class and persists the choice */}
         <ThemeProvider>
           <AuthSessionProvider>
             <DemoModeBanner />
             <Navbar />
-            <div className="flex">
+            {/* min-h-0 lets flex children shrink below their natural height so overflow works */}
+            <div className="flex flex-1 min-h-0">
               <StudioSidebar />
-              <div className="flex-1">
+              <div className="flex-1 overflow-y-auto">
                 <main className="py-8 px-6 max-w-6xl mx-auto">{children}</main>
                 <footer className="py-10 px-6 text-center text-sm text-brand-muted max-w-6xl mx-auto space-y-2">
                   <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-xs md:text-sm">

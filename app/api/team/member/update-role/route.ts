@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({} as any));
   const memberId = String(body?.memberId || '');
   const role = String(body?.role || '');
-  if (!memberId || !['admin','member','viewer'].includes(role)) {
+  if (!memberId || !['manager','editor','viewer'].includes(role)) {
     return NextResponse.json({ ok: false, error: 'Invalid input' }, { status: 400 });
   }
 
@@ -28,16 +28,16 @@ export async function POST(req: Request) {
   }
 
   const toId = (v: any) => (v && typeof (v as any).toString === 'function') ? (v as any).toString() : String(v);
-  const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'member';
+  const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'editor';
   const target = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(memberId));
   if (!target) return NextResponse.json({ ok: false, error: 'Member not found' }, { status: 404 });
 
-  // Authorization: owners can change any; admins can only change member/viewer and cannot assign admin
+  // Authorization: owners can change any; managers can change editor/viewer but not assign manager
   if (meRole !== 'owner') {
-    if (meRole !== 'admin') return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    if (meRole !== 'manager') return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     if (target.role === 'owner') return NextResponse.json({ ok: false, error: 'Cannot modify owner' }, { status: 403 });
-    if (target.role === 'admin') return NextResponse.json({ ok: false, error: 'Cannot modify admin' }, { status: 403 });
-    if (role === 'admin') return NextResponse.json({ ok: false, error: 'Only owner can assign admin' }, { status: 403 });
+    if (target.role === 'manager') return NextResponse.json({ ok: false, error: 'Cannot modify another manager' }, { status: 403 });
+    if (role === 'manager') return NextResponse.json({ ok: false, error: 'Only owner can assign manager role' }, { status: 403 });
   }
 
   // Prevent changing own role to avoid lockouts (optional: allow downgrade by owner)

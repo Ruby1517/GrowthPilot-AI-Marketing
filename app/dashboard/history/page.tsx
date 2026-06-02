@@ -1,10 +1,8 @@
-// app/dashboard/history/page.tsx
 import { dbConnect } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import User from '@/models/User';
 import Org from '@/models/Org';
-import ClipJob from '@/models/ClipJob';
-import Link from 'next/link';
+import Generation from '@/models/Generation';
 import mongoose from 'mongoose';
 
 export default async function HistoryPage() {
@@ -17,28 +15,26 @@ export default async function HistoryPage() {
   const org = me.orgId ? await Org.findById(me.orgId).lean<{ _id: mongoose.Types.ObjectId }>() : null;
   if (!org) return <div className="p-6">Org not found.</div>;
 
-  const jobs = await (ClipJob as any).find({ orgId: org._id }).sort({ createdAt: -1 }).limit(100).lean().exec() as any[];
+  const gens = await (Generation as any).find({ orgId: org._id }).sort({ createdAt: -1 }).limit(100).lean().exec() as any[];
 
   return (
     <section className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">History</h1>
-      <div className="grid grid-cols-6 gap-2 text-sm">
-        <div className="text-brand-muted">ID</div>
-        <div className="text-brand-muted">Status</div>
-        <div className="text-brand-muted">Dur</div>
-        <div className="text-brand-muted">Variants</div>
-        <div className="text-brand-muted">Actual min</div>
-        <div className="text-brand-muted">Created</div>
-
-        {jobs.map((j:any) => (
-          <Link key={String(j._id)} href={`/clippilot/${j._id}`} className="contents">
-            <div className="truncate">{String(j._id).slice(-8)}</div>
-            <div className="capitalize">{j.status}</div>
-            <div>{Math.round(j.durationSec)}s</div>
-            <div>{j.variants}</div>
-            <div>{j.actualMinutes ?? 0}</div>
-            <div>{new Date(j.createdAt).toLocaleString()}</div>
-          </Link>
+      <h1 className="text-2xl font-semibold">Generation History</h1>
+      {gens.length === 0 && (
+        <p className="text-sm text-muted-foreground">No generations yet. Create your first piece of content from the sidebar.</p>
+      )}
+      <div className="grid grid-cols-4 gap-2 text-sm font-medium text-muted-foreground">
+        <div>Module</div>
+        <div>Status</div>
+        <div>Tokens</div>
+        <div>Created</div>
+        {gens.map((g: any) => (
+          <div key={String(g._id)} className="contents">
+            <div className="capitalize">{g.module}</div>
+            <div className="capitalize">{g.status}</div>
+            <div>{g.cost?.tokens ?? '—'}</div>
+            <div>{new Date(g.createdAt).toLocaleString()}</div>
+          </div>
         ))}
       </div>
     </section>

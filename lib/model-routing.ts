@@ -1,15 +1,14 @@
 export type ModuleKey =
-  | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot';
+  | 'postpilot' | 'blogpilot' | 'adpilot'
+  | 'leadpilot' | 'mailpilot';
 
 export type TaskKind =
-  | 'text.generate'       // structured writing (BlogPilot, PostPilot captions, Ad copy)
-  | 'image.generate'      // thumbnails, logos, hero images
-  | 'embedding.create'    // search/ranking
-  | 'moderation.check'    // safety gate
-  | 'speech.synthesize';  // ElevenLabs TTS
+  | 'text.generate'
+  | 'image.generate'
+  | 'embedding.create'
+  | 'moderation.check';
 
-export type ProviderId = 'openai:text' | 'openai:image' | 'openai:embedding' | 'openai:moderation' | 'elevenlabs:tts';
+export type ProviderId = 'openai:text' | 'openai:image' | 'openai:embedding' | 'openai:moderation';
 
 export type ModelSpec = { provider: ProviderId; model: string };
 
@@ -33,14 +32,6 @@ export const ROUTING: Record<ModuleKey, Partial<Record<TaskKind, ModelSpec>>> = 
   mailpilot: {
     'text.generate':     { provider: 'openai:text',      model: process.env.MAILPILOT_MODEL      || 'gpt-4o-mini' },
     'moderation.check':  { provider: 'openai:moderation',model: process.env.MODERATION_MODEL     || 'omni-moderation-latest' },
-  },
-  brandpilot: {
-    'image.generate':    { provider: 'openai:image',     model: process.env.BRANDPILOT_IMAGE_MODEL|| 'gpt-image-1' },
-    'text.generate':     { provider: 'openai:text',      model: process.env.BRANDPILOT_TEXT_MODEL || 'gpt-4o-mini' },
-  },
-  clippilot: {
-    'speech.synthesize': { provider: 'elevenlabs:tts',   model: process.env.ELEVENLABS_MODEL     || 'eleven_multilingual_v2' },
-    'text.generate':     { provider: 'openai:text',      model: process.env.CLIPPILOT_SCRIPT_MODEL|| 'gpt-4o-mini' },
   },
   leadpilot: {
     'text.generate':     { provider: 'openai:text',      model: process.env.LEADPILOT_MODEL      || 'gpt-4o-mini' },

@@ -10,7 +10,7 @@ export default function PostPilotLibraryPage() {
         <p className="text-brand-muted text-sm">Your generated social content will appear here.</p>
         <div className="pt-2 flex gap-3">
           <Link className="btn-gold text-sm" href="/postpilot">Create new content</Link>
-          <Link className="btn-ghost text-sm" href="/postpilot/landing">Back to landing</Link>
+          <Link className="btn-ghost text-sm" href="/dashboard">Dashboard</Link>
         </div>
       </div>
 

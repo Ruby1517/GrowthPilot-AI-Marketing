@@ -26,7 +26,7 @@ export async function POST() {
   const remaining = members.filter((m: any) => String(m.userId) !== meId);
   if (meMember.role === 'owner' && remaining.length > 0) {
     const nextOwner =
-      remaining.find((m: any) => m.role === 'admin') ||
+      remaining.find((m: any) => m.role === 'manager') ||
       remaining[0];
     if (nextOwner) {
       const idx = org.members.findIndex((m: any) => String(m.userId) === String(nextOwner.userId));

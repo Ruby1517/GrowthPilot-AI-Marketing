@@ -7,6 +7,9 @@ const connection = redisUrl ? new IORedis(redisUrl, { maxRetriesPerRequest: null
 export const postpilotQueue = connection ? new Queue('postpilot-schedule', { connection }) : null
 export const postpilotEvents = connection ? new QueueEvents('postpilot-schedule', { connection }) : null
 
+export const agentQueue     = connection ? new Queue('agent-campaign',    { connection }) : null
+export const autopilotQueue = connection ? new Queue('autopilot-checker', { connection }) : null
+
 export function startPostpilotWorker() {
   if (!connection || !postpilotQueue || !postpilotEvents) {
     console.warn('[postpilot] REDIS_URL missing; worker not started');

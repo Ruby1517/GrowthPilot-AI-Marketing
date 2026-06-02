@@ -29,8 +29,10 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   eslint: {
-    // Skip ESLint during builds (Vercel) to avoid legacy option issues; run locally instead.
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
   },
   experimental: {
     serverActions: {

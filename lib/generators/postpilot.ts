@@ -10,6 +10,7 @@ export type PostSpec = {
   audience?: string;
   sourceSummary?: string | null;
   sourceUrl?: string | null;
+  brandVoiceContext?: string | null;
 };
 
 export type GeneratedPost = {
@@ -46,6 +47,9 @@ export async function generatePlatformPost(
 ): Promise<GeneratedPost> {
   const p = spec.platform;
   const cfg = PLATFORM_CFG[p];
+  const systemPrompt = spec.brandVoiceContext
+    ? `${SYSTEM}\n\n${spec.brandVoiceContext}`
+    : SYSTEM;
 
   const userPrompt = `
 TOPIC/BRIEF: ${spec.topic}
@@ -72,7 +76,7 @@ Return JSON matching exactly:
     model,
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: SYSTEM },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
   });

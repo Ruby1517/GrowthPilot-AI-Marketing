@@ -65,9 +65,7 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     { key: 'postpilot_generated', label: 'PostPilot Posts' },
     { key: 'mailpilot_emails', label: 'MailPilot Emails' },
     { key: 'adpilot_variants', label: 'AdPilot Variants' },
-    { key: 'clippilot_exports', label: 'ClipPilot Exports' },
     { key: 'leadpilot_convos', label: 'LeadPilot Conversations' },
-    { key: 'brandpilot_assets', label: 'BrandPilot Assets' },
   ];
 
   return (
@@ -95,15 +93,6 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
         </CardContent>
       </Card>
 
-      {!isTrial && (
-        <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
-          <CardHeader><CardTitle>Brand Assets (MTD)</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div>Total assets generated: <b>{Number((data?.usage as any)?.brandpilot_assets ?? 0).toLocaleString()}</b></div>
-            {/* <Link href="/brandpilot" className="inline-block text-xs underline text-brand-muted hover:text-white">Open BrandPilot</Link> */}
-          </CardContent>
-        </Card>
-      )}
       {metersOrder.map(m => meter(m.key, m.label))}
     </div>
   );

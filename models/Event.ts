@@ -1,11 +1,11 @@
 // models/Event.ts
 import mongoose from 'mongoose';
 import type { Model } from 'mongoose';
-const { Schema, models, model } = mongoose;
+const { Schema } = mongoose
 
 export type ModuleKey =
-  | 'postpilot' | 'clippilot' | 'blogpilot' | 'adpilot'
-  | 'leadpilot' | 'mailpilot' | 'brandpilot' | 'auth';
+  | 'postpilot' | 'blogpilot' | 'adpilot'
+  | 'leadpilot' | 'mailpilot' | 'auth';
 
 export type EventType =
   | 'generation.requested' | 'generation.completed'
@@ -40,5 +40,5 @@ EventSchema.index({ orgId: 1, at: 1 });
 EventSchema.index({ orgId: 1, module: 1, type: 1, at: 1 });
 
 export const Event: Model<EventDoc> =
-  (models.Event as Model<EventDoc>) || model<EventDoc>('Event', EventSchema);
+  (mongoose.models.Event as Model<EventDoc>) || mongoose.model<EventDoc>('Event', EventSchema);
 export default Event;

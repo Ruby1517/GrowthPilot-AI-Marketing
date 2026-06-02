@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import type { ObjectId, Model } from 'mongoose';
-const { Schema, models, model } = mongoose;
+const { Schema } = mongoose
 
 export interface OverageDoc extends mongoose.Document {
   orgId: ObjectId;
@@ -56,5 +56,5 @@ OverageSchema.statics.markInvoiced = async function (ids: ObjectId[], invoiceId:
 };
 
 export const Overage: OverageModel =
-  (models.Overage as OverageModel) || model<OverageDoc, OverageModel>('Overage', OverageSchema);
+  (mongoose.models.Overage as OverageModel) || mongoose.model<OverageDoc, OverageModel>('Overage', OverageSchema);
 export default Overage;

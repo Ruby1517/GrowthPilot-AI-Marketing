@@ -1,12 +1,14 @@
 // models/Org.ts
 import mongoose from 'mongoose';
 import type { Model } from 'mongoose';
-const { Schema, models, model } = mongoose as typeof mongoose & {
-  models: mongoose.Mongoose['models'];
-  model: mongoose.Model<any>;
-};
+const { Schema } = mongoose
 
-export type Role = 'owner' | 'admin' | 'member' | 'viewer';
+// Org-level roles (team membership within an org)
+// owner   — full access + billing, one per org
+// manager — team management + all modules, no billing
+// editor  — content generation only, no team management
+// viewer  — read-only access
+export type Role = 'owner' | 'manager' | 'editor' | 'viewer';
 export const PLANS = ['Trial', 'Starter', 'Pro', 'Business'] as const;
 export type Plan = typeof PLANS[number];
 
@@ -17,6 +19,18 @@ function toCanonicalPlan(v: any): Plan {
   if (s === 'pro') return 'Pro';
   if (s === 'business') return 'Business';
   return 'Trial';
+}
+
+export interface BrandVoice {
+  companyName?: string;
+  productDescription?: string;
+  targetAudience?: string;
+  toneOfVoice?: string;
+  brandKeywords?: string[];
+  bannedWords?: string[];
+  contentGoals?: string[];
+  writingStyle?: string;
+  competitors?: string[];
 }
 
 export interface OrgDoc extends mongoose.Document {
@@ -38,6 +52,7 @@ export interface OrgDoc extends mongoose.Document {
     adVariants?: number;
     emailsDrafted?: number;
   };
+  brandVoice?: BrandVoice;
   members: Array<{ userId: mongoose.Types.ObjectId; role: Role; joinedAt: Date }>;
   createdAt: Date;
   updatedAt: Date;
@@ -63,10 +78,11 @@ const OrgSchema = new Schema<OrgDoc>(
     usagePeriodEnd: { type: Date },
     usage: { type: Schema.Types.Mixed, default: {} },
     kpi: { type: Schema.Types.Mixed, default: {} },
+    brandVoice: { type: Schema.Types.Mixed, default: {} },
     members: [
       {
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-        role: { type: String, enum: ['owner', 'admin', 'member', 'viewer'], default: 'member' },
+        role: { type: String, enum: ['owner', 'manager', 'editor', 'viewer'], default: 'editor' },
         joinedAt: { type: Date, default: Date.now },
       },
     ],
@@ -93,5 +109,5 @@ OrgSchema.pre('updateOne', normalizePlanInUpdate);
 OrgSchema.pre('updateMany', normalizePlanInUpdate);
 OrgSchema.pre('findOneAndUpdate', normalizePlanInUpdate);
 
-export const Org: Model<OrgDoc> = (models.Org as Model<OrgDoc>) || model<OrgDoc>('Org', OrgSchema);
+export const Org: Model<OrgDoc> = (mongoose.models.Org as Model<OrgDoc>) || mongoose.model<OrgDoc>('Org', OrgSchema);
 export default Org;

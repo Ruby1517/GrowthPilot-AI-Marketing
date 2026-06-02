@@ -1,116 +1,156 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 
 type Lead = {
-  _id: string; createdAt: string; site?: string; playbook?: string;
-  name?: string; email?: string; company?: string; message?: string; confidence?: number;
+  _id: string;
+  createdAt: string;
+  site?: string;
+  playbook?: string;
+  name?: string;
+  email?: string;
+  company?: string;
+  confidence?: number;
 };
 
+const PLAYBOOKS = [
+  { value: 'homepage', label: 'Homepage visitor',  desc: 'Qualify intent, collect contact' },
+  { value: 'pricing',  label: 'Pricing page',      desc: 'Answer questions, push to demo' },
+  { value: 'demo',     label: 'Demo request',       desc: 'Book a meeting instantly' },
+];
+
 export default function LeadPilotPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [embedPb, setEmbedPb] = useState('homepage');
-  const [targetSite, setTargetSite] = useState('');
+  const [playbook,    setPlaybook]    = useState('homepage');
+  const [targetSite,  setTargetSite]  = useState('');
+  const [leads,       setLeads]       = useState<Lead[]>([]);
+  const [copied,      setCopied]      = useState(false);
 
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const script = `<script src="${origin}/api/leadpilot/widget.js" data-playbook="${embedPb}"></script>`;
+  const embedScript = `<script src="${origin}/api/leadpilot/widget.js" data-playbook="${playbook}"></script>`;
 
-  async function load() {
+  async function loadLeads() {
     const r = await fetch('/api/leadpilot/leads', { cache: 'no-store' });
-    if (!r.ok) return setLeads([]);
+    if (!r.ok) return;
     const j = await r.json();
     setLeads(j.items || []);
   }
-  useEffect(()=>{ load(); },[]);
+
+  function copyScript() {
+    navigator.clipboard.writeText(embedScript).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  useEffect(() => { loadLeads(); }, []);
 
   return (
-    <section className="relative overflow-hidden px-4 md:px-6 pt-6">
-      <div className="card p-5 md:p-10 w-full max-w-5xl mx-auto">
-        <span className="badge mb-4">LeadPilot</span>
-        <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-          AI concierge for <span className="text-[color:var(--gold,theme(colors.brand.gold))]">lead capture</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-brand-muted">
-          Engage visitors, qualify their intent, and collect contact details in minutes. Drop the snippet on your site, pick a playbook, and watch leads route into this dashboard with transcripts you can export or forward.
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold">LeadPilot</h1>
+        <p className="text-brand-muted mt-1 text-sm">
+          Add an AI chatbot to your site in 30 seconds. It qualifies visitors and routes leads straight here.
         </p>
+      </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-          {/* Embed panel */}
-          <div className="card p-4 space-y-3">
-            <div className="text-sm text-brand-muted mb-1">Choose playbook (tone + intent)</div>
-            <select
-              className="w-full rounded-md border p-2.5"
-              value={embedPb}
-              onChange={e=>setEmbedPb(e.target.value)}
+      {/* Step 1: Choose playbook */}
+      <div className="card p-6 space-y-4">
+        <div className="text-xs uppercase tracking-widest text-brand-muted">Step 1 — Choose a playbook</div>
+        <div className="grid gap-2">
+          {PLAYBOOKS.map(p => (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => setPlaybook(p.value)}
+              className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                playbook === p.value
+                  ? 'border-[color:var(--gold)]/40 bg-[color:var(--gold)]/8'
+                  : 'border-white/10 hover:border-white/20'
+              }`}
             >
-              <option value="homepage">Homepage Lead Qualifier</option>
-              <option value="pricing">Pricing Helper</option>
-              <option value="demo">Book a Demo</option>
-            </select>
-
-            <div className="text-sm text-brand-muted">Embed code</div>
-            <pre className="p-3 rounded-md border text-xs overflow-auto break-words whitespace-pre-wrap break-all">{script}</pre>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <button className="btn-ghost w-full" onClick={()=>navigator.clipboard.writeText(script)}>Copy</button>
-              <a className="btn-ghost w-full" href={`/leadpilot/embed?pb=${embedPb}&site=localhost`} target="_blank" rel="noreferrer">
-                Open in new tab
-              </a>
-            </div>
-            <div className="mt-4 space-y-2">
-              <label className="text-sm text-brand-muted" htmlFor="target-site">Business URL or name (for testing)</label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  id="target-site"
-                  value={targetSite}
-                  onChange={(e) => setTargetSite(e.target.value)}
-                  className="flex-1 rounded-md border px-3 py-2 text-sm"
-                  placeholder="https://example.com or Acme Inc"
-                />
-                <a
-                  className="btn-gold whitespace-nowrap text-center w-full sm:w-auto"
-                  href={`/leadpilot/embed?pb=${embedPb}&site=${encodeURIComponent(targetSite || 'localhost')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open with site
-                </a>
+              <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 mt-1 ${playbook === p.value ? 'border-[color:var(--gold)] bg-[color:var(--gold)]' : 'border-white/30'}`} />
+              <div>
+                <div className="text-sm font-medium">{p.label}</div>
+                <div className="text-xs text-brand-muted">{p.desc}</div>
               </div>
-              <p className="text-xs text-brand-muted">
-                Paste a business URL or name to open the chatbot in a new tab with that context.
-              </p>
-            </div>
-            <p className="mt-2 text-xs text-brand-muted">
-              Preview in a new tab, then drop the snippet onto your site to go live.
-            </p>
-          </div>
-
-          {/* Leads panel */}
-          <div className="card p-4 space-y-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="font-medium">Latest leads</div>
-              <div className="grid gap-2 grid-cols-2 sm:flex sm:flex-row">
-                <a className="btn-ghost w-full sm:w-auto" href="/api/leadpilot/leads?format=csv">Export CSV</a>
-                <button className="btn-ghost w-full sm:w-auto" onClick={load}>Refresh</button>
-              </div>
-            </div>
-            <ul className="mt-3 divide-y divide-[color:var(--card-stroke,rgba(255,255,255,0.08))]">
-              {leads.map(l=>(
-                <li key={l._id} className="py-3 text-sm">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="font-medium leading-tight">
-                      {l.name || '(unknown)'} <span className="text-brand-muted">• {l.email || '-'}</span>
-                    </div>
-                    <div className="text-brand-muted text-xs sm:text-sm">{new Date(l.createdAt).toLocaleString()}</div>
-                  </div>
-                  <div className="mt-1 text-brand-muted">Company: {l.company || '-'}</div>
-                  <div className="mt-1 text-brand-muted">Playbook: {l.playbook || '-'} • Site: {l.site || '-'}</div>
-                </li>
-              ))}
-              {leads.length===0 && <li className="py-3 text-sm text-brand-muted">No leads yet.</li>}
-            </ul>
-          </div>
+            </button>
+          ))}
         </div>
       </div>
 
-    </section>
+      {/* Step 2: Embed code */}
+      <div className="card p-6 space-y-4">
+        <div className="text-xs uppercase tracking-widest text-brand-muted">Step 2 — Add to your site</div>
+        <div className="rounded-xl bg-black/40 border border-white/10 px-4 py-3 font-mono text-xs text-white/80 break-all">
+          {embedScript}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={copyScript} className={`flex-1 btn-gold text-sm flex items-center justify-center gap-1.5 ${copied ? 'opacity-80' : ''}`}>
+            {copied ? (
+              <><svg viewBox="0 0 24 24" className="w-4 h-4"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>Copied!</>
+            ) : (
+              'Copy embed code'
+            )}
+          </button>
+          <a
+            href={`/leadpilot/embed?pb=${playbook}&site=${encodeURIComponent(targetSite || 'localhost')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-ghost text-sm px-4 flex-shrink-0"
+          >
+            Preview ↗
+          </a>
+        </div>
+        <div>
+          <label className="text-xs text-brand-muted block mb-1.5">Test with your site <span className="opacity-60">(optional)</span></label>
+          <input
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[color:var(--gold)]"
+            placeholder="https://yoursite.com or company name"
+            value={targetSite}
+            onChange={e => setTargetSite(e.target.value)}
+          />
+        </div>
+        <p className="text-xs text-brand-muted">
+          Paste the embed code into your site&apos;s <code className="bg-white/10 px-1 rounded">&lt;body&gt;</code> tag. The chatbot appears in the bottom-right corner.
+        </p>
+      </div>
+
+      {/* Step 3: Leads */}
+      <div className="card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-widest text-brand-muted">Step 3 — Your leads</div>
+          <div className="flex items-center gap-2">
+            <a href="/api/leadpilot/leads?format=csv" className="btn-ghost text-xs">Export CSV</a>
+            <button onClick={loadLeads} className="btn-ghost text-xs">Refresh</button>
+          </div>
+        </div>
+
+        {leads.length === 0 ? (
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-8 text-center space-y-2">
+            <div className="text-2xl">💬</div>
+            <div className="text-sm font-medium">No leads yet</div>
+            <div className="text-xs text-brand-muted">Add the embed code to your site and leads will appear here.</div>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {leads.map(l => (
+              <div key={l._id} className="py-3 flex items-start justify-between gap-4">
+                <div className="space-y-0.5 min-w-0">
+                  <div className="text-sm font-medium">
+                    {l.name || '(no name)'}{l.email && <span className="text-brand-muted font-normal"> · {l.email}</span>}
+                  </div>
+                  {l.company && <div className="text-xs text-brand-muted">{l.company}</div>}
+                  <div className="text-xs text-brand-muted capitalize">{l.playbook || 'homepage'} playbook</div>
+                </div>
+                <div className="text-xs text-brand-muted flex-shrink-0">
+                  {new Date(l.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

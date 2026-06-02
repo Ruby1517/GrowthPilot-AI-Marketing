@@ -7,12 +7,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/dashboard',
     '/billing',
     '/postpilot',
-    '/clippilot',
     '/blogpilot',
     '/adpilot',
     '/leadpilot',
     '/mailpilot',
-    '/brandpilot',
   ]
   const now = new Date()
   return routes.map((path) => ({

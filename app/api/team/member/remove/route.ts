@@ -25,16 +25,16 @@ export async function POST(req: Request) {
   if (!memberId) return NextResponse.json({ ok: false, error: 'Invalid input' }, { status: 400 });
 
   const toId = (v: any) => (v && typeof (v as any).toString === 'function') ? (v as any).toString() : String(v);
-  const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'member';
+  const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'editor';
   const target = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(memberId));
   if (!target) return NextResponse.json({ ok: false, error: 'Member not found' }, { status: 404 });
 
   // Authorization rules
   if (target.role === 'owner') return NextResponse.json({ ok: false, error: 'Cannot remove owner' }, { status: 403 });
-  if (meRole === 'admin' && target.role !== 'member' && target.role !== 'viewer') {
-    return NextResponse.json({ ok: false, error: 'Admins can remove only members/viewers' }, { status: 403 });
+  if (meRole === 'manager' && target.role !== 'editor' && target.role !== 'viewer') {
+    return NextResponse.json({ ok: false, error: 'Managers can remove only editors/viewers' }, { status: 403 });
   }
-  if (!['owner','admin'].includes(meRole)) {
+  if (!['owner','manager'].includes(meRole)) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
   if (String(memberId) === String(me._id)) {

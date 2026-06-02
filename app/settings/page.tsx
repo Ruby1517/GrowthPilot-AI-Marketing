@@ -7,7 +7,7 @@ export default function SettingsPage() {
   const [org, setOrg] = useState<Org | null>(null)
   const [name, setName] = useState('')
   const [overage, setOverage] = useState(false)
-  const [myRole, setMyRole] = useState<'owner'|'admin'|'member'|'viewer'|'unknown'>('unknown')
+  const [myRole, setMyRole] = useState<'owner'|'manager'|'editor'|'viewer'|'unknown'>('unknown')
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -20,7 +20,7 @@ export default function SettingsPage() {
     setOrg(j)
     setName(j.name || '')
     setOverage(!!j.overageEnabled)
-    setMyRole((j.myRole as any) || 'member')
+    setMyRole((j.myRole as any) || 'editor')
     setLoading(false)
     // plan is display-only; upgrading handled via billing page
   }
@@ -55,7 +55,7 @@ export default function SettingsPage() {
             <div className="text-sm text-brand-muted mb-1">Organization name</div>
             <input
               className="w-full rounded-xl border border-[color:var(--card-stroke,rgba(255,255,255,0.08))] bg-transparent px-3 py-2 outline-none"
-              disabled={loading || (myRole !== 'owner' && myRole !== 'admin')}
+              disabled={loading || (myRole !== 'owner' && myRole !== 'manager')}
               value={name}
               onChange={e=>setName(e.target.value)}
               placeholder="Your Company"
@@ -67,7 +67,7 @@ export default function SettingsPage() {
               type="checkbox"
               checked={overage}
               onChange={e=>setOverage(e.target.checked)}
-              disabled={loading || (myRole !== 'owner' && myRole !== 'admin')}
+              disabled={loading || (myRole !== 'owner' && myRole !== 'manager')}
             />
             <label htmlFor="ovg" className="text-sm">Enable overage billing when usage exceeds plan limits</label>
           </div>
@@ -78,12 +78,12 @@ export default function SettingsPage() {
           <div className="mt-2">
             <a className="btn-ghost" href="/billing">Upgrade Plan</a>
           </div>
-          {(myRole !== 'owner' && myRole !== 'admin') && (
-            <div className="text-xs text-brand-muted mt-2">Only owners/admins can change org settings.</div>
+          {(myRole !== 'owner' && myRole !== 'manager') && (
+            <div className="text-xs text-brand-muted mt-2">Only owners/managers can change org settings.</div>
           )}
         </div>
         <div className="mt-5 flex items-center gap-3">
-          <button className="btn-gold" onClick={save} disabled={saving || (myRole !== 'owner' && myRole !== 'admin')}>
+          <button className="btn-gold" onClick={save} disabled={saving || (myRole !== 'owner' && myRole !== 'manager')}>
             {saving ? 'Saving…' : 'Save Settings'}
           </button>
           {savedAt && <div className="text-xs text-brand-muted">Saved</div>}

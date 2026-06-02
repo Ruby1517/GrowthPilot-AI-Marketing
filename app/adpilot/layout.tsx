@@ -3,22 +3,19 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import ModuleGuard from '@/components/ModuleGuard';
 
-export default function AdPilotLayout({ children }: { children: ReactNode }) {
+export default function Layout({ children }: { children: ReactNode }) {
   const { status } = useSession();
-  const pathname = usePathname();
   const router = useRouter();
-  const isLanding = pathname?.startsWith('/adpilot/landing') ?? false;
 
   useEffect(() => {
-    if (status === 'unauthenticated' && !isLanding) {
-      router.replace('/adpilot/landing');
+    if (status === 'unauthenticated') {
+      router.replace('/api/auth/signin');
     }
-  }, [status, isLanding, router]);
+  }, [status, router]);
 
-  if (isLanding) return <>{children}</>;
   if (status === 'unauthenticated') return null;
 
   return <ModuleGuard module="adpilot">{children}</ModuleGuard>;

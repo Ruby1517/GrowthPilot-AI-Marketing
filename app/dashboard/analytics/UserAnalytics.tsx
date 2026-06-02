@@ -1,16 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { PLAN_LIMITS, type MeterKey } from '@/lib/limits';
-import { canAccess } from '@/lib/access';
 import type { Plan, ModuleKey } from '@/lib/modules';
 
 type AnalyticsData = {
   usage?: Partial<Record<MeterKey, number>>;
-  period?: { plan?: Plan | null };
 };
 
 type Props = {
@@ -19,92 +14,93 @@ type Props = {
   role: string;
 };
 
-const MODULE_METERS: Array<{ module: ModuleKey; meter: MeterKey; label: string }> = [
-  { module: 'postpilot', meter: 'postpilot_generated', label: 'PostPilot Posts' },
-  { module: 'blogpilot', meter: 'blogpilot_words', label: 'BlogPilot Words' },
-  { module: 'mailpilot', meter: 'mailpilot_emails', label: 'MailPilot Emails' },
-  { module: 'adpilot', meter: 'adpilot_variants', label: 'AdPilot Variants' },
-  { module: 'leadpilot', meter: 'leadpilot_convos', label: 'LeadPilot Conversations' },
-  { module: 'clippilot', meter: 'clippilot_exports', label: 'ClipPilot Exports' },
-  { module: 'brandpilot', meter: 'brandpilot_assets', label: 'BrandPilot Assets' },
+const METERS: Array<{ module: ModuleKey; meter: MeterKey; icon: string; label: string }> = [
+  { module: 'postpilot', meter: 'postpilot_generated', icon: '📱', label: 'PostPilot — Posts' },
+  { module: 'blogpilot', meter: 'blogpilot_words',     icon: '📝', label: 'BlogPilot — Words' },
+  { module: 'adpilot',   meter: 'adpilot_variants',    icon: '🎯', label: 'AdPilot — Variants' },
+  { module: 'leadpilot', meter: 'leadpilot_convos',    icon: '💬', label: 'LeadPilot — Conversations' },
+  { module: 'mailpilot', meter: 'mailpilot_emails',    icon: '📧', label: 'MailPilot — Emails' },
 ];
 
-export default function UserAnalytics({ initial, plan, role }: Props) {
+function fmt(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
+  return n.toLocaleString();
+}
+
+function barColor(p: number) {
+  if (p >= 90) return 'bg-rose-500';
+  if (p >= 70) return 'bg-amber-400';
+  return 'bg-[color:var(--gold,theme(colors.brand.gold))]';
+}
+
+export default function UserAnalytics({ initial, plan }: Props) {
   const usage = initial?.usage || {};
-  const unlocked = useMemo(
-    () =>
-      MODULE_METERS.filter((m) =>
-        canAccess({
-          userPlan: plan,
-          module: m.module,
-          userRole: role,
-        })
-      ),
-    [plan, role]
-  );
 
-  const meterCard = (m: { meter: MeterKey; label: string }) => {
-    const used = Number(usage?.[m.meter] ?? 0);
+  const meters = METERS.map(m => {
+    const used  = Number(usage?.[m.meter] ?? 0);
     const limit = Number(PLAN_LIMITS[plan]?.[m.meter] ?? 0);
-    const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-    const locked = limit === 0;
-
-    return (
-      <Card key={m.meter} className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base">{m.label}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {locked ? (
-            <div className="text-sm text-brand-muted space-y-2">
-              <div>Not included in {plan}. Upgrade to unlock.</div>
-              <Link href="/billing" className="btn-ghost text-xs inline-flex">View plans</Link>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span>
-                  <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{used.toLocaleString()}</span>
-                  <span> / </span>
-                  <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{limit.toLocaleString()}</span>
-                </span>
-                <span className="text-[color:var(--gold,theme(colors.brand.gold))]">{pct}%</span>
-              </div>
-              <Progress value={pct} />
-            </>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
+    const p     = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+    return { ...m, used, limit, p };
+  });
 
   return (
     <div className="space-y-4">
-      <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base">Your usage</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm space-y-2">
-          <div>
-            Plan: <b>{plan}</b>
+      {/* Plan summary */}
+      <div className="card p-5 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="font-semibold text-lg">{plan} plan</div>
+          <div className="text-sm text-brand-muted mt-1">
+            Usage shown is your organisation&apos;s total for the current billing period.
           </div>
-          <div className="text-brand-muted">
-            You can use the modules listed below based on your current plan. These limits are per organization; usage shown here reflects your team&apos;s totals.
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-        {unlocked.map((m) => meterCard(m))}
-        {unlocked.length === 0 && (
-          <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
-            <CardHeader><CardTitle className="text-base">No modules available</CardTitle></CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div>Upgrade to unlock modules for your team.</div>
-              <Link href="/billing" className="btn-ghost text-xs inline-flex">See plans</Link>
-            </CardContent>
-          </Card>
+        </div>
+        {plan === 'Trial' && (
+          <Link href="/billing" className="btn-gold text-sm flex-shrink-0">Upgrade plan →</Link>
         )}
+      </div>
+
+      {/* Usage cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {meters.map(m => (
+          <div key={m.meter} className="card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{m.icon}</span>
+              <span className="text-sm font-medium">{m.label}</span>
+            </div>
+
+            {m.limit === 0 ? (
+              <div className="text-sm text-brand-muted space-y-2">
+                <div>Not available on {plan}.</div>
+                <Link href="/billing" className="text-xs underline hover:text-white">View plans</Link>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-semibold">{fmt(m.used)}</span>
+                  <span className="text-sm text-brand-muted">/ {fmt(m.limit)}</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${barColor(m.p)}`} style={{ width: `${m.p}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-brand-muted">
+                    <span>{m.p}% used</span>
+                    <span>{fmt(Math.max(0, m.limit - m.used))} remaining</span>
+                  </div>
+                </div>
+                {m.p >= 80 && (
+                  <div className="text-xs text-amber-400 flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>
+                      {m.p >= 100 ? 'Limit reached — ' : 'Near limit — '}
+                      <Link href="/billing" className="underline hover:text-white">upgrade or enable overage</Link>
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

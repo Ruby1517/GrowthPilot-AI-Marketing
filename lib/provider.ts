@@ -2,7 +2,6 @@ import OpenAI from "openai";
 
 // --- ENV ---
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const ELEVEN_API_KEY = process.env.ELEVENLABS_API_KEY || "";
 
 // --- Types ---
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -38,17 +37,6 @@ export type EmbeddingResult = { vectors: number[][] };
 export type ModerationOptions = { input: string; model: string };
 export type ModerationResult = { flagged: boolean; categories?: any; raw?: any };
 
-export type TTSOptions = {
-  text: string;
-  voiceId?: string;
-  model?: string;       // elevenlabs model, e.g., 'eleven_multilingual_v2'
-  outputFormat?: string;// 'mp3_44100_128' etc.
-  stability?: number;
-  similarityBoost?: number;
-  style?: number;
-  useSpeakerBoost?: boolean;
-};
-export type TTSResult = { audioBuffer: Buffer; secondsEstimate: number; characters: number };
 
 // --- utils ---
 function estimateTokens(str: string) { return Math.ceil((str?.length || 0) / 4); }
@@ -56,11 +44,6 @@ function toMessages(msgs: ChatMessage[]) {
   const hasSystem = msgs.some(m => m.role === 'system');
   return hasSystem ? msgs : [{ role: 'system', content: 'You are a helpful assistant.' }, ...msgs];
 }
-function estimateSpeechSeconds(text: string) {
-  const words = (text.trim().match(/\b\w+\b/g) || []).length;
-  return Math.max(1, Math.round(words / 2.67));
-}
-
 // --- TEXT ---
 export async function callText(opts: TextOptions): Promise<TextResult> {
   if (!OPENAI_API_KEY || process.env.MOCK_PROVIDER === 'true') {
@@ -137,38 +120,3 @@ export async function callModeration(opts: ModerationOptions): Promise<Moderatio
   return { flagged: !!res.flagged, categories: res.categories, raw: r };
 }
 
-// --- ELEVENLABS TTS ---
-export async function callTTS(opts: TTSOptions): Promise<TTSResult> {
-  if (!ELEVEN_API_KEY || process.env.MOCK_PROVIDER === 'true') {
-    const mock = Buffer.from([]);
-    return { audioBuffer: mock, secondsEstimate: estimateSpeechSeconds(opts.text), characters: opts.text.length };
-  }
-  const voiceId = opts.voiceId || process.env.ELEVENLABS_VOICE_ID || 'Rachel';
-  const modelId = opts.model || process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2';
-  const format = opts.outputFormat || process.env.ELEVENLABS_OUTPUT_FORMAT || 'mp3_44100_128';
-
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': ELEVEN_API_KEY,
-      'Content-Type': 'application/json',
-      'Accept': `audio/${format.startsWith('mp3') ? 'mpeg' : format}`
-    },
-    body: JSON.stringify({
-      text: opts.text,
-      model_id: modelId,
-      voice_settings: {
-        stability: typeof opts.stability === 'number' ? opts.stability : 0.5,
-        similarity_boost: typeof opts.similarityBoost === 'number' ? opts.similarityBoost : 0.75,
-        style: typeof opts.style === 'number' ? opts.style : 0.0,
-        use_speaker_boost: typeof opts.useSpeakerBoost === 'boolean' ? opts.useSpeakerBoost : true,
-      }
-    })
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(()=> '');
-    throw new Error(`ElevenLabs TTS failed (${res.status}): ${t}`);
-  }
-  const audioBuffer = Buffer.from(await res.arrayBuffer());
-  return { audioBuffer, secondsEstimate: estimateSpeechSeconds(opts.text), characters: opts.text.length };
-}

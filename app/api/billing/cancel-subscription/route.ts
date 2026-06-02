@@ -19,8 +19,8 @@ export async function POST(req: Request) {
   const org = await Org.findById(me.orgId);
   if (!org) return new Response('Org not found', { status: 404 });
 
-  const myRole = org.members?.find((m: any) => String(m.userId) === String(me._id))?.role || 'member';
-  if (!['owner', 'admin'].includes(myRole)) return new Response('Forbidden', { status: 403 });
+  const myRole = org.members?.find((m: any) => String(m.userId) === String(me._id))?.role || 'editor';
+  if (myRole !== 'owner') return new Response('Forbidden — only owner can cancel subscription', { status: 403 });
 
   let subId = org.subscription?.id || null;
   if (!subId && org.billingCustomerId) {

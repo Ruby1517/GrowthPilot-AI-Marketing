@@ -22,8 +22,8 @@ export default async function AnalyticsPage({ searchParams }: Search) {
   const me = await (await import('@/models/User')).default.findOne({ email: session.user.email }).lean<{ _id: mongoose.Types.ObjectId; orgId?: mongoose.Types.ObjectId; role?: string }>();
   if (!me) return <div className="p-6">User not found.</div>;
 
-  const role = String((me as any).role || 'member');
-  const isAdmin = ['admin','owner'].includes(role);
+  const role = String((me as any).role || 'user');
+  const isAdmin = role === 'superadmin';
 
   const requestedOrgIdRaw = searchParams?.orgId;
   const requestedOrgId = typeof requestedOrgIdRaw === 'string' ? requestedOrgIdRaw : Array.isArray(requestedOrgIdRaw) ? requestedOrgIdRaw[0] : undefined;

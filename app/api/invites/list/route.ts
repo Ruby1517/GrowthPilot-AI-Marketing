@@ -13,10 +13,6 @@ export async function GET() {
   const orgId = (me as any)?.orgId;
   const org = orgId ? await Org.findById(orgId).lean() : null;
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
-  if (String((org as any).plan || 'Trial') !== 'Business') {
-    return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
-  }
-
   const invites = await Invite.find({ orgId: org._id, status: 'pending' }).sort({ createdAt: -1 }).lean();
   return NextResponse.json({ ok: true, invites: invites.map((i: any) => ({ _id: String(i._id), email: i.email, role: i.role, token: i.token, expiresAt: i.expiresAt })) });
 }

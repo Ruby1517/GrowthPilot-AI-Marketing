@@ -15,8 +15,8 @@ export async function POST() {
   const orgId = (me as any)?.orgId;
   const org = orgId ? await Org.findById(orgId).lean().catch(()=>null) : null;
   const meId = String((me as any)?._id || '');
-  const myRole = org?.members?.find((m:any) => String(m.userId) === meId)?.role || 'member';
-  if (!['owner','admin'].includes(myRole)) {
+  const myRole = org?.members?.find((m:any) => String(m.userId) === meId)?.role || 'editor';
+  if (!['owner','manager'].includes(myRole)) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
@@ -29,7 +29,7 @@ export async function POST() {
   ];
   const draft = `# GrowthPilot Pricing Comparison\n\n` +
 `This guide compares Starter, Pro, and Business plans and how they map to modules and usage caps.\n\n` +
-`## Modules\n- PostPilot: Social posts (meter: postpilot_generated)\n- ClipPilot: Exports (meter: clippilot_exports)\n- BlogPilot: Words (meter: blogpilot_words)\n- AdPilot: Ad variants (meter: adpilot_variants)\n- LeadPilot: Conversations (meter: leadpilot_convos)\n- MailPilot: Emails (meter: mailpilot_emails)\n- BrandPilot: Assets (meter: brandpilot_assets)\n\n` +
+`## Modules\n- PostPilot: Social posts (meter: postpilot_generated)\n- BlogPilot: Words (meter: blogpilot_words)\n- AdPilot: Ad variants (meter: adpilot_variants)\n- LeadPilot: Conversations (meter: leadpilot_convos)\n- MailPilot: Emails (meter: mailpilot_emails)\n\n` +
 `## Plan Caps\nEach plan defines caps per meter. When usage exceeds caps and overage is enabled, extra units incur charges based on the overage price per meter.\n\n` +
 `## Overage\nOverage is recorded and invoiced. Admins can issue invoices from the dashboard.\n\n` +
 `## Upgrade Guidance\nUpgrade when you consistently reach caps or need advanced modules.\n`;
