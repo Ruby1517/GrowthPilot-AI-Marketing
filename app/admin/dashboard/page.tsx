@@ -35,6 +35,7 @@ function fmt(n: number) {
 }
 
 const PLAN_PRICES: Record<Plan, number> = { Trial: 0, Starter: 49, Pro: 149, Business: 399 };
+const PLAN_LABELS: Record<Plan, string> = { Trial: 'Free', Starter: 'Pro', Pro: 'Scale', Business: 'Enterprise' };
 const PLAN_COLOR: Record<Plan, string> = {
   Trial: 'bg-white/10 text-white/60',
   Starter: 'bg-sky-500/15 text-sky-400',
@@ -151,7 +152,7 @@ export default async function AdminDashboard() {
             const share = orgs.length > 0 ? Math.round((count / orgs.length) * 100) : 0;
             return (
               <div key={p} className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
-                <div className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full inline-block ${PLAN_COLOR[p]}`}>{p}</div>
+                <div className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full inline-block ${PLAN_COLOR[p]}`}>{PLAN_LABELS[p]}</div>
                 <div className="text-2xl font-semibold">{count}</div>
                 <div className="text-xs text-brand-muted">{share}% of orgs</div>
                 <div className="h-1 rounded-full bg-white/10 overflow-hidden">
@@ -197,7 +198,7 @@ export default async function AdminDashboard() {
                     <td className="px-5 py-3 font-medium">{o.name}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${PLAN_COLOR[o.plan]}`}>{o.plan}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${PLAN_COLOR[o.plan]}`}>{PLAN_LABELS[o.plan] ?? o.plan}</span>
                         {o.overageEnabled && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-brand-muted">+OVR</span>}
                       </div>
                     </td>

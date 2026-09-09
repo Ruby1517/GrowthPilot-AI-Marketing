@@ -47,9 +47,9 @@ const AGENTS = [
 ];
 
 const PLANS = [
-  { name: 'Trial', price: 'Free', desc: 'Try every module with limited usage. No credit card.', features: ['All 5 modules', '10 posts · 5k blog words · 5 ads', '10 lead conversations', '3 email campaigns'] },
-  { name: 'Starter', price: '$49/mo', desc: 'For small teams shipping consistent content.', features: ['All 5 modules + all 3 agents', '200 posts · 50k words · 50 ads', '50 lead conversations', '50 email campaigns'], highlight: true },
-  { name: 'Pro', price: '$149/mo', desc: 'For growing teams with high content volume.', features: ['Everything in Starter', '2k posts · 500k words · 500 ads', '1k lead conversations', '2k email campaigns', 'Priority AI processing'] },
+  { name: 'Trial', label: 'Free', price: 'Free', desc: 'Try every module with limited usage. No credit card.', features: ['All 5 modules', '10 posts · 5k blog words · 5 ads', '10 lead conversations', '3 email campaigns'] },
+  { name: 'Starter', label: 'Pro', price: '$49/mo', desc: 'For solo marketers shipping consistent content.', features: ['All 5 modules + all 3 agents', '200 posts · 50k words · 50 ads', '50 lead conversations', '50 email campaigns'], highlight: true },
+  { name: 'Pro', label: 'Scale', price: '$149/mo', desc: 'For growing teams with high content volume.', features: ['Everything in Pro', '2k posts · 500k words · 500 ads', '1k lead conversations', '2k email campaigns', 'Priority AI processing'] },
 ];
 
 const FAQS = [
@@ -361,7 +361,7 @@ export default function Home() {
               <div key={p.name} className={`card p-6 flex flex-col gap-5 ${p.highlight ? 'border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 ring-1 ring-[color:var(--gold)]/20' : ''}`}>
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold">{p.name}</div>
+                    <div className="font-semibold">{p.label}</div>
                     {p.highlight && <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[color:var(--gold)]/20 text-[color:var(--gold)]">Most popular</span>}
                   </div>
                   <div className="text-2xl font-semibold mt-2">{p.price}</div>
@@ -375,8 +375,8 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link href={isAuthed ? '/billing' : '/api/auth/signin'} className={`text-sm text-center py-2.5 rounded-xl border transition ${p.highlight ? 'btn-gold' : 'btn-ghost'}`}>
-                  {p.name === 'Trial' ? 'Start free' : `Get ${p.name}`}
+                <Link href={isAuthed ? '/billing' : '/auth/signup'} className={`text-sm text-center py-2.5 rounded-xl border transition ${p.highlight ? 'btn-gold' : 'btn-ghost'}`}>
+                  {p.name === 'Trial' ? 'Start free' : `Get ${p.label}`}
                 </Link>
               </div>
             ))}
@@ -430,7 +430,7 @@ export default function Home() {
         <section className="card p-8 md:p-14 text-center space-y-5">
           <h2 className="text-3xl md:text-4xl font-semibold">Ship your next campaign today</h2>
           <p className="text-brand-muted max-w-xl mx-auto">
-            Start free. Every module is available on the Trial plan. No credit card required.
+            Start free. Every module is available on the Free plan. No credit card required.
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href={isAuthed ? '/dashboard' : '/api/auth/signin'} className="btn-gold px-6 py-3">

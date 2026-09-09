@@ -208,7 +208,7 @@ export default function Dashboard() {
           <div>
             <div className="text-sm font-medium">You&apos;re on the Free plan</div>
             <p className="text-xs text-brand-muted mt-0.5">
-              Upgrade to Starter for 200 posts, 50k blog words, 50 emails, and no watermark.
+              Upgrade to Pro for 200 posts, 50k blog words, 50 emails, and no watermark.
             </p>
           </div>
           <Link href="/billing" className="btn-gold text-sm flex-shrink-0">See plans →</Link>
@@ -323,10 +323,10 @@ export default function Dashboard() {
           <div>
             <div className="text-2xl font-semibold">{plan}</div>
             <div className="text-sm text-brand-muted mt-1">
-              {plan === 'Trial'    && 'Free forever · Limited usage'}
-              {plan === 'Starter'  && '$49/month · 1 seat'}
-              {plan === 'Pro'      && '$149/month · 3 seats · Priority AI'}
-              {plan === 'Business' && '$399/month · 10 seats · API access'}
+              {plan === 'Trial'    && 'Free · Limited usage'}
+              {plan === 'Starter'  && 'Pro · $49/month · 1 seat'}
+              {plan === 'Pro'      && 'Scale · $149/month · 3 seats · Priority AI'}
+              {plan === 'Business' && 'Enterprise · $399/month · 10 seats · API access'}
             </div>
           </div>
           <div className="space-y-2">

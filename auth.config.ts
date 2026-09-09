@@ -22,6 +22,7 @@ const PROTECTED_PREFIXES = [
   '/jobs',
   '/invite',
   '/upload',
+  '/onboarding',
 ]
 
 const PUBLIC_EXCEPTIONS = [

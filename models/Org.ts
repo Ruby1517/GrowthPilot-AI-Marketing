@@ -53,6 +53,7 @@ export interface OrgDoc extends mongoose.Document {
     emailsDrafted?: number;
   };
   brandVoice?: BrandVoice;
+  onboarded?: boolean;
   members: Array<{ userId: mongoose.Types.ObjectId; role: Role; joinedAt: Date }>;
   createdAt: Date;
   updatedAt: Date;
@@ -79,6 +80,7 @@ const OrgSchema = new Schema<OrgDoc>(
     usage: { type: Schema.Types.Mixed, default: {} },
     kpi: { type: Schema.Types.Mixed, default: {} },
     brandVoice: { type: Schema.Types.Mixed, default: {} },
+    onboarded: { type: Boolean, default: false },
     members: [
       {
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

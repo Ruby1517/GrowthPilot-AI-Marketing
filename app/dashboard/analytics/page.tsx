@@ -93,8 +93,8 @@ export default async function AnalyticsPage({ searchParams }: Search) {
             </>
           ) : (
             <div className="card p-4 text-sm dark:text-brand-muted text-black/70">
-              Unlock LeadPilot insights with <b>Pro</b> or <b>Business</b>.
-              <div className="mt-3"><a href="/billing" className="btn-ghost">View Plans</a></div>
+              Unlock LeadPilot insights with the <b>Pro</b> plan or above.
+              <div className="mt-3"><a href="/pricing" className="btn-ghost">View Plans</a></div>
             </div>
           )}
           <Recent recent={data.recent || []} />

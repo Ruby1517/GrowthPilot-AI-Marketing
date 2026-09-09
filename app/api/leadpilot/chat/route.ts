@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
   } else {
     const last = userText.toLowerCase();
     if (/price|cost|plan/.test(last)) {
-      reply = "Our plans start with Starter, Pro (more usage + priority AI), and Business for large teams. All plans include PostPilot, BlogPilot, AdPilot, LeadPilot, and MailPilot. Want me to connect you with sales?";
+      reply = "Our plans: Free ($0), Pro ($49/mo, no watermark), Scale ($149/mo, priority AI + 3 seats), and Enterprise (custom, SLA). All plans include every module and all 3 AI agents. Want me to connect you with sales?";
     } else if (/book|demo/.test(last)) {
       reply = "Happy to line that up! Drop your name, email, and company and I'll pass it along to the team.";
     } else if (/hours|support|help/.test(last)) {

@@ -16,10 +16,6 @@ export async function POST(req: Request) {
   if (!me?.orgId) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
   const org = await Org.findById(me.orgId).lean();
   if (!org) return NextResponse.json({ ok: false, error: 'Org not found' }, { status: 404 });
-  if (String((org as any).plan || 'Trial') !== 'Business') {
-    return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
-  }
-
   const body = await req.json().catch(() => ({} as any));
   const memberId = String(body?.memberId || '');
   if (!memberId) return NextResponse.json({ ok: false, error: 'Invalid input' }, { status: 400 });
