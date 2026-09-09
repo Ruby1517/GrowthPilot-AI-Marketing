@@ -50,11 +50,7 @@ export async function POST(req: Request) {
 
   // Save brand voice derived from onboarding answers
   const brandVoice = {
-    companyName: businessName,
-    productDescription: differentiator,
-    targetAudience: targetCustomers,
     toneOfVoice: 'friendly',
-    contentGoals: [goal],
     // preserve any existing fields
     ...(org.brandVoice || {}),
     // then override with fresh onboarding data
