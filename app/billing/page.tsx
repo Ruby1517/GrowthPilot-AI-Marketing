@@ -17,18 +17,18 @@ const PLANS = [
       '10 social posts / month',
       '5,000 blog words / month',
       '5 ad variants / month',
-      '10 lead conversations',
+      '10 lead conversations / month',
       '3 emails / month',
       '1 seat',
       'All 5 modules included',
       'All 3 AI agents included',
       'Watermark on exports',
     ],
-    missing: ['Priority AI processing', 'Team seats', 'API access'],
+    missing: ['No watermark', 'Priority AI processing', 'Team seats', 'API access'],
   },
   {
     key: 'Starter' as const,
-    label: 'Starter',
+    label: 'Pro',
     price: '$49',
     desc: 'For solo marketers shipping consistent content every week.',
     highlight: false,
@@ -37,7 +37,7 @@ const PLANS = [
       '200 social posts / month',
       '50,000 blog words / month',
       '50 ad variants / month',
-      '50 lead conversations',
+      '50 lead conversations / month',
       '50 emails / month',
       '1 seat',
       'All 5 modules included',
@@ -48,7 +48,7 @@ const PLANS = [
   },
   {
     key: 'Pro' as const,
-    label: 'Pro',
+    label: 'Scale',
     price: '$149',
     desc: 'For growing teams that need volume, speed, and extra seats.',
     checkoutKey: 'pro' as const,
@@ -57,7 +57,7 @@ const PLANS = [
       '2,000 social posts / month',
       '500,000 blog words / month',
       '500 ad variants / month',
-      '1,000 lead conversations',
+      '1,000 lead conversations / month',
       '2,000 emails / month',
       '3 seats included',
       'All 5 modules included',
@@ -72,16 +72,16 @@ const PLANS = [
 type PlanKey = typeof PLANS[number]['key'] | 'Business';
 
 const COMPARISON = [
-  { label: 'Social posts / mo',  free: '10',       starter: '200',    pro: '2,000' },
-  { label: 'Blog words / mo',    free: '5,000',    starter: '50,000', pro: '500,000' },
-  { label: 'Ad variants / mo',   free: '5',        starter: '50',     pro: '500' },
-  { label: 'Lead conversations', free: '10',       starter: '50',     pro: '1,000' },
-  { label: 'Emails / mo',        free: '3',        starter: '50',     pro: '2,000' },
-  { label: 'Team seats',         free: '1',        starter: '1',      pro: '3' },
-  { label: 'No watermark',       free: false,      starter: true,     pro: true },
-  { label: 'Priority AI',        free: false,      starter: false,    pro: true },
-  { label: 'All 5 modules',      free: true,       starter: true,     pro: true },
-  { label: 'All 3 AI agents',    free: true,       starter: true,     pro: true },
+  { label: 'Social posts / mo',  free: '10',    pro: '200',    scale: '2,000' },
+  { label: 'Blog words / mo',    free: '5,000', pro: '50,000', scale: '500,000' },
+  { label: 'Ad variants / mo',   free: '5',     pro: '50',     scale: '500' },
+  { label: 'Lead conversations', free: '10',    pro: '50',     scale: '1,000' },
+  { label: 'Emails / mo',        free: '3',     pro: '50',     scale: '2,000' },
+  { label: 'Team seats',         free: '1',     pro: '1',      scale: '3' },
+  { label: 'No watermark',       free: false,   pro: true,     scale: true },
+  { label: 'Priority AI',        free: false,   pro: false,    scale: true },
+  { label: 'All 5 modules',      free: true,    pro: true,     scale: true },
+  { label: 'All 3 AI agents',    free: true,    pro: true,     scale: true },
 ];
 
 const FAQS = [
@@ -227,7 +227,7 @@ export default function BillingPage() {
                   ) : `Get ${plan.label}`}
                 </button>
               ) : (
-                <Link href="/api/auth/signin"
+                <Link href="/auth/signup"
                   className="w-full py-3 rounded-xl border border-white/15 text-sm font-medium text-center hover:bg-white/5 transition block">
                   Start free
                 </Link>
@@ -291,7 +291,7 @@ export default function BillingPage() {
                 {COMPARISON.map((row, i) => (
                   <tr key={row.label} className={`border-b border-white/8 ${i % 2 === 0 ? 'bg-white/[0.015]' : ''}`}>
                     <td className="px-5 py-3 text-xs text-brand-muted">{row.label}</td>
-                    {(['free', 'starter', 'pro'] as const).map(col => (
+                    {(['free', 'pro', 'scale'] as const).map(col => (
                       <td key={col} className="px-5 py-3 text-center">
                         {typeof row[col] === 'boolean'
                           ? <div className="flex justify-center"><Tick on={row[col] as boolean} /></div>
@@ -313,7 +313,7 @@ export default function BillingPage() {
           <div className="font-semibold">Need more? Enterprise plan available.</div>
           <p className="text-sm text-brand-muted mt-1">
             20,000 posts · 2M blog words · 10 seats · API access · pooled usage · SLA.
-            Built for large marketing teams.
+            Built for large marketing teams. <Link href="/pricing" className="underline hover:text-white">See all plans →</Link>
           </p>
         </div>
         <a href="mailto:hello@growthpilot.ai?subject=Enterprise plan"

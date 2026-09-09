@@ -27,7 +27,7 @@ export default function Navbar() {
   const baseLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
-    { href: '/billing', label: 'Plans & Pricing' },
+    { href: '/pricing', label: 'Pricing' },
     { href: '/dashboard', label: 'Dashboard' },
   ];
   const authed = Boolean(session?.user);
@@ -72,7 +72,7 @@ export default function Navbar() {
             <Link href="/" className="text-white/90 hover:text-white">
               Home
             </Link>
-            <Link href="/billing" className="text-white/90 hover:text-white whitespace-nowrap">
+            <Link href="/pricing" className="text-white/90 hover:text-white whitespace-nowrap">
               Pricing
             </Link>
           </div>

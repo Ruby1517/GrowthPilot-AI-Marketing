@@ -87,7 +87,7 @@ const PRINCIPLES = [
   {
     icon: '🤝',
     title: 'Built for teams, not just solo creators',
-    desc: 'Role-based access (owner, admin, member, viewer), team seats on Starter and above, shared analytics, and audit trails — GrowthPilot grows with your team.',
+    desc: 'Role-based access (owner, manager, editor, viewer), team seats on Pro and above, shared analytics, and audit trails — GrowthPilot grows with your team.',
   },
 ];
 
@@ -237,9 +237,9 @@ export default function AboutPage() {
         <h2 className="text-xl font-semibold">Simple, transparent pricing</h2>
         <div className="grid gap-3 md:grid-cols-3">
           {[
-            { plan: 'Free',    price: '$0',    desc: 'Every module + all 3 agents. Limited usage. No card required.' },
-            { plan: 'Starter', price: '$49/mo', desc: '200 posts · 50k words · 50 ads · 50 emails · 1 seat.', highlight: true },
-            { plan: 'Pro',     price: '$149/mo',desc: '2,000 posts · 500k words · 500 ads · 2k emails · 3 seats · Priority AI.' },
+            { plan: 'Free',  price: '$0',     desc: 'Every module + all 3 agents. Limited usage. No card required.' },
+            { plan: 'Pro',   price: '$49/mo', desc: '200 posts · 50k words · 50 ads · 50 emails · 1 seat · no watermark.', highlight: true },
+            { plan: 'Scale', price: '$149/mo',desc: '2,000 posts · 500k words · 500 ads · 2k emails · 3 seats · Priority AI.' },
           ].map(p => (
             <div key={p.plan} className={`rounded-xl border p-4 space-y-1 ${p.highlight ? 'border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5' : 'border-white/10'}`}>
               <div className="flex items-center justify-between gap-2">

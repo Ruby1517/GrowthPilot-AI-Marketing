@@ -8,7 +8,7 @@ Body: GrowthPilot is an AI marketing suite with modules:
 - LeadPilot: embeddable chatbot for lead capture; conversations are metered.
 - MailPilot: draft and export email campaigns; emails are metered.
 
-Plans: Starter, Pro, Business. Each plan has usage meters (e.g., blog words, email count, render minutes, ad variants, conversations, assets). When usage exceeds the plan cap and overage is enabled, extra units are billed per overage pricing.
+Plans: Free ($0), Pro ($49/mo, no watermark), Scale ($149/mo, priority AI + 3 seats), Enterprise (custom, API access, 10 seats, SLA). Each plan has usage meters (blog words, email count, ad variants, conversations, social posts). When usage exceeds the plan cap and overage is enabled, extra units are billed per overage pricing.
 
 Overage: Additional usage beyond plan caps is recorded and can be invoiced. Pricing per meter is predefined.
 

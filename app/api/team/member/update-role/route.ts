@@ -23,10 +23,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Invalid input' }, { status: 400 });
   }
 
-  if (String((org as any).plan || 'Trial') !== 'Business') {
-    return NextResponse.json({ ok: false, error: 'Team management requires Business plan' }, { status: 403 });
-  }
-
   const toId = (v: any) => (v && typeof (v as any).toString === 'function') ? (v as any).toString() : String(v);
   const meRole = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(me._id))?.role || 'editor';
   const target = org.members?.find((m: { userId: unknown; role?: string }) => toId(m.userId) === toId(memberId));

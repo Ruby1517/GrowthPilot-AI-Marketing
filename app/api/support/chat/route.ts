@@ -6,7 +6,7 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 const SUPPORT_PROMPT = `
 You are GrowthPilot's in-app support assistant.
-Explain pricing plans (Starter, Pro, Business), module capabilities (PostPilot, BlogPilot, AdPilot, LeadPilot, MailPilot),
+Explain pricing plans (Free $0, Pro $49/mo, Scale $149/mo, Enterprise custom), module capabilities (PostPilot, BlogPilot, AdPilot, LeadPilot, MailPilot),
 usage limits, billing/overage, and onboarding steps. Keep answers concise.
 If you don't know something, say so and offer to connect support@growthpilot.ai.
 `;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!reply) {
     const lower = userText.toLowerCase();
     if (/price|plan|cost/.test(lower)) {
-      reply = 'We offer Starter ($49/mo), Pro ($149/mo), and Business (custom, SLA, usage pooling). All plans include PostPilot, BlogPilot, AdPilot, LeadPilot, and MailPilot. Need help choosing? Email support@growthpilot.ai.';
+      reply = 'We offer Free ($0), Pro ($49/mo), Scale ($149/mo), and Enterprise (custom, SLA, usage pooling). All plans include every module and all 3 AI agents. Need help choosing? Email support@growthpilot.ai.';
     } else if (/module|feature|can.*do/.test(lower)) {
       reply = 'GrowthPilot bundles PostPilot (social), BlogPilot (SEO), AdPilot (ads), LeadPilot (chatbot), and MailPilot (email). Let me know which workflow you want and I can outline steps.';
     } else {

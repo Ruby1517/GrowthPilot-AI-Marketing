@@ -49,12 +49,21 @@ export const metadata: Metadata = {
     siteName: 'GrowthPilot',
     title: 'GrowthPilot — AI Marketing Suite',
     description: 'All-in-one AI suite for social posts, blogs, ads, email and video.',
+    images: [
+      {
+        url: '/growthpilot-preview.png',
+        width: 1200,
+        height: 630,
+        alt: 'GrowthPilot — AI-powered marketing automation',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'GrowthPilot — AI Marketing Suite',
     description: 'All-in-one AI suite for social posts, blogs, ads, email and video.',
     creator: '@growthpilot',
+    images: ['/growthpilot-preview.png'],
   },
   icons: {
     icon: [

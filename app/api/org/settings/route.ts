@@ -40,6 +40,7 @@ export async function GET() {
     myRole: meRole,
     platformRole: me.role || 'user',
     effectivePlan: (!org.billingCustomerId && !(org as any).subscription?.id && org.plan !== 'Trial') ? 'Trial' : org.plan,
+    onboarded: !!(org as any).onboarded,
   })
 }
 

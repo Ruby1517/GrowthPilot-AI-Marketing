@@ -72,14 +72,14 @@ export default function AnalyticsCards({ initial }: { initial: AnalyticsData }) 
     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 max-w-none mx-auto">
       <Card className="border-white/20 bg-transparent dark:bg-card shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-none">
         <CardHeader>
-          <CardTitle>{isTrial ? 'Trial Usage' : 'Org KPIs (MTD)'}</CardTitle>
+          <CardTitle>{isTrial ? 'Free Plan Usage' : 'Org KPIs (MTD)'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {isTrial ? (
             <>
-              <div>Your plan: <b>Trial</b>. All modules are available with limited usage caps.</div>
-              <div>Upgrade to lift limits, remove watermarks, and increase upload duration.</div>
-              <Link href="/billing" className="inline-block text-xs underline text-brand-muted hover:text-white">View plans</Link>
+              <div>Your plan: <b>Free</b>. All modules are available with limited usage caps.</div>
+              <div>Upgrade to Pro to lift limits and remove watermarks.</div>
+              <Link href="/pricing" className="inline-block text-xs underline text-brand-muted hover:text-white">View plans</Link>
             </>
           ) : (
             <>
